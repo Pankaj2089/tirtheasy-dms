@@ -18,8 +18,8 @@ $siteUrl = env('APP_URL');
                             <input type="text" class="form-control" id="property_code" name="property_code" placeholder="Enter property code">
                         </div>
                         <div class="text-start">
-                            <label for="email" class="form-label">Email ID</label>
-                            <input type="email" class="form-control" id="email" name="email" placeholder="Enter eamil id">
+                            <label for="login_id" class="form-label">Login ID</label>
+                            <input type="text" class="form-control" id="login_id" name="login_id" placeholder="Enter eamil id">
                         </div>
 
                          <div class="text-start position-relative">
@@ -32,8 +32,8 @@ $siteUrl = env('APP_URL');
                              <button type="button" class="me-auto theme-btn"  id="loginSubmit">Login</button>
                         </div>
 
-                        <!-- <p class="sub-lg mb-0">Don’t have an account <a id="loginSubmit" style="cursor:pointer">Signup</a></p> -->
-                        <hr style="display: none;">
+                        <!-- <p class="sub-lg mb-0">Don’t have an account <a id="loginSubmit" style="cursor:pointer">Signup</a></p>
+                        <hr style="display: none;"> -->
                     </form>
                 </div>
             </div>
@@ -44,7 +44,7 @@ $siteUrl = env('APP_URL');
     let adminLoginURL = "{{url('vendor-login')}}"; 
     let dashboardURL = "{{url('/calendar')}}";
     $(document).ready(function(){
-      $("#property_code", "#email, #password").on('keyup', function (e) {
+      $("#property_code", "#login_id, #password").on('keyup', function (e) {
         if (e.keyCode == 13) {
           $('#loginSubmit').trigger('click');
         }
@@ -55,9 +55,9 @@ $siteUrl = env('APP_URL');
           flag = 1;
           showMessage('Please enter your property code.');
           return false;
-        }else if($.trim($("#email").val()) == ''){
+        }else if($.trim($("#login_id").val()) == ''){
           flag = 1;
-          showMessage('Please enter your email address.');
+          showMessage('Please enter your login ID.');
           return false;
         }else if($.trim($("#password").val()) == ''){
           flag = 1;

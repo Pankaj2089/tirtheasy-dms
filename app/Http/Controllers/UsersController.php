@@ -30,7 +30,7 @@ class UsersController extends Controller{
 	
     #login page
     public function LoginPage(Request $request){
-        if($request->session()->has('vendor_email')){
+        if($request->session()->has('vendor_login_id')){
             return redirect('/calendar');
         }
         return view('/users/login');
@@ -40,12 +40,11 @@ class UsersController extends Controller{
     public function VendorLogin(Request $request){
 		$validator = Validator::make($request->all(), [
 			'property_code' => 'required',
-			'email' => 'required|email',
+			'login_id' => 'required',
 			'password' => 'required',
 		],[
 			'property_code.required' => 'Please enter your property code.',
-			'email.required' => 'Please enter your email address.',
-			'email.email' => 'Please enter valid email address.',
+			'login_id.required' => 'Please enter your login ID.',
 			'password.required' => 'Please enter your password.'
 		]);
 
@@ -53,29 +52,29 @@ class UsersController extends Controller{
 			 $errors = $validator->errors();
 			if($errors->first('property_code')){
 				echo json_encode(array('heading'=>'Error Property Code','msg'=>$errors->first('property_code')));
-			}else if($errors->first('email')){
-				echo json_encode(array('heading'=>'Error Email','msg'=>$errors->first('email')));
+			}else if($errors->first('login_id')){
+				echo json_encode(array('heading'=>'Error login_id','msg'=>$errors->first('login_id')));
 			}else if($errors->first('password')){
 				echo json_encode(array('heading'=>'Error Password','msg'=>$errors->first('password')));
 			}
 		}else{
 			if(isset($request->reminderMe) && $request->reminderMe == 1){
                 Cookie::queue('cookiePropertyCode', $request->property_code, 5000);
-                Cookie::queue('cookieUsername', $request->email, 5000);
+                Cookie::queue('cookieLoginId', $request->login_id, 5000);
                 Cookie::queue('cookiePassword', $request->password, 5000);
             }else{
                 Cookie::queue('cookiePropertyCode', "", 5000);
-                Cookie::queue('cookieUsername', '', 5000);
+                Cookie::queue('cookieLoginId', '', 5000);
                 Cookie::queue('cookiePassword', '', 5000);
             }
 
-			$User = self::$UserModel->where('property_id', $request->property_code)->where('email', $request->email)->where('status',1)->where('type',"Vendor")->first();
+			$User = self::$UserModel->where('property_id', $request->property_code)->where('login_id', $request->login_id)->where('status',1)->where('type',"Vendor")->first();
 			if($User){
 				$PasswordMatch = password_verify($request->password, $User->password);
 				if(!$PasswordMatch){
 					echo json_encode(array('heading'=>'Error Account','msg'=>'Username and password incorrect'));
 				}else{
-					session(['vendor_id' => $User->id, 'vendor_email' => $User->email, 'vendor_profile' => $User, 'vendor_type' => $User->type, 'vendor_name' => $User->name]);
+					session(['vendor_id' => $User->id, 'vendor_login_id' => $User->login_id, 'vendor_profile' => $User, 'vendor_type' => $User->type, 'vendor_name' => $User->name]);
 					echo json_encode(array('heading'=>'Success','msg'=>''));
 				}
 			}else{
@@ -86,7 +85,7 @@ class UsersController extends Controller{
 
 	# admin dashboard page
     public function calendar(Request $request){
-		if(!$request->session()->has('vendor_email')){return redirect('/');}
+		if(!$request->session()->has('vendor_login_id')){return redirect('/');}
         return view('/calendar/index');
     }
 
