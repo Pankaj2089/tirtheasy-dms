@@ -1,0 +1,593 @@
+@media screen and (min-width: 360px) and (max-width: 767px) { 
+
+.form {
+    width: 100%;
+    padding:50px 20px 30px 20px;
+}
+
+.form h3 {
+    font-size: 24px;
+    margin-top: 20px;
+}
+
+.form form input {
+    margin-top: 0;
+    border: 0px;
+    margin-bottom: 30px;
+    box-shadow: 0 0 8px 0 rgba(0, 0, 0, .11);
+}
+.theme-btn {
+    width: 100%;
+}
+
+.sub-lg {
+    margin-top: 35px;
+}
+
+.show-ps {
+    right: 16px;
+    top: 48px;
+}
+
+.form form hr{
+    display: block!important;
+    height: 5px;
+    border-radius: 10px;
+    border: none;
+    background: #CD484B;
+    width: 120px;
+    margin:15px auto;
+    opacity: 1;
+}
+
+img.login-logo {
+    width: 130px;
+}
+
+}
+
+
+
+
+
+
+
+@media screen and (min-width: 1440px) and (max-width:1600px) { 
+
+select.form-select.form-select-sm {
+    width: 250px;
+}
+
+}
+
+
+
+@media screen and (min-width: 1280px) and (max-width:1439px) { 
+
+select.form-select.form-select-sm {
+    width: 205px;
+}
+
+.box-detail ul li span, .box-conclusion li span {
+    font-size: 11.5px;
+}
+
+.modal-dialog {
+    position: relative;
+    margin: 0px;
+    pointer-events: none;
+    min-width: 900px;
+    margin-left: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+#booking-popup .modal-dialog {
+    min-width: 50%!important;
+    max-width: 50%!important;
+    min-width: 700px;
+}
+
+.filter-md button {
+    padding: 0 10px!important;
+}
+
+.bl-reserve-form .time input {
+    width: 150px;
+}
+
+.booking-block {
+    font-size: 11px;
+}
+
+.reservation-footer {
+    bottom: 20px;
+}
+
+.reservation-inner .tab-content {
+    margin-top: 10px;
+}
+
+.box-detail {
+    padding: 10px 15px;
+}
+
+.reserve-box .box-top {
+    padding: 10px 15px;
+}
+
+.box-conclusion {
+    padding: 10px 15px;
+}
+
+.box-detail .date hr {
+    margin: 6px 0!important;
+}
+
+.box-detail ul li {
+    margin: 0px 0;
+}
+
+}
+
+@media screen and (min-width: 1280px) and (max-width:1365px) { 
+
+select.form-select.form-select-sm {
+    width: 205px;
+}
+
+.search-box {
+    width: 20%;
+}
+
+.filter-md button {
+    padding: 0 8px!important;
+    font-size: 12px!important;
+}
+
+.form-control {
+    font-size: 13px;
+}
+
+.reserve-box .box-top h5 img {
+    height: 15px;
+    width: 15px;
+    padding: 2px;
+    right: -20px;
+    top: 2px;
+}
+
+.bl-tabs .nav-link {
+    padding: 12px 35px;
+}
+
+.reservation-inner nav .nav-tabs button {
+    padding: 10px 32px;
+}
+
+.details .head-menu ul li a {
+    padding: 6px 30px;
+    line-height: 30px;
+}
+
+.details .head-menu ul {
+    gap: 10px;
+}
+.btns {
+    margin-top: 0;
+}
+
+}
+
+
+@media screen and (min-width: 1024px) and (max-width:1279px) { 
+
+.search-box {
+    margin-left: 5px;
+    width: 25%;
+    padding: 20px;
+}
+
+
+.head-menu ul li a {
+    padding: 8px 15px;
+    font-size: 13px;
+}
+
+.head-menu ul {
+    gap: 7px;
+}
+.filter-md button span {
+    height: 20px;
+    width: 20px;
+    font-size: 11px;
+}
+
+.calender-box .fillter span {
+    font-size: 11px;
+}
+
+select.form-select.form-select-sm {
+    width: 140px;
+    font-size: 12px;
+    padding: 8px 8px;
+}
+
+.filter-md button {
+    padding: 0 6px!important;
+    font-size: 10px!important;
+}
+
+button.btn.btn-outline-danger.btn-sm.text-nowrap {
+    border-radius: 20px;
+    padding: 0 20px;
+    font-size: 12px;
+}
+
+.gap-4 {
+    gap: 0.5rem!important;
+}
+
+.grid-cell {
+    min-width: 80px;
+}
+
+.date-cell {
+    min-width: 70px;
+}
+
+}
+
+
+
+@media screen and (min-width: 768px) and (max-width:1023px) { 
+
+    .room-name {
+    min-width: 150px;
+}
+
+.room-grid {
+    width: calc(100% - 150px);
+    margin-left: 150px;
+}
+
+.footer-grid {
+    min-width: 100%;
+}
+
+}
+
+
+@media screen and (min-width: 576px) and (max-width:767px) { 
+
+.room-name {
+    min-width: 150px;
+    border-bottom: 1px solid #CECECE;
+}
+.room-grid {
+    width: calc(100%);
+    margin-left: 0;
+}
+
+.footer-grid {
+    min-width: 100%;
+}
+
+.filter-md {
+    display: none;
+}
+
+.calender-box .fillter {
+    position: fixed;
+    width: calc(100% - 40px);
+    z-index: 999;
+}
+
+.room-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.room-label-header {
+    width: 100%;
+}
+
+.footer-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-label {
+    background: #fff;
+    border-bottom: 1px solid #e4e4e4;
+}
+
+.date-header-scroll {
+    padding-top: 100px;
+}
+
+.assign-desktop, .desktop-room{
+    display: none!important;
+}
+
+.mobile-room, .assign-mobile{
+    display: block!important;
+}
+
+.fillter .g-2 {
+    flex-direction: column-reverse;
+}
+
+button.btn.btn-outline-danger.btn-sm.text-nowrap {
+    border-radius: 20px;
+    padding: 5px 20px;
+}
+
+.room-name{
+    position: unset;
+}
+
+.calender-box {
+    height: calc(100vh - 175px);
+}
+
+.grid-cell {
+    padding: 3px;
+    min-height: 35px;
+}
+
+.date-cell {
+    width: 95px;
+}
+
+}
+
+
+
+@media screen and (min-width: 320px) and (max-width:575px) { 
+.form {
+    width: 100%;
+    padding: 0 15px;
+}
+.form form label {
+    font-size: 12px;
+}
+.form form input {
+    font-size: 12px;
+    margin-top: 5px;
+    color: #696969;
+    font-weight: 400;
+    text-align: left;
+    border: 1px solid #696969;
+    border-radius: 6px;
+    height: 45px;
+    line-height: 50px;
+    margin-bottom: 15px;
+}
+.theme-btn {
+    width: 100%;
+}
+
+.mobile-footer{
+    display: flex!important;
+}
+.show-ps {
+    position: absolute;
+    right: 15px;
+    top: 47px;
+    cursor: pointer;
+}
+img.login-logo {
+    width: 120px;
+}
+
+#coll-one .room-grid {
+    width: calc(100%);
+    margin-left: 0;
+}
+.form h3 {
+    margin-top: 12px;
+    font-size: 32px;
+    font-weight: 600;
+    color: #000;
+}
+.room-name {
+    min-width: 150px;
+    border-bottom: 1px solid #CECECE;
+}
+.comp-logo img {
+    width: 120px;
+}
+.search-box .search-input {
+    display: none;
+}
+.logo-left {
+    gap: 5px!important;
+}
+.search-box {
+    gap: 10px;
+    height: 34px;
+    margin-left: auto;
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+.calender-box {
+    margin: 20px 5px;
+    box-shadow: none;
+    margin-top: 70px;
+    overflow: auto;
+    height: calc(100vh - 120px);
+}
+
+.header nav {
+    padding: 10px 10px;
+}
+.room-grid {
+    width: calc(100% - 185px);
+    margin-left: 0;
+}
+
+.availability-footer {
+    background: #f8f9fa;
+    border-radius: 0 0 10px 10px;
+    bottom: 70px;
+    overflow-x: scroll;
+    width: calc(100% - 0px);
+    left: 0;
+}
+
+.footer-cell {
+    padding: 4px 5px;
+    font-size: 10px;
+    border-right: 1px solid #cbc6c6;
+    min-width: 80px;
+     border-top: 1px solid #CECECE;
+    border-bottom: 1px solid #CECECE;
+    margin-top: -1px;
+}
+
+.footer-grid {
+    min-width: 100%;
+}
+
+.filter-md {
+    display: none;
+}
+
+.calender-box .fillter {
+    position: fixed;
+    width: calc(100% - 40px);
+}
+
+.room-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.room-label-header {
+    width: 100%;
+}
+
+.footer-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-label {
+    background: #fff;
+    border-bottom: 1px solid #e4e4e4;
+}
+
+.calender-box .fillter {
+    position: fixed;
+    width: calc(100% - 10px);
+    z-index: 999;
+}
+
+select.form-select.form-select-sm {
+    width: 50%!important;
+    padding: 8px 15px;
+    border-color: #696969;
+    font-size: 11px;
+}
+
+.date-header-scroll {
+    padding-top: 100px;
+}
+
+.fillter-md .gap-4 {
+    gap: 0.5rem!important;
+}
+
+.assign-desktop, .desktop-room{
+    display: none!important;
+     font-size: 11px;
+}
+
+.mobile-room, .assign-mobile{
+    display: block!important;
+     font-size: 11px;
+}
+
+.fillter .g-2 {
+    flex-direction: column-reverse;
+}
+
+button.btn.btn-outline-danger.btn-sm.text-nowrap {
+    border-radius: 20px;
+    font-size: 11px;
+    padding: 5px 20px;
+}
+
+.room-name{
+    position: unset;
+}
+
+.date-cell .day,.date-cell .month {
+    font-size: 8px;
+}
+
+.date-cell .date {
+    font-size: 10px;
+}
+
+.calender-box {
+    height: calc(100vh - 175px);
+    background: #fff;
+}
+
+.grid-cell {
+    padding: 3px;
+    min-height: 35px;
+    min-width: 80px;
+    border-top: 1px solid #CECECE;
+    border-bottom: 1px solid #CECECE;
+    margin-top: -1px;
+}
+
+.calender-box .fillter span {
+    font-size: 11px;
+}
+.btn-link img {
+    width: 13px;
+}
+.date-cell {
+    width: auto;
+    min-width: 75px;
+}
+
+.btn-link{
+    padding-left: 5px!important;
+}
+
+footer.mobile-footer img {
+    width: 30px;
+    margin-bottom: 5px;
+    background: #ebe2e2;
+    height: 30px;
+    border-radius: 50%;
+    padding: 7px;
+}
+.cal input{
+    font-size: 12px;
+    background-size: 20px;
+}
+.form form hr {
+    display: block!important;
+    height: 4px;
+    background: #CD484B;
+    opacity: 1;
+    border-radius: 10px;
+    border: none;
+    width: 105px;
+    margin: 14px auto;
+}
+
+
+
+
+
+}
