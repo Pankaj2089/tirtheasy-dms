@@ -1,0 +1,181 @@
+/* .date-column {
+    border-right: 1px solid #dee2e6;
+} */
+
+.date-column-button:last-child {
+    border-right: none;
+}
+
+
+.date-cell-button {
+    text-align: center;
+    padding: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin: 2px 0;
+    border-radius: 5px;
+    background: #FDF3F3;
+    min-width: 95px;
+    border-right: 3px solid #FFF;
+}
+
+.date-column-button {
+    min-width: 10%;
+}
+
+
+.date-cell-button.is-today {
+    background-color: #212529;
+    color: white;
+}
+
+.date-cell-button .day {
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 300;
+}
+
+.date-cell-button .date {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 12px;
+}
+.date-cell-button .month {
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 300;
+}
+
+.rooms-container {
+    min-width: 1000px;
+    position: relative;
+    /* padding-bottom: 100px; */
+}
+.room-category-list .room-category + .room-category {
+        /* margin-top: 1.5rem; */
+}
+.date-cell-button.is-weekend {
+    /* background-color: #f8f9fa; */
+}
+
+.room-row {
+    display: flex;
+}
+
+.room-name {
+    min-width: 160px;
+}
+
+.room-grid {
+    display: flex;
+    flex: 1;
+    max-height: 37px;
+}
+
+.grid-cell.calendar-cell {
+    flex: 1;
+    border: 1px solid #f0f0f0;
+    cursor: pointer;
+    background-color: #fff;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+}
+
+.grid-cell.calendar-cell:hover {
+    background-color: #f8f9fa;
+}
+
+.grid-cell.selected-range {
+    background-color: rgba(220, 53, 69, 0.12);
+    border-color: rgba(220, 53, 69, 0.35);
+}
+
+.grid-cell.drag-preview {
+    background-color: rgba(220, 53, 69, 0.25);
+    border-color: #dc3545;
+}
+.calendar-container .date-columns {
+    display: grid;
+    grid-template-columns: repeat(var(--calendar-column-count), minmax(var(--calendar-cell-min-width), 1fr));
+    gap: 0;
+}
+
+.calendar-container .date-column {
+    width: 100%;
+}
+
+.rooms-container .room-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--calendar-column-count), minmax(var(--calendar-cell-min-width), 1fr));
+}
+
+.rooms-container .grid-cell {
+    width: 100%;
+}
+
+.price-label {
+    line-height: 1.15rem;
+    text-align: center;
+    font-size: 11px;
+    color: #000;
+}
+
+.price-label span {
+    display: inline-block;
+    font-size: 11px;
+    color: #000;
+    height: 15px;
+}
+.room-grid .booking-block{
+    height: 19px;
+    margin-top: 6px;
+}
+
+
+.selection-action-tooltip {
+    position: absolute;
+    z-index: 1200;
+    min-width: 220px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.15);
+    padding: 14px 16px;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.selection-action-tooltip .selection-action-title {
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+.selection-action-tooltip .selection-action-btn {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: block;
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.selection-action-tooltip .selection-action-btn + .selection-action-btn {
+    margin-top: 6px;
+}
+.selection-action-tooltip .selection-action-btn[data-action="reservation"] {
+    background-color: #dc3545;
+    color: #fff;
+}
+.selection-action-tooltip .selection-action-btn[data-action="reservation"]:hover {
+    background-color: #bb2d3b;
+}
+.selection-action-tooltip .selection-action-btn[data-action="maintenance"] {
+    background-color: #f8f9fa;
+    color: #212529;
+    border-color: #dee2e6;
+}
+.selection-action-tooltip .selection-action-btn[data-action="maintenance"]:hover {
+    background-color: #e9ecef;
+}

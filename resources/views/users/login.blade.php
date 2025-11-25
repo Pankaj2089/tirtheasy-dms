@@ -19,7 +19,7 @@ $siteUrl = env('APP_URL');
                         </div>
                         <div class="text-start">
                             <label for="login_id" class="form-label">Login ID</label>
-                            <input type="text" class="form-control" id="login_id" name="login_id" placeholder="Enter eamil id">
+                            <input type="text" class="form-control" id="login_id" name="login_id" placeholder="Enter login id">
                         </div>
 
                          <div class="text-start position-relative">

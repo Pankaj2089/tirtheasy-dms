@@ -6,7 +6,7 @@ $siteUrl = env('APP_URL');
   <head>
 
     <meta charset="utf-8">
-    <title>Welcome</title>
+    <title>Tirtheasy DMS</title>
     <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- SEO Meta Tags -->

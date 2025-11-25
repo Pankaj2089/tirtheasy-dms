@@ -2,7 +2,82 @@
 $siteUrl = env('APP_URL');
 @endphp
 @extends('layout.calendar')
-@section('content')
+@section('calendar-content')
+
+<style>
+    :root {
+        --calendar-column-count: 7;
+        --calendar-cell-min-width: 110px;
+    }
+    .cell-booked{
+        display: none !important;
+    }
+    .selection-action-tooltip {
+        position: absolute;
+        z-index: 1200;
+        min-width: 220px;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.15);
+        padding: 14px 16px;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    .selection-action-tooltip .selection-action-title {
+        font-size: 0.85rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 6px;
+    }
+    .selection-action-tooltip .selection-action-range {
+        font-size: 0.85rem;
+        color: #495057;
+        margin-bottom: 10px;
+        line-height: 1.3;
+    }
+    .selection-action-tooltip .selection-action-duration {
+        font-size: 0.82rem;
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+    .selection-action-tooltip .selection-action-btn {
+        border: 1px solid transparent;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: block;
+        width: 100%;
+        text-align: left;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .selection-action-tooltip .selection-action-btn + .selection-action-btn {
+        margin-top: 6px;
+    }
+    .selection-action-tooltip .selection-action-btn[data-action="reservation"] {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    .selection-action-tooltip .selection-action-btn[data-action="reservation"]:hover {
+        background-color: #bb2d3b;
+    }
+    .selection-action-tooltip .selection-action-btn[data-action="maintenance"] {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #dee2e6;
+    }
+    .selection-action-tooltip .selection-action-btn[data-action="maintenance"]:hover {
+        background-color: #e9ecef;
+    }
+    .rooms-container.is-loading {
+        opacity: 0.5;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+</style>
+
+   
 <div class="calender-box">
     <!-- Calendar Grid -->
     <div class="calendar-container">
@@ -17,7 +92,7 @@ $siteUrl = env('APP_URL');
                                 <div class="d-flex align-items-center">
                                     <!-- <span class="">04, October, 2025</span> -->
                                     <button class="btn btn-link text-dark px-3 py-0 cal">
-                                        <input type="date" placeholder="04, October, 2025" class="border-0">
+                                        <input type="date" id="datePicker" placeholder="04, October, 2025" class="border-0">
                                         <!-- <img src="{{$siteUrl}}public/assets/img/cal-ic.svg" alt=""> -->
                                     </button>
                                 </div>
@@ -29,17 +104,17 @@ $siteUrl = env('APP_URL');
                             <div class="col-12 col-md filter-md">
                                 <div class="d-flex flex-wrap gap-2">
                                     <button class="bg-transparent">All <span
-                                            class="badge bg-secondary">80</span></button>
+                                            class="badge bg-secondary">0</span></button>
                                     <button class="bg-transparent">Vacant <span
-                                            class="badge bg-secondary">34</span></button>
+                                            class="badge bg-secondary">0</span></button>
                                     <button class="bg-transparent">Occupied <span
-                                            class="badge bg-secondary">40</span></button>
+                                            class="badge bg-secondary">0</span></button>
                                     <button class="bg-transparent">Reserved <span
-                                            class="badge bg-secondary">07</span></button>
+                                            class="badge bg-secondary">0</span></button>
                                     <button class="bg-transparent">Blocked <span
-                                            class="badge bg-secondary">09</span></button>
+                                            class="badge bg-secondary">0</span></button>
                                     <button class="bg-transparent">Due Date <span
-                                            class="badge bg-secondary">09</span></button>
+                                            class="badge bg-secondary">0</span></button>
                                 </div>
                             </div>
 
@@ -76,167 +151,21 @@ $siteUrl = env('APP_URL');
                                 <option>Suite</option>
                             </select>
                         </div>
-                        <div class="d-flex align-items-center position-relative">
-                            <button class="bg-transpaent border-0 arrow-slide left" id="moveBtn"><img
-                                    src="{{$siteUrl}}public/assets/img/circle-arrow.svg" alt=""></button>
-                            <div class="date-columns">
-                                <div class="date-column" id="box">
-                                    <div class="date-cell selected">
-                                        <div class="day">MON</div>
-                                        <div class="date">01</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column" id="box">
-                                    <div class="date-cell">
-                                        <div class="day">MON</div>
-                                        <div class="date">02</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column" id="box">
-                                    <div class="date-cell">
-                                        <div class="day">MON</div>
-                                        <div class="date">03</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column" id="box">
-                                    <div class="date-cell">
-                                        <div class="day">MON</div>
-                                        <div class="date">04</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column" id="box">
-                                    <div class="date-cell">
-                                        <div class="day">MON</div>
-                                        <div class="date">05</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column" id="box">
-                                    <div class="date-cell">
-                                        <div class="day">MON</div>
-                                        <div class="date">05</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column" id="box">
-                                    <div class="date-cell">
-                                        <div class="day">MON</div>
-                                        <div class="date">06</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">TUE</div>
-                                        <div class="date">07</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">WED</div>
-                                        <div class="date">08</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">THU</div>
-                                        <div class="date">09</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">FRI</div>
-                                        <div class="date">10</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">SAT</div>
-                                        <div class="date">11</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">SUN</div>
-                                        <div class="date">12</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">MON</div>
-                                        <div class="date">13</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">TUE</div>
-                                        <div class="date">14</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">WED</div>
-                                        <div class="date">15</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">THU</div>
-                                        <div class="date">16</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">FRI</div>
-                                        <div class="date">17</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">MON</div>
-                                        <div class="date">18</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">TUE</div>
-                                        <div class="date">19</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">WED</div>
-                                        <div class="date">20</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
-                                <div class="date-column">
-                                    <div class="date-cell">
-                                        <div class="day">THU</div>
-                                        <div class="date">21</div>
-                                        <div class="month">OCT</div>
-                                    </div>
-                                </div>
+                        <div class="d-flex align-items-center position-relative gap-2 flex-wrap flex-md-nowrap">
+                            <div class="btn-group btn-group-sm view-toggle d-none" role="group" aria-label="Calendar view">
+                                <button type="button" class="btn btn-outline-secondary active" data-view="week"
+                                    id="weekViewBtn">Week</button>
+                                <button type="button" class="btn btn-outline-secondary" data-view="month"
+                                    id="monthViewBtn">Month</button>
                             </div>
-                            <button class="bg-transpaent border-0 arrow-slide right" id="moveBtn2"><img
-                                    src="{{$siteUrl}}public/assets/img/circle-arrow.svg" alt=""></button>
+                            <!-- <input type="date" class="form-control form-control-sm w-auto" id="datePicker"> -->
+                            <button class="bg-transpaent border-0 arrow-slide left" id="prevRangeBtn">
+                                <img src="{{$siteUrl}}public/assets/img/circle-arrow.svg" alt="">
+                            </button>
+                            <div class="date-columns flex-grow-1" id="dateColumns"></div>
+                            <button class="bg-transpaent border-0 arrow-slide right" id="nextRangeBtn">
+                                <img src="{{$siteUrl}}public/assets/img/circle-arrow.svg" alt="">
+                            </button>
                         </div>
                     </div>
 
@@ -247,7 +176,7 @@ $siteUrl = env('APP_URL');
             <div class="border-bottom room-cat">
                 <div class="container-fluid px-3">
                     <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
-                        <div class="room-label-header">Room Category Name Here</div>
+                        <div class="room-label-header"></div>
                     </div>
                 </div>
             </div>
@@ -255,591 +184,7 @@ $siteUrl = env('APP_URL');
             <!-- Room Rows -->
             <div class="rooms-container">
                 <!-- 4 ICR Villa Section -->
-                <div class="room-category">
-                    <div class="room-row">
-                        <div class="room-name bg-white title">4 ICR Villa</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="price-label"><span  data-bs-toggle="tooltip" data-bs-placement="top" title="Hello Tooltip">0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span  data-bs-toggle="tooltip" data-bs-placement="top" title="Hello Tooltip">0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span  data-bs-toggle="tooltip" data-bs-placement="top" title="Hello Tooltip">0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">1109</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" data-bs-toggle="tooltip" data-bs-placement="top" title="Hello Tooltip" style="width:calc(200% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-group"  data-bs-toggle="tooltip" data-bs-placement="top" title="Hello Tooltip" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> John doe & Gro...
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt=""> Maintain blk..
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest payment-pending"  data-bs-toggle="tooltip" data-bs-placement="top" title="Hello Tooltip" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 Second Row -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">1201</div>
-                        <div class="room-grid">
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance"
-                                    style="width:calc(200% - 5px);" data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt=""> Maintenance block
-
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-group" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> Mr. john grp...
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-                </div>
-
-
-
-                <div class="room-category">
-                    <div class="room-row">
-                        <div class="room-name bg-white title">4 ICR Villa</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><span
-                                        class="bg-info text-white">1</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><span
-                                        class="bg-info text-white">1</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">V1101</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest payment-pending" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-group" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> John Grp...
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt=""> Maintain blk..
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest payment-pending" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 Second Row -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">V1101</div>
-                        <div class="room-grid">
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt=""> Maintain blk..
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-group" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> Mr. john doe &...
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="border-bottom room-cat ">
-                    <div class="container-fluid px-3">
-                        <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
-                            <div class="room-label-header">Room Category Name 2</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="room-category">
-                    <div class="room-row">
-                        <div class="room-name bg-white title">4 ICR Villa</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><span
-                                        class="bg-info text-white">1</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><span
-                                        class="bg-info text-white">1</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">1109</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-group" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> John doe & Gro...
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt=""> Maintain blk..
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 Second Row -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">1201</div>
-                        <div class="room-grid">
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt="">Maintain blk..
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-due" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> Mr. john doe &...
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border-bottom room-cat ">
-                    <div class="container-fluid px-3">
-                        <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
-                            <div class="room-label-header">Room Category Name 3</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="room-category">
-                    <div class="room-row">
-                        <div class="room-name bg-white title">4 ICR Villa</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">V1101</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-group" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> John doe & Gro...
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt=""> Maintain blk..
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 Second Row -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">V1101</div>
-                        <div class="room-grid">
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt=""> Maintenance block
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-due" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> Mr. john doe &...
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="room-category">
-                    <div class="room-row">
-                        <div class="room-name bg-white title">4 ICR Villa</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span> <span
-                                        class="bg-info text-white">1</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><span
-                                        class="bg-info text-white">1</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><span
-                                        class="bg-info text-white">1</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="price-label"><span>0</span><br>18000.00</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">V1101</div>
-                        <div class="room-grid">
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-group" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> John doe & Gro...
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt=""> Maintenance block
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-
-                    <!-- Villa 01 Second Row -->
-                    <div class="room-row">
-                        <div class="room-name bg-light ">V1101</div>
-                        <div class="room-grid">
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-maintenance" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/maintain.svg" alt=""> Maintenance block
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-due" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/users.svg" alt=""> Mr. john doe &...
-                                </div>
-                            </div>
-                            <div class="grid-cell">
-                                <div class="booking-block booking-guest" style="width: calc(100% - 5px);"
-                                    data-bs-toggle="modal" data-bs-target="#booking-pop">
-                                    <img src="{{$siteUrl}}public/assets/img/user.svg" alt=""> Mr. john doe
-                                </div>
-                            </div>
-                            <div class="grid-cell"></div>
-                        </div>
-                    </div>
-                </div>
+                
 
 
 
@@ -886,6 +231,18 @@ $siteUrl = env('APP_URL');
     </div>
 
 
+</div>
+
+<div id="selection-action-tooltip" class="selection-action-tooltip d-none">
+    <div class="selection-action-title">Create for selection</div>
+    <div class="selection-action-range" id="selection-action-range"></div>
+    <div class="selection-action-duration" id="selection-action-duration"></div>
+    <button type="button" class="selection-action-btn" data-action="reservation">
+        Reservation
+    </button>
+    <button type="button" class="selection-action-btn" data-action="maintenance">
+        Maintenance Block
+    </button>
 </div>
 
 <!-- Legend -->
@@ -1102,8 +459,41 @@ $siteUrl = env('APP_URL');
 
 <!-- quick reservation popup end-->
 
-
-
+<!-- maintenance block popup start -->
+<div class="modal fade" id="maintenance-block-pop" tabindex="-1" aria-labelledby="maintenanceBlockLabel" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            <img src="{{$siteUrl}}public/assets/img/close.svg" alt="">
+        </button>
+        <div class="modal-body p-4">
+            <h4 id="maintenanceBlockLabel" class="mb-3">Maintenance Block</h4>
+            <form class="maintenance-form" id="maintenanceForm">
+                <input type="hidden" id="maintenanceRoomIdInput" name="room_id">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="maintenanceStartInput" name="start_date">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="maintenanceEndInput" name="end_date">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Reason</label>
+                        <textarea class="form-control" rows="3" id="maintenanceReasonInput" name="reason" placeholder="Describe the maintenance work"></textarea>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="blockDatesBtn" onclick="blockDates(event)" class="btn btn-dark">Block Dates</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+<!-- maintenance block popup end -->
 
 
 <!--booking Modal -->
@@ -1648,9 +1038,7 @@ $siteUrl = env('APP_URL');
 </div>
 </div>
 
-
 <!-- assign room popup -->
-
 <!-- Modal -->
 <div class="modal fade" id="assign" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
 aria-labelledby="assignLabel" aria-hidden="true">
@@ -2040,13 +1428,9 @@ aria-labelledby="assignLabel" aria-hidden="true">
     </div>
 </div>
 </div>
-
 <!-- aassign room popup -->
 
-
-
 <!-- Reservation New -->
-
 <div class="modal fade  bl-reserve-tbl" id="reservation-new" tabindex="-1" aria-labelledby="quickReservationLabel"
 aria-hidden="true">
 <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -2271,38 +1655,1257 @@ aria-hidden="true">
 
 
 <script>
-$(document).ready(function () {
-    $(".drop-one").click(function () {
+$(function () {
+    $(".drop-one").on("click", function () {
         $(".availability-footer").toggleClass("slide-box");
-    });
-
-    $(".drop-one").click(function () {
         $(this).toggleClass("rotate");
     });
 
-    $(".date-columns .date-column").click(function () {
-        $(".date-column").removeClass("active");
-        $(this).addClass("active");
-    });
-});
-</script>
-
-<script>
-$(document).ready(function () {
-    $("#moveBtn").click(function () {
-        $("#box").animate({ marginLeft: "+=10%" }, 400);
-    });
-
-    $("#moveBtn2").click(function () {
-        $("#box").animate({ marginLeft: "-=10%" }, 400);
-    });
-    $(".humberger-ic").click(function () {
+    $(".humberger-ic").on("click", function () {
         $(".profile-sidebar").toggleClass("active");
     });
 
-    $(".close-profile").click(function () {
+    $(".close-profile").on("click", function () {
         $(".profile-sidebar").removeClass("active");
     });
+});
+
+function blockDates(event) {
+    if (event?.preventDefault) {
+        event.preventDefault();
+        event.stopPropagation();
+    } else if (window.event?.preventDefault) {
+        window.event.preventDefault();
+        window.event.stopPropagation();
+    }
+
+    const form = document.getElementById('maintenanceForm');
+    const startInput = document.getElementById('maintenanceStartInput');
+    const endInput = document.getElementById('maintenanceEndInput');
+    const reasonInput = document.getElementById('maintenanceReasonInput');
+    const roomIdInput = document.getElementById('maintenanceRoomIdInput');
+    const submitBtn = document.getElementById('blockDatesBtn');
+
+    if (!form) {
+        console.warn('Maintenance form not found.');
+        return false;
+    }
+
+    const roomId = roomIdInput?.value?.trim();
+    const startDate = startInput?.value?.trim();
+    const endDate = endInput?.value?.trim();
+    const reason = reasonInput?.value?.trim();
+
+    if (!roomId || !startDate || !endDate || !reason) {
+        swal("Error!", "Please fill the room, start date, end date and reason before blocking the dates.", "error");
+        return false;
+    }
+
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    if (startDateObj > endDateObj) {
+        swal("Error!", "End date cannot be before the start date.", "error");
+        return false;
+    }
+
+    const actionUrl = "{{url('save-maintenance-block')}}";
+    if (!actionUrl) {
+        swal("Error!", "No action URL defined for maintenance form. Aborting AJAX submission.", "error");
+        return false;
+    }
+
+    const formData = new FormData(form);
+    formData.set('room_number_id', roomId);
+    formData.set('start_date', startDate);
+    formData.set('end_date', endDate);
+    formData.set('reason', reason);
+
+    submitBtn?.setAttribute('disabled', 'disabled');
+
+    const requestHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (csrfToken) {
+        requestHeaders['X-CSRF-TOKEN'] = csrfToken;
+    }
+
+    const method = (form.getAttribute('method') || 'POST').toUpperCase();
+
+    fetch(actionUrl, {
+        method,
+        headers: requestHeaders,
+        body: formData
+    })
+        .then((response) => {
+            if (!response.ok) {
+                return response.json().catch(() => ({})).then((payload) => {
+                    throw new Error(payload.message || 'Unable to block dates.');
+                });
+            }
+            return response.json().catch(() => ({}));
+        })
+        .then((payload) => {
+            console.log('Maintenance block response:', payload);
+            form.reset();
+            if (roomIdInput) {
+                roomIdInput.value = roomId;
+            }
+            const modalEl = document.getElementById('maintenance-block-pop');
+            if (modalEl && window.bootstrap?.Modal) {
+                const modalInstance = window.bootstrap.Modal.getInstance(modalEl);
+                modalInstance?.hide();
+            }
+            if (typeof swal === 'function') {
+                swal("Success!", "Dates blocked successfully.", "success");
+            } else {
+                alert('Dates blocked successfully.');
+            }
+        })
+        .catch((error) => {
+            console.error('Maintenance block error:', error);
+            if (typeof swal === 'function') {
+                swal("Error!", error.message || 'Unable to block dates. Please try again.', "error");
+            } else {
+                alert(error.message || 'Unable to block dates. Please try again.');
+            }
+        })
+        .finally(() => {
+            submitBtn?.removeAttribute('disabled');
+        });
+
+    return false;
+}
+
+
+
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const dateColumnsEl = document.getElementById('dateColumns');
+    const roomsContainer = document.querySelector('.rooms-container');
+    const weekViewBtn = document.getElementById('weekViewBtn');
+    const monthViewBtn = document.getElementById('monthViewBtn');
+    const datePicker = document.getElementById('datePicker');
+    const prevRangeBtn = document.getElementById('prevRangeBtn');
+    const nextRangeBtn = document.getElementById('nextRangeBtn');
+    const selectionTooltip = document.getElementById('selection-action-tooltip');
+    const selectionTooltipRangeEl = document.getElementById('selection-action-range');
+    const selectionTooltipDurationEl = document.getElementById('selection-action-duration');
+    const maintenanceStartInput = document.getElementById('maintenanceStartInput');
+    const maintenanceEndInput = document.getElementById('maintenanceEndInput');
+    const maintenanceRoomIdInput = document.getElementById('maintenanceRoomIdInput');
+    const maintenanceReasonInput = document.getElementById('maintenanceReasonInput');
+    const maintenanceForm = document.getElementById('maintenanceForm');
+    const calendarDataEndpoint = @json(route('calendar.data'));
+
+    if (!dateColumnsEl || !roomsContainer) {
+        return;
+    }
+
+    const rootElement = document.documentElement;
+    const roomsListEl = document.createElement('div');
+    roomsListEl.className = 'room-category-list w-100';
+    const emptyStateEl = document.createElement('div');
+    emptyStateEl.id = 'roomsEmptyState';
+    emptyStateEl.className = 'text-center py-4 text-muted small';
+    emptyStateEl.textContent = 'No rooms available for the selected range.';
+    emptyStateEl.style.display = 'none';
+
+    roomsContainer.innerHTML = '';
+    roomsContainer.appendChild(roomsListEl);
+    roomsContainer.appendChild(emptyStateEl);
+
+    if (selectionTooltip && selectionTooltip.parentElement !== document.body) {
+        document.body.appendChild(selectionTooltip);
+    }
+
+    const BOOKING_STYLE_MAP = {
+        reserved: 'booking-guest',
+        group: 'booking-group',
+        due: 'booking-due',
+        maintenance: 'booking-maintenance',
+        blocked: 'booking-maintenance'
+    };
+
+    const serverRoomsData = @json($rooms ?? []);
+    const fallbackRoomsData = [
+        {
+            hostelName: "Room Category Name Here",
+            title: "4 ICR Villa",
+            summary: {
+                defaultCount: 0,
+                defaultPrice: 18000,
+                tooltip: 'Available rooms / base rate',
+                overrides: {
+                    '2025-03-01': { count: 3, price: 18500 },
+                    '2025-03-02': { count: 2, price: 18250 },
+                    '2025-03-03': { count: 1, price: 19000 }
+                }
+            },
+            rooms: [
+                { id: 1, number: "1109" },
+                { id: 2, number: "1201" },
+                { id: 3, number: "1203" }
+            ]
+        },
+        {
+            hostelName: "Room Category Name Here",
+            title: "Garden Suite",
+            summary: {
+                defaultCount: 1,
+                defaultPrice: 15000,
+                tooltip: 'Suites remaining / rack rate',
+                overrides: {
+                    '2025-03-02': { count: 0, price: 16000 },
+                    '2025-03-05': { count: 2, price: 14800 }
+                }
+            },
+            rooms: [
+                { id: 4, number: "1210" },
+                { id: 5, number: "1302" }
+            ]
+        },
+        {
+            hostelName: "Premium Suites",
+            title: "ICR Deluxe",
+            summary: {
+                defaultCount: 2,
+                defaultPrice: 22000,
+                tooltip: 'Deluxe allocation / nightly rate',
+                overrides: {
+                    '2025-03-03': { count: 4, price: 21500 },
+                    '2025-03-04': { count: 1, price: 23000 }
+                }
+            },
+            rooms: [
+                { id: 6, number: "2101" },
+                { id: 7, number: "2102" }
+            ]
+        }
+    ];
+
+    let roomsData = (Array.isArray(serverRoomsData) && serverRoomsData.length) ? serverRoomsData : fallbackRoomsData;
+
+    const serverBookingData = @json($bookings ?? []);
+    let bookingData = Array.isArray(serverBookingData) ? serverBookingData : [];
+
+    let normalizedRoomsData = [];
+    let roomDictionary = new Map();
+    let normalizedBookings = [];
+    let bookingsByRoom = new Map();
+    let bookingDateLookup = new Map();
+
+    function refreshDerivedDatasets() {
+        normalizedRoomsData = dedupeRoomCategories(roomsData);
+        roomDictionary = buildRoomDictionary(normalizedRoomsData);
+        normalizedBookings = normalizeBookings(bookingData);
+        bookingsByRoom = groupBookingsByRoom(normalizedBookings, roomDictionary);
+        bookingDateLookup = buildBookingDateLookup(bookingsByRoom);
+    }
+
+    refreshDerivedDatasets();
+
+    function cloneSummary(summary) {
+        if (!summary) {
+            return null;
+        }
+        return {
+            defaultCount: summary.defaultCount ?? null,
+            defaultPrice: summary.defaultPrice ?? null,
+            tooltip: summary.tooltip ?? null,
+            overrides: { ...(summary.overrides || {}) }
+        };
+    }
+
+    function mergeSummaries(target, source) {
+        if (!source) {
+            return target;
+        }
+        const merged = target || {
+            defaultCount: null,
+            defaultPrice: null,
+            tooltip: null,
+            overrides: {}
+        };
+        if (source.defaultCount !== undefined && source.defaultCount !== null) {
+            merged.defaultCount = source.defaultCount;
+        }
+        if (source.defaultPrice !== undefined && source.defaultPrice !== null) {
+            merged.defaultPrice = source.defaultPrice;
+        }
+        if (source.tooltip) {
+            merged.tooltip = source.tooltip;
+        }
+        merged.overrides = {
+            ...(merged.overrides || {}),
+            ...(source.overrides || {})
+        };
+        return merged;
+    }
+
+    function dedupeRoomCategories(data) {
+        const seen = new Map();
+        data.forEach((category) => {
+            const key = `${category.hostelName}|${category.title}`;
+            const existing = seen.get(key);
+            if (existing) {
+                const existingIds = new Set(existing.rooms.map((room) => room.id));
+                category.rooms.forEach((room) => {
+                    if (!existingIds.has(room.id)) {
+                        existing.rooms.push(room);
+                        existingIds.add(room.id);
+                    }
+                });
+                existing.summary = mergeSummaries(existing.summary, category.summary);
+                return;
+            }
+            seen.set(key, {
+                hostelName: category.hostelName,
+                title: category.title,
+                summary: cloneSummary(category.summary),
+                rooms: category.rooms.slice()
+            });
+        });
+        return Array.from(seen.values());
+    }
+
+    function buildRoomDictionary(data) {
+        const map = new Map();
+        data.forEach((category) => {
+            (category.rooms || []).forEach((room) => {
+                map.set(Number(room.id), {
+                    number: room.number,
+                    hostelName: category.hostelName,
+                    title: category.title
+                });
+            });
+        });
+        return map;
+    }
+
+    function groupCategoriesByHostel(data) {
+        const grouped = new Map();
+        data.forEach((category) => {
+            if (!grouped.has(category.hostelName)) {
+                grouped.set(category.hostelName, []);
+            }
+            grouped.get(category.hostelName).push(category);
+        });
+        return grouped;
+    }
+
+    const dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+    const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
+    const currencyFormatter = new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    const tooltipRangeFormatter = new Intl.DateTimeFormat('en-US', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+
+    function getWeekStart(date) {
+        const base = new Date(date);
+        base.setHours(0, 0, 0, 0);
+        const day = base.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        base.setDate(base.getDate() + diff);
+        return base;
+    }
+
+    const calendarState = {
+        viewMode: 'week',
+        referenceDate: getWeekStart(new Date()),
+        visibleDates: []
+    };
+
+    const selectionState = {
+        isDragging: false,
+        activeRoomId: null,
+        dragStartDate: null,
+        dragEndDate: null,
+        activeRoomMeta: null
+    };
+
+    const roomSelections = new Map();
+
+    function replaceCalendarData(nextRooms, nextBookings) {
+        roomsData = Array.isArray(nextRooms) ? nextRooms : [];
+        bookingData = Array.isArray(nextBookings) ? nextBookings : [];
+        refreshDerivedDatasets();
+        roomSelections.clear();
+        hideSelectionTooltip();
+    }
+
+    let activeSelectionContext = null;
+    let lastCommittedSelectionContext = null;
+    let suppressNextDocumentClick = false;
+    const DAY_IN_MS = 24 * 60 * 60 * 1000;
+    const WEEK_DAY_COUNT = 10;
+
+    function hideSelectionTooltip() {
+        if (!selectionTooltip) {
+            return;
+        }
+        selectionTooltip.classList.add('d-none');
+        selectionTooltip.style.top = '-9999px';
+        selectionTooltip.style.left = '-9999px';
+        selectionTooltip.style.visibility = '';
+        if (selectionTooltipRangeEl) {
+            selectionTooltipRangeEl.textContent = '';
+            selectionTooltipRangeEl.style.display = 'none';
+        }
+        if (selectionTooltipDurationEl) {
+            selectionTooltipDurationEl.textContent = '';
+            selectionTooltipDurationEl.style.display = 'none';
+        }
+        activeSelectionContext = null;
+        suppressNextDocumentClick = false;
+    }
+
+    function formatTooltipRange(range) {
+        if (!range?.start) {
+            return '';
+        }
+        const startDate = parseISO(range.start);
+        const endDate = range.end ? parseISO(range.end) : startDate;
+        if (!startDate) {
+            return '';
+        }
+        const startLabel = tooltipRangeFormatter.format(startDate);
+        const endLabel = endDate ? tooltipRangeFormatter.format(endDate) : startLabel;
+        return startLabel === endLabel ? startLabel : `${startLabel} - ${endLabel}`;
+    }
+
+    function formatTooltipDuration(range) {
+        if (!range?.start) {
+            return '';
+        }
+        const startDate = parseISO(range.start);
+        const endDate = range.end ? parseISO(range.end) : startDate;
+        if (!startDate) {
+            return '';
+        }
+        const end = endDate || startDate;
+        const durationMs = Math.abs(end.getTime() - startDate.getTime());
+        const nights = Math.max(1, Math.round(durationMs / DAY_IN_MS) + 1);
+        const label = nights === 1 ? '1 day' : `${nights} days`;
+        return label;
+    }
+
+    function getCurrentViewRangeBounds() {
+        const previewDates = generateVisibleDates();
+        if (!previewDates.length) {
+            return { startIso: null, endIso: null };
+        }
+        const startIso = toISO(previewDates[0]);
+        const endIso = toISO(previewDates[previewDates.length - 1]);
+        return { startIso, endIso };
+    }
+
+    function setCalendarLoading(isLoading) {
+        roomsContainer?.classList.toggle('is-loading', Boolean(isLoading));
+        if (roomsContainer) {
+            roomsContainer.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+        }
+    }
+
+    async function fetchCalendarDataForCurrentView() {
+        if (!calendarDataEndpoint) {
+            return;
+        }
+        const { startIso, endIso } = getCurrentViewRangeBounds();
+        if (!startIso || !endIso) {
+            return;
+        }
+        try {
+            setCalendarLoading(true);
+            const params = new URLSearchParams({
+                start_date: startIso,
+                end_date: endIso
+            });
+            const fetchUrl = `${calendarDataEndpoint}?${params.toString()}`;
+            const response = await fetch(fetchUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (!response.ok) {
+                const errorPayload = await response.json().catch(() => ({}));
+                throw new Error(errorPayload.message || 'Unable to load calendar data.');
+            }
+            const payload = await response.json();
+            replaceCalendarData(payload.rooms || [], payload.bookings || []);
+            renderCalendar();
+        } catch (error) {
+            console.error('Calendar data refresh failed:', error);
+            if (typeof swal === 'function') {
+                swal("Error!", error.message || 'Unable to load calendar data.', "error");
+            } else {
+                alert(error.message || 'Unable to load calendar data.');
+            }
+        } finally {
+            setCalendarLoading(false);
+        }
+    }
+
+    function populateMaintenanceModal(context) {
+        if (!context?.range) {
+            return;
+        }
+        if (maintenanceStartInput) {
+            maintenanceStartInput.value = context.range.start || '';
+        }
+        if (maintenanceEndInput) {
+            maintenanceEndInput.value = context.range.end || context.range.start || '';
+        }
+        if (maintenanceRoomIdInput) {
+            maintenanceRoomIdInput.value = context.roomId || context.meta?.roomId || '';
+        }
+    }
+
+    function getSelectionContextForModal() {
+        if (activeSelectionContext?.range) {
+            return activeSelectionContext;
+        }
+        if (lastCommittedSelectionContext?.range) {
+            return lastCommittedSelectionContext;
+        }
+        return null;
+    }
+
+    function openModalById(modalId) {
+        const modalEl = modalId ? document.getElementById(modalId) : null;
+        if (!modalEl) {
+            return;
+        }
+        if (window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            return;
+        }
+        modalEl.classList.add('show');
+        modalEl.style.display = 'block';
+        modalEl.removeAttribute('aria-hidden');
+    }
+
+    function showSelectionTooltipForRange(roomId, range, meta) {
+        if (!selectionTooltip || !roomsListEl || !roomId || !range?.end) {
+            return;
+        }
+        const targetCell = roomsListEl.querySelector(`.calendar-cell[data-room-id="${roomId}"][data-date="${range.end}"]`);
+        if (!targetCell) {
+            hideSelectionTooltip();
+            return;
+        }
+
+        activeSelectionContext = { roomId, range, meta };
+        suppressNextDocumentClick = true;
+        if (selectionTooltipRangeEl) {
+            const label = formatTooltipRange(range);
+            selectionTooltipRangeEl.textContent = label;
+            selectionTooltipRangeEl.style.display = label ? 'block' : 'none';
+        }
+        if (selectionTooltipDurationEl) {
+            const durationLabel = formatTooltipDuration(range);
+            selectionTooltipDurationEl.textContent = durationLabel;
+            selectionTooltipDurationEl.style.display = durationLabel ? 'block' : 'none';
+        }
+        selectionTooltip.classList.remove('d-none');
+        selectionTooltip.style.visibility = 'hidden';
+        selectionTooltip.style.top = '-9999px';
+        selectionTooltip.style.left = '-9999px';
+
+        const cellRect = targetCell.getBoundingClientRect();
+        const tooltipRect = selectionTooltip.getBoundingClientRect();
+        const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        const scrollX = window.scrollX || document.documentElement.scrollLeft || 0;
+        let top = cellRect.top + scrollY - tooltipRect.height - 12;
+        if (top < scrollY + 16) {
+            top = cellRect.bottom + scrollY + 12;
+        }
+        let left = cellRect.left + scrollX + (cellRect.width / 2) - (tooltipRect.width / 2);
+        const maxLeft = scrollX + document.documentElement.clientWidth - tooltipRect.width - 16;
+        left = Math.max(16, Math.min(left, maxLeft));
+
+        selectionTooltip.style.top = `${top}px`;
+        selectionTooltip.style.left = `${left}px`;
+        selectionTooltip.style.visibility = 'visible';
+    }
+
+    function handleSelectionAction(action) {
+        if (!action) {
+            return;
+        }
+        if (action === 'reservation') {
+            openModalById('reservation-pop');
+        } else if (action === 'maintenance') {
+            const context = getSelectionContextForModal();
+            if (context?.range) {
+                populateMaintenanceModal(context);
+            }
+            openModalById('maintenance-block-pop');
+        }
+        hideSelectionTooltip();
+    }
+
+    selectionTooltip?.addEventListener('click', (event) => {
+        const button = event.target.closest('.selection-action-btn');
+        if (!button) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        handleSelectionAction(button.dataset.action);
+    });
+
+    document.addEventListener('click', (event) => {
+        if (suppressNextDocumentClick) {
+            suppressNextDocumentClick = false;
+            return;
+        }
+        if (!selectionTooltip || selectionTooltip.classList.contains('d-none')) {
+            return;
+        }
+        if (selectionTooltip.contains(event.target)) {
+            return;
+        }
+        if (event.target.closest('.calendar-cell') && selectionState.isDragging) {
+            return;
+        }
+        hideSelectionTooltip();
+    });
+
+    window.addEventListener('resize', hideSelectionTooltip);
+    window.addEventListener('scroll', () => {
+        if (!selectionTooltip || selectionTooltip.classList.contains('d-none')) {
+            return;
+        }
+        hideSelectionTooltip();
+    }, true);
+
+
+    function toISO(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function parseISO(value) {
+        if (!value && value !== 0) {
+            return null;
+        }
+        if (value instanceof Date) {
+            const clone = new Date(value);
+            clone.setHours(0, 0, 0, 0);
+            return clone;
+        }
+        const safeValue = String(value).split('T')[0];
+        const [year, month, day] = safeValue.split('-').map(Number);
+        if ([year, month, day].some((segment) => Number.isNaN(segment))) {
+            return null;
+        }
+        return new Date(year, month - 1, day);
+    }
+
+    function ensureISODate(value) {
+        if (!value) {
+            return null;
+        }
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            return value;
+        }
+        const parsed = parseISO(value);
+        return parsed ? toISO(parsed) : null;
+    }
+
+    function normalizeBookings(data) {
+        if (!Array.isArray(data)) {
+            return [];
+        }
+        const normalized = [];
+        data.forEach((entry, index) => {
+            const roomIds = Array.isArray(entry.room_ids || entry.roomIds)
+                ? (entry.room_ids || entry.roomIds)
+                : [entry.room_id ?? entry.roomId];
+            const start = ensureISODate(entry.start_date ?? entry.startDate);
+            const end = ensureISODate(entry.end_date ?? entry.endDate ?? entry.start_date ?? entry.startDate);
+            if (!roomIds?.length || !start) {
+                return;
+            }
+            const normalizedRange = (start && end && start > end)
+                ? { start: end, end: start }
+                : { start, end: end || start };
+
+            roomIds.filter(Boolean).forEach((roomId) => {
+                normalized.push({
+                    id: entry.id ?? `booking-${index}-${roomId}`,
+                    roomId: Number(roomId),
+                    startDate: normalizedRange.start,
+                    endDate: normalizedRange.end,
+                    label: entry.label || entry.guest_name || entry.guestName || 'Reserved',
+                    tooltip: entry.tooltip || entry.notes || entry.source || '',
+                    status: (entry.status || '').toLowerCase() || (entry.is_blocked || entry.isBlocked ? 'blocked' : 'reserved'),
+                    isBlocked: Boolean(entry.is_blocked || entry.isBlocked)
+                });
+            });
+        });
+        return normalized;
+    }
+
+    function groupBookingsByRoom(bookings, dictionary = new Map()) {
+        const grouped = new Map();
+        bookings.forEach((booking) => {
+            if (!grouped.has(booking.roomId)) {
+                grouped.set(booking.roomId, []);
+            }
+            const roomMeta = dictionary.get(booking.roomId) || {};
+            grouped.get(booking.roomId).push({
+                ...booking,
+                roomNumber: roomMeta.number || '',
+                hostelName: roomMeta.hostelName || '',
+                categoryTitle: roomMeta.title || '',
+                cssClass: BOOKING_STYLE_MAP[booking.status] || BOOKING_STYLE_MAP.reserved
+            });
+        });
+        return grouped;
+    }
+
+    function getBookingDisplayRange(booking) {
+        if (!booking?.startDate) {
+            return null;
+        }
+        const normalized = normalizeRange(booking.startDate, booking.endDate || booking.startDate);
+        if (!normalized) {
+            return null;
+        }
+
+        const startDate = parseISO(normalized.start);
+        const endDate = parseISO(normalized.end);
+        if (!startDate) {
+            return null;
+        }
+
+        const inclusiveEnd = booking.isBlocked || booking.status === 'maintenance';
+
+        if (!endDate || startDate.getTime() === endDate.getTime()) {
+            return {
+                start: toISO(startDate),
+                end: toISO(startDate)
+            };
+        }
+
+        const adjustedEnd = inclusiveEnd
+            ? endDate
+            : new Date(endDate.getTime() - DAY_IN_MS);
+
+        if (adjustedEnd < startDate) {
+            return {
+                start: toISO(startDate),
+                end: toISO(startDate)
+            };
+        }
+
+        return {
+            start: toISO(startDate),
+            end: toISO(adjustedEnd)
+        };
+    }
+
+    function buildBookingDateLookup(grouped) {
+        const lookup = new Map();
+        grouped.forEach((bookings, roomId) => {
+            const dateMap = new Map();
+            bookings.forEach((booking) => {
+                const displayRange = getBookingDisplayRange(booking);
+                if (!displayRange) {
+                    return;
+                }
+                eachDateInRange(displayRange.start, displayRange.end, (iso) => {
+                    if (!dateMap.has(iso)) {
+                        dateMap.set(iso, booking);
+                    }
+                });
+            });
+            lookup.set(roomId, dateMap);
+        });
+        return lookup;
+    }
+
+    function eachDateInRange(startIso, endIso, callback) {
+        const start = parseISO(startIso);
+        const end = parseISO(endIso);
+        if (!start || !end) {
+            return;
+        }
+        const forward = start <= end ? { start, end } : { start: end, end: start };
+        const cursor = new Date(forward.start);
+        cursor.setHours(0, 0, 0, 0);
+        while (cursor <= forward.end) {
+            callback(toISO(cursor));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+    }
+
+    function calculateSpan(startIso, endIso) {
+        const start = parseISO(startIso);
+        const end = parseISO(endIso);
+        if (!start || !end) {
+            return 1;
+        }
+        const diff = Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+        return Math.max(diff, 0) + 1;
+    }
+
+    function getVisibleRangeIndices(booking, visibleDates) {
+        const displayRange = getBookingDisplayRange(booking);
+        if (!displayRange || !visibleDates.length) {
+            return null;
+        }
+
+        const firstVisible = visibleDates[0];
+        const lastVisible = visibleDates[visibleDates.length - 1];
+
+        if (displayRange.end < firstVisible || displayRange.start > lastVisible) {
+            return null;
+        }
+
+        const clampedStart = displayRange.start < firstVisible ? firstVisible : displayRange.start;
+        const clampedEnd = displayRange.end > lastVisible ? lastVisible : displayRange.end;
+
+        let startIndex = -1;
+        let endIndex = -1;
+
+        visibleDates.forEach((iso, index) => {
+            if (iso < clampedStart || iso > clampedEnd) {
+                return;
+            }
+
+            if (startIndex === -1) {
+                startIndex = index;
+            }
+            endIndex = index;
+        });
+
+        if (startIndex === -1 || endIndex === -1 || startIndex > endIndex) {
+            return null;
+        }
+
+        return { start: startIndex, end: endIndex };
+    }
+
+    function getBookingForCell(roomId, iso) {
+        const roomMap = bookingDateLookup.get(roomId);
+        return roomMap ? roomMap.get(iso) : null;
+    }
+
+    function isWeekend(date) {
+        const day = date.getDay();
+        return day === 0 || day === 6;
+    }
+
+    function generateVisibleDates() {
+        const base = new Date(calendarState.referenceDate);
+        base.setHours(0, 0, 0, 0);
+        if (calendarState.viewMode === 'week') {
+            const dates = [];
+            for (let index = 0; index < WEEK_DAY_COUNT; index += 1) {
+                const current = new Date(base);
+                current.setDate(base.getDate() + index);
+                dates.push(current);
+            }
+            return dates;
+        }
+
+        const firstDay = new Date(base.getFullYear(), base.getMonth(), 1);
+        const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+        const dates = [];
+        for (let day = 1; day <= daysInMonth; day += 1) {
+            dates.push(new Date(base.getFullYear(), base.getMonth(), day));
+        }
+        return dates;
+    }
+
+    function updateColumnCountStyles() {
+        const count = calendarState.visibleDates.length || 0;
+        rootElement.style.setProperty('--calendar-column-count', count || 1);
+    }
+
+    function renderDateHeader() {
+        calendarState.visibleDates = generateVisibleDates();
+        updateColumnCountStyles();
+        dateColumnsEl.innerHTML = '';
+
+        calendarState.visibleDates.forEach((date) => {
+            const iso = toISO(date);
+            const column = document.createElement('div');
+            column.className = 'date-column';
+
+            const cell = document.createElement('div');
+            cell.className = 'date-cell-button';
+
+            if (iso === toISO(new Date())) {
+                cell.classList.add('is-today');
+            }
+
+            if (isWeekend(date)) {
+                cell.classList.add('is-weekend');
+            }
+
+            cell.innerHTML = `
+                <div class="day">${dayFormatter.format(date)}</div>
+                <div class="date">${date.getDate().toString().padStart(2, '0')}</div>
+                <div class="month">${monthFormatter.format(date)}</div>
+            `;
+
+            column.appendChild(cell);
+            dateColumnsEl.appendChild(column);
+        });
+    }
+
+    function buildCategoryHeader(label) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'border-bottom room-cat';
+        wrapper.innerHTML = `
+            <div class="container-fluid px-3">
+                <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
+                    <div class="room-label-header">${label}</div>
+                </div>
+            </div>
+        `;
+        return wrapper;
+    }
+
+    function formatPrice(amount) {
+        if (amount === null || amount === undefined) {
+            return '';
+        }
+        return currencyFormatter.format(amount);
+    }
+
+    function getCategorySummary(category) {
+        return category?.summary || {};
+    }
+
+    function getCategoryDailyMetrics(category, iso) {
+        const summary = getCategorySummary(category);
+        const overrides = summary.overrides || {};
+        const override = overrides[iso];
+        return {
+            count: override?.count ?? summary.defaultCount ?? 0,
+            price: override?.price ?? summary.defaultPrice ?? null,
+            tooltip: override?.tooltip ?? summary.tooltip ?? null
+        };
+    }
+
+    function buildTitleRow(category) {
+        const row = document.createElement('div');
+        row.className = 'room-row align-items-center';
+        const label = document.createElement('div');
+        label.className = 'room-name bg-white title fw-semibold';
+        label.textContent = category.title;
+
+        const grid = document.createElement('div');
+        grid.className = 'room-grid';
+        calendarState.visibleDates.forEach((date) => {
+            const iso = toISO(date);
+            const { count, price, tooltip } = getCategoryDailyMetrics(category, iso);
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell bg-transparent border-0';
+            const priceLabel = document.createElement('div');
+            priceLabel.className = 'price-label';
+            const priceMarkup = price !== null ? `<br>${formatPrice(price)}` : '';
+            priceLabel.innerHTML = `<span>${count}</span>${priceMarkup || '<br>&nbsp;'}`;
+            if (tooltip) {
+                priceLabel.setAttribute('title', tooltip);
+                priceLabel.dataset.bsToggle = 'tooltip';
+            }
+            cell.appendChild(priceLabel);
+            grid.appendChild(cell);
+        });
+
+        row.appendChild(label);
+        row.appendChild(grid);
+        return row;
+    }
+
+    function buildRoomRow(room, category) {
+        const row = document.createElement('div');
+        row.className = 'room-row';
+        const roomLabel = document.createElement('div');
+        roomLabel.className = 'room-name bg-light';
+        roomLabel.innerHTML = `<div class="fw-semibold">${room.number}</div>`;//<small class="text-muted">${category.title}</small>
+
+        const grid = document.createElement('div');
+        grid.className = 'room-grid';
+
+        calendarState.visibleDates.forEach((date, index) => {
+            const iso = toISO(date);
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell calendar-cell';
+            cell.dataset.roomId = String(room.id);
+            cell.dataset.date = iso;
+            cell.dataset.gridIndex = String(index);
+
+            const bookingAtDate = getBookingForCell(room.id, iso);
+            if (bookingAtDate) {
+                cell.classList.add('cell-booked');
+                if (bookingAtDate.isBlocked) {
+                    cell.classList.add('cell-blocked');
+                }
+                cell.title = bookingAtDate.tooltip || `${bookingAtDate.label} (${bookingAtDate.startDate} - ${bookingAtDate.endDate})`;
+               cell.addEventListener('click', () => showBookingSummary(bookingAtDate));
+            } else {
+                cell.addEventListener('mousedown', (event) => {
+                    handleCellMouseDown(event, room, category, iso);
+                });
+                cell.addEventListener('mouseenter', () => {
+                    handleCellMouseEnter(room.id, iso);
+                });
+                cell.addEventListener('mouseup', () => {
+                    handleDocumentMouseUp();
+                });
+            }
+            grid.appendChild(cell);
+        });
+
+        renderBookingBlocks(grid, room.id);
+
+        row.appendChild(roomLabel);
+        row.appendChild(grid);
+        return row;
+    }
+
+    function renderBookingBlocks(gridEl, roomId) {
+        const bookings = bookingsByRoom.get(roomId);
+        if (!bookings || !bookings.length) {
+            return;
+        }
+        const visibleIso = calendarState.visibleDates.map((date) => toISO(date));
+        bookings.forEach((booking) => {
+            const indices = getVisibleRangeIndices(booking, visibleIso);
+            if (!indices) {
+                return;
+            }
+            const block = document.createElement('div');
+            block.className = ['booking-block', booking.cssClass].filter(Boolean).join(' ');
+            block.dataset.bookingId = booking.id;
+            block.style.gridColumn = `${indices.start + 1} / ${indices.end + 2}`;
+            block.style.gridRow = '1';
+            block.title = booking.tooltip || `${booking.label} (${booking.startDate} - ${booking.endDate})`;
+            block.textContent = booking.label;
+            block.addEventListener('click', () => showBookingSummary(booking));
+            gridEl.appendChild(block);
+        });
+    }
+
+    function renderRooms() {
+        roomsListEl.innerHTML = '';
+        if (!normalizedRoomsData.length) {
+            emptyStateEl.style.display = 'block';
+            return;
+        }
+        emptyStateEl.style.display = 'none';
+
+        const grouped = groupCategoriesByHostel(normalizedRoomsData);
+        grouped.forEach((categories, hostelName) => {
+            roomsListEl.appendChild(buildCategoryHeader(hostelName));
+            categories.forEach((category) => {
+                const categoryWrapper = document.createElement('div');
+                categoryWrapper.className = 'room-category';
+                categoryWrapper.appendChild(buildTitleRow(category));
+                category.rooms.forEach((room) => {
+                    categoryWrapper.appendChild(buildRoomRow(room, category));
+                });
+                roomsListEl.appendChild(categoryWrapper);
+            });
+        });
+    }
+
+    function normalizeRange(startIso, endIso) {
+        if (!startIso || !endIso) {
+            return null;
+        }
+        return startIso <= endIso
+            ? { start: startIso, end: endIso }
+            : { start: endIso, end: startIso };
+    }
+
+    function updateSelectionClasses() {
+        const previewRange = selectionState.isDragging
+            ? normalizeRange(selectionState.dragStartDate, selectionState.dragEndDate)
+            : null;
+
+        roomsListEl.querySelectorAll('.calendar-cell').forEach((cell) => {
+            const roomId = Number(cell.dataset.roomId);
+            const iso = cell.dataset.date;
+            const stored = roomSelections.get(roomId);
+            const isStored = stored ? iso >= stored.startDate && iso <= stored.endDate : false;
+            const isPreview = previewRange
+                && selectionState.activeRoomId === roomId
+                && iso >= previewRange.start
+                && iso <= previewRange.end;
+
+            cell.classList.toggle('selected-range', Boolean(isStored));
+            cell.classList.toggle('drag-preview', Boolean(isPreview));
+        });
+    }
+
+    function resetDragging() {
+        selectionState.isDragging = false;
+        selectionState.activeRoomId = null;
+        selectionState.dragStartDate = null;
+        selectionState.dragEndDate = null;
+        selectionState.activeRoomMeta = null;
+    }
+
+    function showSelectionAlert(meta, startIso, endIso) {
+        if (!meta) {
+            return;
+        }
+        showSelectionTooltipForRange(meta.roomId ?? selectionState.activeRoomId, {
+            start: startIso,
+            end: endIso
+        }, meta);
+    }
+
+    function showBookingSummary(booking) {
+        if (!booking) {
+            return;
+        }
+        const lines = [
+            booking.label || 'Reservation',
+            booking.roomNumber ? `Room ${booking.roomNumber}` : `Room ID ${booking.roomId}`,
+            `${booking.startDate} → ${booking.endDate}`
+        ];
+        if (booking.hostelName || booking.categoryTitle) {
+            lines.splice(1, 0, [booking.hostelName, booking.categoryTitle].filter(Boolean).join(' • '));
+        }
+        if (booking.tooltip) {
+            lines.push(booking.tooltip);
+        }
+        alert(lines.join('\n'));
+    }
+
+    function handleCellMouseDown(event, room, category, iso) {
+        if (event) {
+            event.preventDefault();
+        }
+        hideSelectionTooltip();
+        selectionState.isDragging = true;
+        selectionState.activeRoomId = room.id;
+        selectionState.dragStartDate = iso;
+        selectionState.dragEndDate = iso;
+        selectionState.activeRoomMeta = {
+            roomNumber: room.number,
+            roomId: room.id,
+            hostelName: category.hostelName,
+            title: category.title
+        };
+        updateSelectionClasses();
+    }
+
+    function handleCellMouseEnter(roomId, iso) {
+        if (!selectionState.isDragging || selectionState.activeRoomId !== roomId) {
+            return;
+        }
+        selectionState.dragEndDate = iso;
+        updateSelectionClasses();
+    }
+
+    function commitSelection() {
+        if (!selectionState.activeRoomId || !selectionState.dragStartDate) {
+            return;
+        }
+
+        const range = normalizeRange(selectionState.dragStartDate, selectionState.dragEndDate || selectionState.dragStartDate);
+        const committedContext = {
+            roomId: selectionState.activeRoomId,
+            startDate: range.start,
+            endDate: range.end,
+            meta: selectionState.activeRoomMeta
+        };
+        roomSelections.set(selectionState.activeRoomId, committedContext);
+        lastCommittedSelectionContext = {
+            roomId: committedContext.roomId,
+            range,
+            meta: selectionState.activeRoomMeta
+        };
+
+        showSelectionAlert(selectionState.activeRoomMeta, range.start, range.end);
+        resetDragging();
+        updateSelectionClasses();
+    }
+
+    function handleDocumentMouseUp() {
+        if (!selectionState.isDragging) {
+            return;
+        }
+        commitSelection();
+    }
+
+    document.addEventListener('mouseup', handleDocumentMouseUp);
+
+    function setView(mode) {
+        if (calendarState.viewMode === mode) {
+            return;
+        }
+        calendarState.viewMode = mode;
+        weekViewBtn?.classList.toggle('active', mode === 'week');
+        monthViewBtn?.classList.toggle('active', mode === 'month');
+        renderCalendar();
+        fetchCalendarDataForCurrentView();
+    }
+
+    function shiftRange(direction) {
+        if (calendarState.viewMode === 'week') {
+            calendarState.referenceDate.setDate(
+                calendarState.referenceDate.getDate() + (direction * WEEK_DAY_COUNT)
+            );
+        } else {
+            calendarState.referenceDate.setMonth(calendarState.referenceDate.getMonth() + direction);
+        }
+        syncDatePicker();
+        renderCalendar();
+        fetchCalendarDataForCurrentView();
+    }
+
+    function syncDatePicker() {
+        if (datePicker) {
+            datePicker.value = toISO(calendarState.referenceDate);
+        }
+    }
+
+    function handleDatePickerChange(event) {
+        const selected = parseISO(event.target.value);
+        if (!selected) {
+            return;
+        }
+        calendarState.referenceDate = calendarState.viewMode === 'week'
+            ? new Date(selected.setHours(0, 0, 0, 0))
+            : selected;
+        renderCalendar();
+        fetchCalendarDataForCurrentView();
+    }
+
+    function renderCalendar() {
+        renderDateHeader();
+        renderRooms();
+        updateSelectionClasses();
+    }
+
+    weekViewBtn?.addEventListener('click', () => setView('week'));
+    monthViewBtn?.addEventListener('click', () => setView('month'));
+    prevRangeBtn?.addEventListener('click', () => shiftRange(-1));
+    nextRangeBtn?.addEventListener('click', () => shiftRange(1));
+    datePicker?.addEventListener('change', handleDatePickerChange);
+
+    syncDatePicker();
+    renderCalendar();
 });
 </script>
 @endsection

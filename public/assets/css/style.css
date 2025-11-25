@@ -405,11 +405,14 @@ input:focus {
 }
 
 .room-grid {
+    position: relative;
     display: grid;
-    grid-template-columns: repeat(10, 1fr);
+    grid-template-columns: repeat(var(--calendar-column-count, 7), minmax(var(--calendar-cell-min-width, 110px), 1fr));
     width: calc(100% - 250px);
     margin-left: 250px;
-    max-height: 33px;
+    min-height: 33px;
+    grid-auto-rows: 33px;
+    align-items: stretch;
 }
 
 .cal input[type="date"]::-webkit-calendar-picker-indicator {
@@ -467,6 +470,7 @@ input:focus {
     position: relative;
     z-index: 99;
     font-weight: 400;
+    cursor: pointer;
 }
 
 .booking-block i {
@@ -492,6 +496,26 @@ input:focus {
 .booking-maintenance {
     background-color: var(--color-maintenance);
     color: white!important;
+}
+
+.room-grid .booking-block {
+    grid-row: 1;
+    justify-self: stretch;
+    text-align: left;
+    transform: translateX(0);
+}
+
+.calendar-cell.cell-booked {
+    background-color: #ffe5e9;
+}
+
+.calendar-cell.cell-blocked {
+    background-color: #1c1c1c;
+    color: #fff;
+}
+
+.calendar-cell.cell-blocked .price-label {
+    color: #fff;
 }
 
 .payment-pending{
