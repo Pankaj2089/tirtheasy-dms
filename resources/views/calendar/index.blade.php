@@ -1754,11 +1754,8 @@ function blockDates(event) {
                 const modalInstance = window.bootstrap.Modal.getInstance(modalEl);
                 modalInstance?.hide();
             }
-            if (typeof swal === 'function') {
-                swal("Success!", "Dates blocked successfully.", "success");
-            } else {
-                alert('Dates blocked successfully.');
-            }
+            swal("Success!", "Dates blocked successfully.", "success");
+        
         })
         .catch((error) => {
             console.error('Maintenance block error:', error);

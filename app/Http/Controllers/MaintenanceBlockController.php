@@ -64,7 +64,7 @@ class MaintenanceBlockController extends Controller{
 					'start_date' => $request->start_date,
 					'end_date' => $request->end_date,
 					'reason' => $request->reason,   
-					'vendor_id' => $request->session()->get('vendor_login_id'),
+					'vendor_id' => $request->session()->get('vendor_id'),
 				]);
 				echo json_encode(array('heading'=>'Success','msg'=>'Maintenance block created successfully'));
 			}
