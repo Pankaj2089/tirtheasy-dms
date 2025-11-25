@@ -1754,6 +1754,10 @@ function blockDates(event) {
                 const modalInstance = window.bootstrap.Modal.getInstance(modalEl);
                 modalInstance?.hide();
             }
+            // Refresh calendar data after modal is hidden
+            if (typeof window.fetchCalendarDataForCurrentView === 'function') {
+                window.fetchCalendarDataForCurrentView();
+            }
             swal("Success!", "Dates blocked successfully.", "success");
         
         })
@@ -2147,6 +2151,9 @@ document.addEventListener('DOMContentLoaded', function () {
             setCalendarLoading(false);
         }
     }
+
+    // Make function globally accessible
+    window.fetchCalendarDataForCurrentView = fetchCalendarDataForCurrentView;
 
     function populateMaintenanceModal(context) {
         if (!context?.range) {
