@@ -9,4 +9,5 @@ Route::Post('/vendor-login',[UsersController::class, 'VendorLogin'])->name('Vend
 Route::get('/calendar',[UsersController::class, 'calendar'])->name('calendar');
 Route::get('/calendar/data',[UsersController::class, 'calendarData'])->name('calendar.data');
 Route::post('/save-maintenance-block',[MaintenanceBlockController::class, 'saveMaintenanceBlock'])->name('saveMaintenanceBlock');
+Route::post('/quick-reservations',[UsersController::class, 'saveQuickReservation'])->name('quickReservations.store');
 Route::get('/logout',[UsersController::class, 'logout'])->name('logout');

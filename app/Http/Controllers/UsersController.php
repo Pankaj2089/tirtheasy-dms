@@ -16,6 +16,7 @@ use App\Models\Rooms;
 use App\Models\RoomPrices;
 use App\Models\RoomNumbers;
 use App\Models\MaintenanceBlocks;
+use App\Models\Orders;
 use Session;
 use Validator;
 use Mail;
@@ -23,6 +24,7 @@ use URL;
 use Cookie;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 
 class UsersController extends Controller{
 
@@ -33,6 +35,7 @@ class UsersController extends Controller{
 	private static $RoomPricesModel;
 	private static $RoomNumbersModel;
 	private static $MaintenanceBlocksModel;
+    private static $OrdersModel;
     public function __construct(){
         self::$UserModel = new User();
 		self::$TokenHelper = new TokenHelper();
@@ -41,6 +44,7 @@ class UsersController extends Controller{
 		self::$RoomPricesModel = new RoomPrices();
 		self::$RoomNumbersModel = new RoomNumbers();
 		self::$MaintenanceBlocksModel = new MaintenanceBlocks();
+        self::$OrdersModel = new Orders();
     }
 	
     #login page
@@ -187,14 +191,75 @@ class UsersController extends Controller{
         if($maintenanceBlocks->count() > 0){
             foreach($maintenanceBlocks as $maintenanceBlock){
                 $bookings[] = [
-                    'id' => $maintenanceBlock->id,
+                    'id' => 'MB-'.$maintenanceBlock->id,
                     'room_id' => $maintenanceBlock->room_number_id,
                     'start_date' => $maintenanceBlock->start_date,
                     'end_date' => $maintenanceBlock->end_date,
                     'guest_name' => $maintenanceBlock->reason,
                     'label' => 'Maintenance Block',
+                    'source' => 'maintenance',
                     'is_blocked' => true,
                     'status' => 'maintenance',
+                    'inclusive_end' => true,
+                ];
+            }
+        }
+
+        $ordersQuery = self::$OrdersModel
+            ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
+            ->where('hotel.vendor_id', $vendorId);
+
+        if($start && $end){
+            $ordersQuery->where(function($query) use ($start, $end){
+                $query->whereBetween('orders.check_in_date', [$start, $end])
+                    ->orWhereBetween('orders.check_out_date', [$start, $end])
+                    ->orWhere(function($inner) use ($start, $end){
+                        $inner->where('orders.check_in_date', '<=', $start)
+                            ->where('orders.check_out_date', '>=', $end);
+                    });
+            });
+        }elseif($start){
+            $ordersQuery->where('orders.check_out_date', '>=', $start);
+        }elseif($end){
+            $ordersQuery->where('orders.check_in_date', '<=', $end);
+        }
+
+        $orders = $ordersQuery->get([
+            'orders.id',
+            'orders.room_id',
+            'orders.check_in_date',
+            'orders.check_out_date',
+            'orders.billing_name',
+            'orders.order_platform',
+            'orders.other_details',
+            'orders.payment_status',
+            'orders.invoice_id',
+            'orders.created_at'
+        ]);
+
+        if($orders->count() > 0){
+            foreach($orders as $order){
+                $details = [];
+                if(!empty($order->other_details)){
+                    $decoded = json_decode($order->other_details, true);
+                    if(json_last_error() === JSON_ERROR_NONE){
+                        $details = $decoded;
+                    }
+                }
+                $reservationType = strtolower($details['reservation_type'] ?? '');
+                $status = $this->determineBookingStatus($order->payment_status, $reservationType);
+
+                $bookings[] = [
+                    'id' => 'ORD-'.$order->id,
+                    'room_id' => $order->room_id,
+                    'start_date' => $order->check_in_date,
+                    'end_date' => $order->check_out_date ?? $order->check_in_date,
+                    'guest_name' => $order->billing_name ?? 'Reserved Guest',
+                    'label' => $order->billing_name ?? $order->invoice_id ?? 'Reservation',
+                    'status' => $status,
+                    'source' => $order->order_platform ?? 'DMS',
+                    'is_blocked' => false,
+                    'inclusive_end' => true,
                 ];
             }
         }
@@ -209,8 +274,9 @@ class UsersController extends Controller{
         $vendorId = $request->session()->get('vendor_id');
         $rooms = $this->buildRoomsPayload($vendorId);
         $bookings = $this->buildBookingsPayload($vendorId);
+        $quickReservationRooms = $this->buildQuickReservationRooms($vendorId);
 
-		return view('/calendar/index', compact('rooms', 'bookings'));
+		return view('/calendar/index', compact('rooms', 'bookings', 'quickReservationRooms'));
     }
 
     public function calendarData(Request $request){
@@ -246,10 +312,353 @@ class UsersController extends Controller{
         ]);
     }
 
+    private function buildQuickReservationRooms($vendorId){
+        $roomsQuery = DB::table('rooms')
+            ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
+            ->where('hotel.vendor_id', $vendorId)
+            ->where('rooms.status', 1)
+            ->select([
+                'rooms.id',
+                'rooms.title',
+                'rooms.hotel_id',
+                'rooms.no_of_rooms',
+                'rooms.extra_mattress_price',
+                'hotel.title as hotel_title'
+            ])
+            ->orderBy('rooms.title', 'ASC');
+
+        $rooms = $roomsQuery->get();
+        if($rooms->isEmpty()){
+            return [];
+        }
+
+        $roomIds = $rooms->pluck('id')->all();
+        $roomPrices = self::$RoomPricesModel
+            ->where('status', 1)
+            ->whereIn('room_id', $roomIds)
+            ->orderBy('price', 'ASC')
+            ->get([
+                'id',
+                'room_id',
+                'hotel_id',
+                'price',
+                'no_of_rooms',
+                'no_of_guest',
+                'no_of_child'
+            ])
+            ->groupBy('room_id');
+
+        $payload = [];
+        foreach($rooms as $room){
+            $rates = [];
+            if(isset($roomPrices[$room->id]) && $roomPrices[$room->id]->count() > 0){
+                foreach($roomPrices[$room->id] as $priceRow){
+                    $rates[] = [
+                        'id' => (int)$priceRow->id,
+                        'price' => (float)$priceRow->price,
+                        'label' => 'Rs. '.number_format((float)$priceRow->price, 2).' / night',
+                        'no_of_rooms' => (int)($priceRow->no_of_rooms ?? 0),
+                        'no_of_guest' => (int)($priceRow->no_of_guest ?? 0),
+                        'no_of_child' => (int)($priceRow->no_of_child ?? 0),
+                    ];
+                }
+            }
+
+            $payload[] = [
+                'id' => (int)$room->id,
+                'title' => $room->title,
+                'hotel_id' => (int)$room->hotel_id,
+                'hotel_title' => $room->hotel_title,
+                'inventory' => (int)($room->no_of_rooms ?? 0),
+                'extra_mattress_price' => (float)($room->extra_mattress_price ?? 0),
+                'rates' => $rates
+            ];
+        }
+
+        return $payload;
+    }
+
+    public function saveQuickReservation(Request $request){
+        if(!$request->session()->has('vendor_login_id')){
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $today = date('Y-m-d');
+
+        $validator = Validator::make($request->all(), [
+            'check_in_date' => ['required','date_format:Y-m-d','after_or_equal:'.$today],
+            'check_out_date' => ['required','date_format:Y-m-d','after_or_equal:check_in_date','after_or_equal:'.$today],
+            'check_in_time' => 'nullable|date_format:H:i',
+            'check_out_time' => 'nullable|date_format:H:i',
+            'reservation_type' => ['required', Rule::in(['confirm','confirmed','hold','inquiry'])],
+            'notes' => 'nullable|string|max:500',
+            'guest.name' => 'required|string|max:191',
+            'guest.gender' => ['nullable', Rule::in(['male','female','other'])],
+            'guest.email' => 'nullable|email',
+            'guest.mobile' => 'required|string|min:8|max:20',
+            'room_details' => 'required|array|min:1',
+            'room_details.*.room_id' => 'required|integer|exists:rooms,id',
+            'room_details.*.room_price_id' => 'required|integer|exists:room_prices,id',
+            'room_details.*.rooms' => 'required|integer|min:1',
+            'room_details.*.adults' => 'required|integer|min:1',
+            'room_details.*.children' => 'nullable|integer|min:0',
+            'room_details.*.price' => 'required|numeric|min:0',
+        ],[
+            'check_in_date.required' => 'Please select check-in date.',
+            'check_in_date.after_or_equal' => 'Check-in date cannot be in the past.',
+            'check_out_date.after_or_equal' => 'Check-out date cannot be before the check-in date or in the past.',
+            'guest.name.required' => 'Guest name is required.',
+            'guest.mobile.required' => 'Guest mobile is required.',
+            'room_details.required' => 'Please add at least one room.',
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $input = $request->all();
+        $vendorId = $request->session()->get('vendor_id');
+        $roomDetails = collect($input['room_details']);
+        $roomIds = $roomDetails->pluck('room_id')->unique()->values();
+
+        $rooms = DB::table('rooms')
+            ->join('hotel','rooms.hotel_id','=','hotel.id')
+            ->where('hotel.vendor_id', $vendorId)
+            ->whereIn('rooms.id', $roomIds)
+            ->select([
+                'rooms.id',
+                'rooms.title',
+                'rooms.hotel_id',
+                'rooms.no_of_rooms',
+                'hotel.title as hotel_title'
+            ])
+            ->get()
+            ->keyBy('id');
+
+        if($rooms->count() !== $roomIds->count()){
+            return response()->json([
+                'success' => false,
+                'message' => 'One or more room selections are invalid for your property.'
+            ], 422);
+        }
+
+        $priceIds = $roomDetails->pluck('room_price_id')->unique()->values();
+        $roomPrices = self::$RoomPricesModel
+            ->whereIn('id', $priceIds)
+            ->where('status', 1)
+            ->get()
+            ->keyBy('id');
+
+        foreach($roomDetails as $detail){
+            $priceRow = $roomPrices->get($detail['room_price_id']);
+            if(!$priceRow || (int)$priceRow->room_id !== (int)$detail['room_id']){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid rate plan selected for one of the rooms.'
+                ], 422);
+            }
+        }
+
+        $checkInDate = Carbon::parse($input['check_in_date'])->toDateString();
+        $checkOutDate = Carbon::parse($input['check_out_date'])->toDateString();
+        $arrival = Carbon::parse($checkInDate);
+        $departure = Carbon::parse($checkOutDate);
+        $nightCount = max(1, $arrival->diffInDays($departure) ?: 1);
+
+        $guestPayload = $input['guest'];
+        $guestQuery = self::$UserModel->newQuery();
+        $guestQuery->where(function($query) use ($guestPayload){
+            if(!empty($guestPayload['mobile'])){
+                $query->where('mobile', $guestPayload['mobile']);
+            }
+            if(!empty($guestPayload['email'])){
+                $query->orWhere('email', $guestPayload['email']);
+            }
+        });
+        $guestUser = $guestQuery->first();
+
+        if(!$guestUser){
+            $newGuest = [
+                'type' => 'Guest',
+                'name' => $guestPayload['name'],
+                'email' => $guestPayload['email'] ?? null,
+                'mobile' => $guestPayload['mobile'],
+                'gender' => $guestPayload['gender'] ?? null,
+                'password' => Hash::make(Str::random(12)),
+            ];
+            $guestUser = self::$UserModel->CreateRecord($newGuest);
+        }else{
+            $guestUser->name = $guestPayload['name'];
+            if(!empty($guestPayload['gender'])){
+                $guestUser->gender = $guestPayload['gender'];
+            }
+            if(!empty($guestPayload['email'])){
+                $guestUser->email = $guestPayload['email'];
+            }
+            if(!empty($guestPayload['mobile'])){
+                $guestUser->mobile = $guestPayload['mobile'];
+            }
+            $guestUser->save();
+        }
+
+        $priceBookingLookup = [];
+        if($roomPrices->count() > 0){
+            $overlappingOrders = self::$OrdersModel
+                ->whereIn('room_price_id', $priceIds)
+                ->where(function($query) use ($checkInDate, $checkOutDate){
+                    $query->whereBetween('check_in_date', [$checkInDate, $checkOutDate])
+                        ->orWhereBetween('check_out_date', [$checkInDate, $checkOutDate])
+                        ->orWhere(function($inner) use ($checkInDate, $checkOutDate){
+                            $inner->where('check_in_date', '<=', $checkInDate)
+                                ->where('check_out_date', '>=', $checkOutDate);
+                        });
+                })
+                ->get(['room_price_id','rooms']);
+
+            foreach($overlappingOrders as $order){
+                $priceBookingLookup[$order->room_price_id] = ($priceBookingLookup[$order->room_price_id] ?? 0) + (int)$order->rooms;
+            }
+        }
+
+        foreach($roomDetails as $detail){
+            $priceRow = $roomPrices->get($detail['room_price_id']);
+            $existingBooked = $priceBookingLookup[$priceRow->id] ?? 0;
+            $inventory = (int)($priceRow->no_of_rooms ?? 0);
+            if($inventory <= 0){
+                $inventory = (int)($rooms[$detail['room_id']]->no_of_rooms ?? 0);
+            }
+            if($inventory > 0 && ((int)$detail['rooms'] + $existingBooked) > $inventory){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only '.$inventory.' room(s) are available for '.$rooms[$detail['room_id']]->title.'.'
+                ], 422);
+            }
+            $priceBookingLookup[$priceRow->id] = $existingBooked + (int)$detail['rooms'];
+        }
+
+        $reservationType = strtoupper($input['reservation_type']);
+        $createdOrders = [];
+        $totalAmount = 0;
+
+        DB::beginTransaction();
+        try{
+            $lastOrder = DB::table('orders')->select('in_no','id')->orderBy('id','DESC')->first();
+            $nextInvoiceNo = $lastOrder && isset($lastOrder->in_no) ? ((int)$lastOrder->in_no + 1) : 1;
+
+            foreach($roomDetails as $index => $detail){
+                $pricePerNight = (float)$detail['price'];
+                $roomsCount = (int)$detail['rooms'];
+                $adults = (int)$detail['adults'];
+                $children = (int)($detail['children'] ?? 0);
+                $subTotal = $pricePerNight * $roomsCount * $nightCount;
+                $grandTotal = $subTotal;
+                $totalAmount += $grandTotal;
+
+                $paddedNo = str_pad($nextInvoiceNo, 3, "0", STR_PAD_LEFT);
+                $invoiceId = date('Y').'/'.date('m').'/N'.$paddedNo;
+                $nextInvoiceNo++;
+
+                $otherDetails = [
+                    'reservation_type' => $reservationType,
+                    'check_in_time' => $input['check_in_time'] ?? null,
+                    'check_out_time' => $input['check_out_time'] ?? null,
+                    'notes' => $input['notes'] ?? null,
+                    'source' => 'quick_reservation',
+                    'line_index' => $index,
+                    'requested_rate' => [
+                        'room_price_id' => (int)$detail['room_price_id'],
+                        'price_entered' => $pricePerNight,
+                    ],
+                ];
+
+                $orderPayload = [
+                    'invoice_id' => $invoiceId,
+                    'in_no' => $paddedNo,
+                    'vendor_id' => $vendorId,
+                    'user_id' => $guestUser->id,
+                    'hotel_id' => $rooms[$detail['room_id']]->hotel_id,
+                    'room_id' => (int)$detail['room_id'],
+                    'room_price_id' => (int)$detail['room_price_id'],
+                    'adults' => $adults,
+                    'childs' => $children,
+                    'rooms' => $roomsCount,
+                    'number_of_nights' => $nightCount,
+                    'extra_mattress' => 0,
+                    'extra_mattress_price' => 0,
+                    'room_price' => $pricePerNight,
+                    'sub_total' => $subTotal,
+                    'grand_total' => $grandTotal,
+                    'discount' => 0,
+                    'convenience' => 0,
+                    'coupon_code' => null,
+                   // 'cod_amount' => null,
+                    'billing_name' => $guestPayload['name'],
+                    'billing_email' => $guestPayload['email'] ?? null,
+                    'billing_phone' => $guestPayload['mobile'],
+                    'billing_address' => null,
+                    'billing_city' => null,
+                    'billing_state' => null,
+                    'payment_status' => 'PENDING',
+                    'payment_method_type' => 'OFFLINE',
+                    'order_platform' => 'DMS',
+                    'platform' => 'dms',
+                    'check_in_date' => $checkInDate,
+                    'check_out_date' => $checkOutDate,
+                    'txn_id' => null,
+                    'other_details' => json_encode($otherDetails),
+                ];
+
+                $orderRecord = self::$OrdersModel->CreateRecord($orderPayload);
+                $createdOrders[] = [
+                    'order_id' => $orderRecord->id,
+                    'invoice_id' => $invoiceId,
+                    'amount' => $grandTotal,
+                    'room_title' => $rooms[$detail['room_id']]->title
+                ];
+            }
+
+            DB::commit();
+        }catch(\Throwable $throwable){
+            DB::rollBack();
+            report($throwable);
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to save reservation right now. Please try again.'
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reservation saved successfully.',
+            'data' => [
+                'total_amount' => $totalAmount,
+                'orders' => $createdOrders
+            ]
+        ]);
+    }
+
     # admin dashboard page
     public function logout(Request $request){
         $request->session()->flush();
         return redirect('/');
    }
+
+    private function determineBookingStatus($paymentStatus, $reservationType = null){
+        $type = strtolower($reservationType ?? '');
+        if(in_array($type, ['hold', 'inquiry'])){
+            return $type;
+        }
+        $payment = strtolower($paymentStatus ?? '');
+        if($payment === 'pending'){
+            return 'due';
+        }
+        if(in_array($payment, ['cancelled', 'failed'])){
+            return 'cancelled';
+        }
+        return 'reserved';
+    }
 
 }

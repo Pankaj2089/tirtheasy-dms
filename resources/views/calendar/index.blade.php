@@ -75,6 +75,18 @@ $siteUrl = env('APP_URL');
         pointer-events: none;
         transition: opacity 0.2s ease;
     }
+    .booking-label{
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 400;
+    }
+    .booking-label .booking-icon{
+        width: 14px;
+        height: 14px;
+        object-fit: contain;
+    }
+    
 </style>
 
    
@@ -295,95 +307,48 @@ $siteUrl = env('APP_URL');
                 <div class="tab-pane fade active show" id="nav-home" role="tabpanel"
                     aria-labelledby="nav-home-tab">
                     <h5>Booking Details</h5>
-                    <form class="bl-reserve-form position-relative">
-                        <div class="row align-items-center mb-3">
+                    <form id="quickReservationForm" class="bl-reserve-form position-relative" data-endpoint="{{ route('quickReservations.store') }}">
+                        @csrf
+                        <div id="quickReservationErrors" class="alert alert-danger small d-none"></div>
+                        <div class="row align-items-end mb-3">
                             <div class="col-md-4">
-                                <div class="">
-                                    <label for="check-In" class="form-label">Check-In</label>
-                                    <div class="time">
-                                        <input type="date" class="form-control" id="Check-In">
-                                        <input type="time" class="form-control" id="Check-In">
-                                    </div>
+                                <label class="form-label">Check-In</label>
+                                <div class="time">
+                                    <input type="date" class="form-control" id="quickCheckInDate" name="check_in_date">
+                                    <input type="time" class="form-control" id="quickCheckInTime" name="check_in_time">
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="">
-                                    <label for="check-out" class="form-label">Check-Out</label>
-                                    <div class="time">
-                                        <input type="date" class="form-control" id="Check-In">
-                                        <input type="time" class="form-control" id="Check-In">
-                                    </div>
+                                <label class="form-label">Check-Out</label>
+                                <div class="time">
+                                    <input type="date" class="form-control" id="quickCheckOutDate" name="check_out_date">
+                                    <input type="time" class="form-control" id="quickCheckOutTime" name="check_out_time">
                                 </div>
                             </div>
-                            <div class="col-md-4 d-flex align-items-center gap-3">
-                                <div class="d-flex flex-column w-50">
-                                    <label for="check-out" class="form-label">Rooms</label>
-                                    <select name="" id="" class="form-control">
-                                        <option value="Select">Select</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                    </select>
-                                </div>
-                                <div class="d-flex flex-column w-50">
-                                    <label for="check-out" class="form-label">Reservation Type</label>
-                                    <select name="" id="" class="form-control">
-                                        <option value="Select">Confirm</option>
-                                        <option value="Inquiry">Inquiry</option>
-                                        <option value="Hold">Hold</option>
-                                    </select>
-                                </div>
+                            <div class="col-md-2 d-flex flex-column">
+                                <label class="form-label">Rooms</label>
+                                <input type="number" class="form-control" id="quickRoomsCount" name="total_rooms" readonly placeholder="0">
+                            </div>
+                            <div class="col-md-2 d-flex flex-column">
+                                <label class="form-label">Reservation Type</label>
+                                <select class="form-control" id="quickReservationType" name="reservation_type">
+                                    <option value="confirmed">Confirm</option>
+                                    <option value="hold">Hold</option>
+                                    <option value="inquiry">Inquiry</option>
+                                </select>
                             </div>
                         </div>
-                        <div class="row align-items-center mb-3">
-                            <div class="col-md-12">
-                                <h5 class="mt-3">Room Details</h5>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12 d-flex align-items-center justify-content-between">
+                                <h5 class="mt-3 mb-0">Room Details</h5>
+                                <!-- <small class="text-muted">Add one entry per room and rate plan</small> -->
                             </div>
-                            <div class="col-md-2 d-flex flex-column">
-                                <label for="check-out" class="form-label">Room Type</label>
-                                <select name="" id="" class="form-control" class="w-100">
-                                    <option value="Normal">Normal</option>
-                                    <option value="Mint">Mint</option>
-                                    <option value="Deluxe">Deluxe</option>
-                                    <option value="Non Deluxe">Non Deluxe</option>
-                                </select>
+                            <div class="col-12">
+                                <div id="roomDetailsContainer" class="room-details-container"></div>
                             </div>
-                            <div class="col-md-2 d-flex flex-column">
-                                <label for="check-out" class="form-label">Rate Type</label>
-                                <select name="" id="" class="form-control" class="w-100">
-                                    <option value="Select">Select</option>
-                                    <!-- <option value="Inquiry">Inquiry</option>
-                            <option value="Hold">Hold</option> -->
-                                </select>
-                            </div>
-                            <div class="col-md-2 d-flex flex-column">
-                                <label for="check-out" class="form-label">Number of Room</label>
-                                <select name="" id="" class="form-control" class="w-100">
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2 d-flex flex-column">
-                                <label for="check-out" class="form-label">Adult</label>
-                                <input type="number" class="form-control" class="w-100" placeholder="Ex. 2">
-                            </div>
-                            <div class="col-md-2 d-flex flex-column">
-                                <label for="check-out" class="form-label">Child</label>
-                                <input type="number" class="form-control" class="w-100" placeholder="Ex. 2">
-                            </div>
-                            <div class="col-md-2 d-flex flex-column">
-                                <label for="check-out" class="form-label">Price</label>
-                                <input type="number" class="form-control" class="w-100" placeholder="Rs. 5000">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-2 add-rom text-center mx-auto">
-                                <button type="submit" class="theme-btn-text text-white w-100 h-auto">+ Add
-                                    Room</button>
+                            <div class="col-md-3 add-rom text-center mx-auto">
+                                <button type="button" class="theme-btn-text text-white w-100 h-auto" id="addRoomDetailBtn">+ Add Room</button>
                             </div>
                         </div>
 
@@ -392,58 +357,52 @@ $siteUrl = env('APP_URL');
                                 <h5 class="mt-3">Guest Information</h5>
                             </div>
                             <div class="col-md-3 d-flex flex-column">
-                                <label for="check-out" class="form-label">Name</label>
-                                <input type="text" class="form-control" class="w-100"
-                                    placeholder="Shanker Sharma">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" id="quickGuestName" name="guest[name]" placeholder="Enter guest name">
                             </div>
                             <div class="col-md-3 d-flex flex-column">
-                                <label for="check-out" class="form-label">Gender</label>
-                                <select name="" id="" class="form-control" class="w-100">
-                                    <option value="Select">Select</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
+                                <label class="form-label">Gender</label>
+                                <select class="form-control" id="quickGuestGender" name="guest[gender]">
+                                    <option value="">Select</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
                                 </select>
                             </div>
                             <div class="col-md-3 d-flex flex-column">
-                                <label for="check-out" class="form-label">Email</label>
-                                <input type="email" class="form-control" class="w-100"
-                                    placeholder="sample@tirtheasy.com">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="quickGuestEmail" name="guest[email]" placeholder="sample@gmail.com">
                             </div>
                             <div class="col-md-3 d-flex flex-column">
-                                <label for="check-out" class="form-label">Mobile</label>
-                                <input type="number" class="form-control" class="w-100"
-                                    placeholder="+91 0123456789">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-3 add-rom">
-                                <button type="submit" class="theme-outline-btn">Confirm</button>
+                                <label class="form-label">Mobile</label>
+                                <input type="tel" class="form-control" id="quickGuestMobile" name="guest[mobile]" placeholder="+91 0123456789">
                             </div>
                         </div>
 
-
-                        <div
-                            class="row justify-content-between align-items-center position-absolute reservation-footer w-100">
+                        <div class="row justify-content-between   position-absolute align-items-center reservation-footer w-100">
                             <hr>
                             <div class="col-md-6">
                                 <div class="d-flex justify-content-between align-items-center my-1">
                                     <p class="mb-0 fw-bold">Total</p>
-                                    <p class="mb-0 fw-bold">Rs. 1,48,680</p>
+                                    <p class="mb-0 fw-bold">Rs. <span id="quickTotalAmountLabel">0.00</span></p>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center my-1">
                                     <p class="mb-0">Paid</p>
-                                    <p class="mb-0">Rs. 0.00</p>
+                                    <p class="mb-0">Rs. <span id="quickPaidAmountLabel">0.00</span></p>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center my-1">
                                     <p class="mb-0 text-info">Balance</p>
-                                    <p class="mb-0 text-info">Rs. 1,48,680</p>
+                                    <p class="mb-0 text-info">Rs. <span id="quickBalanceAmountLabel">0.00</span></p>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="d-flex">
-                                    <a href=""
-                                        class="theme-btn text-white ms-auto text-center text-decoration-none">Payment</a>
-                                </div>
+                            <div class="col-md-4 d-flex justify-content-end gap-2">
+                                <button type="submit" class="theme-btn text-white ms-auto text-center text-decoration-none" id="quickReservationSubmitBtn">
+                                    <span class="label-default">Confirm</span>
+                                    <span class="label-loading d-none">
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Processing...
+                                    </span>
+                                </button>
                             </div>
                         </div>
                     </form>
@@ -1798,6 +1757,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const maintenanceReasonInput = document.getElementById('maintenanceReasonInput');
     const maintenanceForm = document.getElementById('maintenanceForm');
     const calendarDataEndpoint = @json(route('calendar.data'));
+    const assetBaseUrl = @json($siteUrl.'public/assets/img/');
+    const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
     if (!dateColumnsEl || !roomsContainer) {
         return;
@@ -1829,6 +1790,10 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     const serverRoomsData = @json($rooms ?? []);
+    const quickReservationServerRooms = @json($quickReservationRooms ?? []);
+    const quickReservationRooms = Array.isArray(quickReservationServerRooms) ? quickReservationServerRooms : [];
+
+    initQuickReservationForm(quickReservationRooms);
     const fallbackRoomsData = [
         {
             hostelName: "Room Category Name Here",
@@ -2043,7 +2008,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let activeSelectionContext = null;
     let lastCommittedSelectionContext = null;
     let suppressNextDocumentClick = false;
-    const DAY_IN_MS = 24 * 60 * 60 * 1000;
     const WEEK_DAY_COUNT = 10;
 
     function hideSelectionTooltip() {
@@ -2170,6 +2134,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function populateQuickReservationDates(startDate, endDate) {
+        const checkInInput = document.getElementById('quickCheckInDate');
+        const checkOutInput = document.getElementById('quickCheckOutDate');
+        const startValue = ensureISODate(startDate);
+        const endValue = ensureISODate(endDate) || startValue;
+        if (checkInInput && startValue) {
+            checkInInput.value = startValue;
+            checkInInput.dispatchEvent(new Event('change'));
+        }
+        if (checkOutInput && endValue) {
+            checkOutInput.value = endValue;
+            checkOutInput.dispatchEvent(new Event('change'));
+        }
+    }
+
     function getSelectionContextForModal() {
         if (activeSelectionContext?.range) {
             return activeSelectionContext;
@@ -2243,6 +2222,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         if (action === 'reservation') {
+            const context = getSelectionContextForModal();
+            if (context?.range) {
+                populateQuickReservationDates(context.range.start, context.range.end);
+            }
             openModalById('reservation-pop');
         } else if (action === 'maintenance') {
             const context = getSelectionContextForModal();
@@ -2344,6 +2327,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const normalizedRange = (start && end && start > end)
                 ? { start: end, end: start }
                 : { start, end: end || start };
+            const isBlocked = Boolean(entry.is_blocked || entry.isBlocked);
+            const inclusiveEnd = Boolean(entry.inclusive_end ?? entry.inclusiveEnd);
+            const statusValue = (entry.status || '').toLowerCase() || (isBlocked ? 'blocked' : 'reserved');
 
             roomIds.filter(Boolean).forEach((roomId) => {
                 normalized.push({
@@ -2353,8 +2339,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     endDate: normalizedRange.end,
                     label: entry.label || entry.guest_name || entry.guestName || 'Reserved',
                     tooltip: entry.tooltip || entry.notes || entry.source || '',
-                    status: (entry.status || '').toLowerCase() || (entry.is_blocked || entry.isBlocked ? 'blocked' : 'reserved'),
-                    isBlocked: Boolean(entry.is_blocked || entry.isBlocked)
+                    status: statusValue,
+                    isBlocked,
+                    inclusiveEnd: inclusiveEnd || isBlocked
                 });
             });
         });
@@ -2394,7 +2381,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return null;
         }
 
-        const inclusiveEnd = booking.isBlocked || booking.status === 'maintenance';
+        const inclusiveEnd = Boolean(booking.inclusiveEnd) || booking.isBlocked || booking.status === 'maintenance';
 
         if (!endDate || startDate.getTime() === endDate.getTime()) {
             return {
@@ -2701,7 +2688,31 @@ document.addEventListener('DOMContentLoaded', function () {
             block.style.gridColumn = `${indices.start + 1} / ${indices.end + 2}`;
             block.style.gridRow = '1';
             block.title = booking.tooltip || `${booking.label} (${booking.startDate} - ${booking.endDate})`;
-            block.textContent = booking.label;
+
+            const labelWrapper = document.createElement('div');
+            labelWrapper.className = 'booking-label';
+            if (booking.isBlocked || booking.status === 'maintenance') {
+                const icon = document.createElement('img');
+                icon.src = assetBaseUrl + 'maintain.svg';
+                icon.alt = 'Maintenance';
+                icon.className = 'booking-icon';
+                labelWrapper.appendChild(icon);
+            } else {
+                const icon = document.createElement('img');
+                icon.src = assetBaseUrl + 'user.svg';
+                icon.alt = 'Reservation';
+                icon.className = 'booking-icon';
+                labelWrapper.appendChild(icon);
+            }
+            const labelText = document.createElement('span');
+            if ((booking.isBlocked || booking.status === 'maintenance') && booking.roomNumber) {
+                labelText.textContent = `${booking.roomNumber} ${booking.label}`;
+            } else {
+                labelText.textContent = booking.label;
+            }
+            labelWrapper.appendChild(labelText);
+
+            block.appendChild(labelWrapper);
             block.addEventListener('click', () => showBookingSummary(booking));
             gridEl.appendChild(block);
         });
@@ -2894,6 +2905,374 @@ document.addEventListener('DOMContentLoaded', function () {
             : selected;
         renderCalendar();
         fetchCalendarDataForCurrentView();
+    }
+
+    function initQuickReservationForm(roomDataset) {
+        const form = document.getElementById('quickReservationForm');
+        if (!form) {
+            return;
+        }
+        const detailsContainer = document.getElementById('roomDetailsContainer');
+        const addRoomBtn = document.getElementById('addRoomDetailBtn');
+        const totalRoomsInput = document.getElementById('quickRoomsCount');
+        const totalAmountLabel = document.getElementById('quickTotalAmountLabel');
+        const paidAmountLabel = document.getElementById('quickPaidAmountLabel');
+        const balanceAmountLabel = document.getElementById('quickBalanceAmountLabel');
+        const errorsBox = document.getElementById('quickReservationErrors');
+        const checkInDateInput = document.getElementById('quickCheckInDate');
+        const checkOutDateInput = document.getElementById('quickCheckOutDate');
+        const endpoint = form.dataset.endpoint;
+        if (!detailsContainer || !addRoomBtn) {
+            return;
+        }
+
+        const csrfToken = form.querySelector('input[name="_token"]')?.value
+            || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const roomsList = Array.isArray(roomDataset) ? roomDataset : [];
+        const currencyFormatter = new Intl.NumberFormat('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        const todayIso = new Date().toISOString().split('T')[0];
+        if (checkInDateInput) {
+            checkInDateInput.setAttribute('min', todayIso);
+        }
+        if (checkOutDateInput) {
+            checkOutDateInput.setAttribute('min', checkInDateInput?.value || todayIso);
+        }
+        let rowIndex = 0;
+
+        const roomOptionsMarkup = (() => {
+            const options = ['<option value="">Select</option>'];
+            roomsList.forEach((room) => {
+                options.push(`<option value="${room.id}">${room.title}</option>`);
+            });
+            return options.join('');
+        })();
+
+        function buildRateOptions(roomId) {
+            const room = roomsList.find((entry) => Number(entry.id) === Number(roomId));
+            if (!room || !Array.isArray(room.rates) || !room.rates.length) {
+                return '<option value="">Select</option>';
+            }
+            const options = ['<option value="">Select</option>'];
+            room.rates.forEach((rate) => {
+                options.push(`<option value="${rate.id}" data-price="${rate.price}" data-max-adults="${rate.no_of_guest}" data-max-child="${rate.no_of_child}">${rate.label}</option>`);
+            });
+            return options.join('');
+        }
+
+        function addRoomRow(initial = {}) {
+            const currentIndex = rowIndex++;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'room-detail-item';
+            wrapper.dataset.index = currentIndex;
+            wrapper.innerHTML = `
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Room Type</label>
+                        <select class="form-control room-type-select" name="room_details[${currentIndex}][room_id]">
+                            ${roomOptionsMarkup}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Rate Type</label>
+                        <select class="form-control room-rate-select" name="room_details[${currentIndex}][room_price_id]">
+                            <option value="">Select</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Rooms</label>
+                        <input type="number" class="form-control room-qty-input" name="room_details[${currentIndex}][rooms]" min="1" value="1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Adults</label>
+                        <input type="number" class="form-control room-adult-input" name="room_details[${currentIndex}][adults]" min="1" value="1">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Child</label>
+                        <input type="number" class="form-control room-child-input" name="room_details[${currentIndex}][children]" min="0" value="0">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Price</label>
+                        <input type="number" readonly class="form-control room-price-input" name="room_details[${currentIndex}][price]" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col-12 d-flex justify-content-between align-items-center mt-2">
+                        <p class="mb-0 small text-muted">Line Total: Rs. <span class="room-line-total">0.00</span></p>
+                        <button type="button" class="btn btn-link text-danger p-0 remove-room-row">Remove</button>
+                    </div>
+                </div>
+            `;
+            detailsContainer.appendChild(wrapper);
+            const roomSelect = wrapper.querySelector('.room-type-select');
+            if (initial.room_id) {
+                roomSelect.value = initial.room_id;
+            }
+            updateRateOptions(wrapper, roomSelect.value || null, initial.room_price_id);
+            wrapper.querySelector('.room-qty-input').value = initial.rooms || 1;
+            wrapper.querySelector('.room-adult-input').value = initial.adults || 1;
+            wrapper.querySelector('.room-child-input').value = initial.children || 0;
+            if (initial.price) {
+                wrapper.querySelector('.room-price-input').value = Number(initial.price).toFixed(2);
+            }
+            recalcSummary();
+        }
+
+        function updateRateOptions(row, roomId, selectedRateId) {
+            const rateSelect = row.querySelector('.room-rate-select');
+            if (!rateSelect) {
+                return;
+            }
+            rateSelect.innerHTML = buildRateOptions(roomId);
+            if (selectedRateId) {
+                rateSelect.value = String(selectedRateId);
+            } else if (rateSelect.options.length > 1) {
+                rateSelect.selectedIndex = 1;
+            }
+            const selectedOption = rateSelect.selectedOptions[0];
+            if (selectedOption && selectedOption.dataset.price) {
+                row.querySelector('.room-price-input').value = parseFloat(selectedOption.dataset.price).toFixed(2);
+            }
+        }
+
+        function formatAmount(value) {
+            return currencyFormatter.format(Number(value) || 0);
+        }
+
+        function calculateNights() {
+            const start = checkInDateInput?.value;
+            const end = checkOutDateInput?.value;
+            if (!start || !end) {
+                return 1;
+            }
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+                return 1;
+            }
+            const diff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+            return diff > 0 ? diff : 1;
+        }
+
+        function recalcSummary() {
+            const nights = calculateNights();
+            let totalRooms = 0;
+            let totalAmount = 0;
+            detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
+                const qty = parseInt(row.querySelector('.room-qty-input')?.value, 10) || 0;
+                const price = parseFloat(row.querySelector('.room-price-input')?.value) || 0;
+                totalRooms += qty;
+                const lineTotal = qty * price * nights;
+                totalAmount += lineTotal;
+                const lineLabel = row.querySelector('.room-line-total');
+                if (lineLabel) {
+                    lineLabel.textContent = formatAmount(lineTotal);
+                }
+            });
+            if (totalRoomsInput) {
+                totalRoomsInput.value = totalRooms || '';
+            }
+            if (totalAmountLabel) {
+                totalAmountLabel.textContent = formatAmount(totalAmount);
+            }
+            if (paidAmountLabel) {
+                paidAmountLabel.textContent = formatAmount(0);
+            }
+            if (balanceAmountLabel) {
+                balanceAmountLabel.textContent = formatAmount(totalAmount);
+            }
+        }
+
+        function showErrors(messages) {
+            if (!errorsBox) {
+                alert(messages.join('\n'));
+                return;
+            }
+            errorsBox.classList.remove('d-none');
+            errorsBox.innerHTML = `<ul class="mb-0">${messages.map((msg) => `<li>${msg}</li>`).join('')}</ul>`;
+        }
+
+        function clearErrors() {
+            if (!errorsBox) {
+                return;
+            }
+            errorsBox.classList.add('d-none');
+            errorsBox.innerHTML = '';
+        }
+
+        const submitBtn = document.getElementById('quickReservationSubmitBtn');
+        const submitLabelDefault = submitBtn?.querySelector('.label-default');
+        const submitLabelLoading = submitBtn?.querySelector('.label-loading');
+
+        function toggleFormDisabled(state) {
+            form.querySelectorAll('input, select, textarea').forEach((element) => {
+                element.disabled = state;
+            });
+            if (submitBtn) {
+                submitBtn.disabled = state;
+                submitLabelDefault?.classList.toggle('d-none', state);
+                submitLabelLoading?.classList.toggle('d-none', !state);
+            }
+            addRoomBtn.disabled = state;
+        }
+
+        function buildPayload() {
+            const checkInDate = checkInDateInput?.value;
+            const checkOutDate = checkOutDateInput?.value;
+            if (!checkInDate || !checkOutDate) {
+                showErrors(['Please select both check-in and check-out dates.']);
+                return null;
+            }
+            const roomLines = [];
+            detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
+                const roomId = row.querySelector('.room-type-select')?.value;
+                const rateId = row.querySelector('.room-rate-select')?.value;
+                const qty = row.querySelector('.room-qty-input')?.value;
+                if (roomId && rateId && qty) {
+                    roomLines.push({
+                        room_id: Number(roomId),
+                        room_price_id: Number(rateId),
+                        rooms: Number(qty),
+                        adults: Number(row.querySelector('.room-adult-input')?.value || 0),
+                        children: Number(row.querySelector('.room-child-input')?.value || 0),
+                        price: Number(row.querySelector('.room-price-input')?.value || 0)
+                    });
+                }
+            });
+            if (!roomLines.length) {
+                showErrors(['Please add at least one room detail.']);
+                return null;
+            }
+                return {
+                    check_in_date: checkInDate,
+                    check_out_date: checkOutDate,
+                    check_in_time: document.getElementById('quickCheckInTime')?.value || null,
+                    check_out_time: document.getElementById('quickCheckOutTime')?.value || null,
+                    reservation_type: document.getElementById('quickReservationType')?.value,
+                    room_details: roomLines,
+                    guest: {
+                        name: document.getElementById('quickGuestName')?.value,
+                        gender: document.getElementById('quickGuestGender')?.value || null,
+                        email: document.getElementById('quickGuestEmail')?.value || null,
+                        mobile: document.getElementById('quickGuestMobile')?.value
+                    }
+                };
+        }
+
+        addRoomBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            addRoomRow();
+        });
+
+        detailsContainer.addEventListener('change', (event) => {
+            const row = event.target.closest('.room-detail-item');
+            if (!row) {
+                return;
+            }
+            if (event.target.classList.contains('room-type-select')) {
+                updateRateOptions(row, event.target.value);
+            } else if (event.target.classList.contains('room-rate-select')) {
+                updateRateOptions(row, row.querySelector('.room-type-select')?.value, event.target.value);
+            }
+            recalcSummary();
+        });
+
+        detailsContainer.addEventListener('input', (event) => {
+            if (event.target.classList.contains('room-qty-input')
+                || event.target.classList.contains('room-price-input')) {
+                recalcSummary();
+            }
+        });
+
+        detailsContainer.addEventListener('click', (event) => {
+            if (!event.target.classList.contains('remove-room-row')) {
+                return;
+            }
+            event.preventDefault();
+            const row = event.target.closest('.room-detail-item');
+            if (row) {
+                row.remove();
+            }
+            if (!detailsContainer.querySelector('.room-detail-item')) {
+                addRoomRow();
+            }
+            recalcSummary();
+        });
+
+        checkInDateInput?.addEventListener('change', () => {
+            const minDate = checkInDateInput.value || todayIso;
+            if (checkOutDateInput) {
+                checkOutDateInput.setAttribute('min', minDate);
+                if (checkOutDateInput.value && checkOutDateInput.value < minDate) {
+                    checkOutDateInput.value = minDate;
+                }
+            }
+            recalcSummary();
+        });
+
+        checkOutDateInput?.addEventListener('change', recalcSummary);
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearErrors();
+            if (!endpoint) {
+                showErrors(['Reservation endpoint is not configured.']);
+                return;
+            }
+            const payload = buildPayload();
+            if (!payload) {
+                return;
+            }
+            toggleFormDisabled(true);
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken || ''
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const body = await response.json().catch(() => ({}));
+                if (!response.ok || !body.success) {
+                    const messages = [];
+                    if (body?.errors) {
+                        Object.values(body.errors).forEach((value) => {
+                            if (Array.isArray(value)) {
+                                messages.push(...value);
+                            } else if (value) {
+                                messages.push(value);
+                            }
+                        });
+                    } else if (body?.message) {
+                        messages.push(body.message);
+                    }
+                    showErrors(messages.length ? messages : ['Unable to save reservation.']);
+                    return;
+                }
+                if (typeof swal === 'function') {
+                    swal("Success!", body.message || 'Reservation saved successfully.', "success");
+                } else {
+                    alert(body.message || 'Reservation saved successfully.');
+                }
+                form.reset();
+                detailsContainer.innerHTML = '';
+                rowIndex = 0;
+                addRoomRow();
+                recalcSummary();
+                if (typeof window.fetchCalendarDataForCurrentView === 'function') {
+                    window.fetchCalendarDataForCurrentView();
+                }
+            } catch (error) {
+                console.error('Quick reservation error:', error);
+                showErrors(['Unable to save reservation. Please try again.']);
+            } finally {
+                toggleFormDisabled(false);
+            }
+        });
+
+        addRoomRow();
+        recalcSummary();
     }
 
     function renderCalendar() {
