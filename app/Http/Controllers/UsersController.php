@@ -104,12 +104,12 @@ class UsersController extends Controller{
 		}
     }
 
-    private function buildRoomsPayload($vendorId, $startDate = null, $endDate = null, $preloadedBookings = null, $hotelId = null){
+    private function buildRoomsPayload($vendorId, $startDate = null, $endDate = null, $preloadedBookings = null, $hotelId = null, $roomCategoryId = null){
         [$rangeStartIso, $rangeEndIso] = $this->resolveCalendarRange($startDate, $endDate);
         $rangeStart = Carbon::parse($rangeStartIso)->startOfDay();
         $rangeEnd = Carbon::parse($rangeEndIso)->startOfDay();
         $dateSequence = $this->buildDateSequence($rangeStart, $rangeEnd);
-        $bookings = $preloadedBookings ?? $this->buildBookingsPayload($vendorId, $rangeStartIso, $rangeEndIso, $hotelId);
+        $bookings = $preloadedBookings ?? $this->buildBookingsPayload($vendorId, $rangeStartIso, $rangeEndIso, $hotelId, $roomCategoryId);
         $bookingLookup = $this->buildRoomBookingLookup($bookings, $rangeStart, $rangeEnd);
         $rooms = [];
         DB::statement("SET SQL_MODE=''");
@@ -126,6 +126,9 @@ class UsersController extends Controller{
         
         if($hotelId){
             $recQry->where('hotel.id', $hotelId);
+        }
+        if($roomCategoryId){
+            $recQry->where('rooms.room_category_id', $roomCategoryId);
         }
         
         $recQry->groupBy('hotel.id');
@@ -259,7 +262,7 @@ class UsersController extends Controller{
         return [$start->toDateString(), $end->toDateString()];
     }
 
-    private function buildBookingsPayload($vendorId, $startDate = null, $endDate = null, $hotelId = null){
+    private function buildBookingsPayload($vendorId, $startDate = null, $endDate = null, $hotelId = null, $roomCategoryId = null){
         $bookings = [];
         $blocksQuery = self::$MaintenanceBlocksModel
             ->join('room_numbers', 'maintenance_blocks.room_number_id', '=', 'room_numbers.id')
@@ -268,6 +271,9 @@ class UsersController extends Controller{
         
         if($hotelId){
             $blocksQuery->where('rooms.hotel_id', $hotelId);
+        }
+        if($roomCategoryId){
+            $blocksQuery->where('rooms.room_category_id', $roomCategoryId);
         }
 
         if($startDate){
@@ -317,10 +323,13 @@ class UsersController extends Controller{
 
         $ordersQuery = self::$OrdersModel
             ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
+            ->join('rooms', 'orders.room_id', '=', 'rooms.id')
             ->where('hotel.vendor_id', $vendorId);
-        
         if($hotelId){
             $ordersQuery->where('hotel.id', $hotelId);
+        }
+        if($roomCategoryId){
+            $ordersQuery->where('rooms.room_category_id', $roomCategoryId);
         }
 
         if($start && $end){
@@ -391,6 +400,18 @@ class UsersController extends Controller{
         return $hotels;
     }
 
+    private function getVendorRoomCategories($vendorId){
+        return DB::table('room_categories as rc')
+            ->join('rooms', 'rooms.room_category_id', '=', 'rc.id')
+            ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
+            ->where('hotel.vendor_id', $vendorId)
+            ->where('rooms.status', 1)
+            ->select('rc.id', 'rc.title')
+            ->distinct()
+            ->orderBy('rc.title', 'ASC')
+            ->get();
+    }
+
 	# admin dashboard page
     public function calendar(Request $request){
 		if(!$request->session()->has('vendor_login_id')){return redirect('/');}
@@ -401,8 +422,9 @@ class UsersController extends Controller{
         $rooms = $this->buildRoomsPayload($vendorId, $rangeStart, $rangeEnd, $bookings);
         $quickReservationRooms = $this->buildQuickReservationRooms($vendorId);
         $hotels = $this->getVendorHotels($vendorId);
+        $roomCategories = $this->getVendorRoomCategories($vendorId);
 
-		return view('/calendar/index', compact('rooms', 'bookings', 'quickReservationRooms', 'hotels'));
+		return view('/calendar/index', compact('rooms', 'bookings', 'quickReservationRooms', 'hotels', 'roomCategories'));
     }
 
     public function calendarData(Request $request){
@@ -414,6 +436,7 @@ class UsersController extends Controller{
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
         $hotelId = $request->query('hotel_id');
+        $roomCategoryId = $request->query('room_category_id');
 
         try{
             $start = $startDate ? Carbon::parse($startDate)->toDateString() : null;
@@ -430,10 +453,14 @@ class UsersController extends Controller{
         if($hotelId && is_numeric($hotelId)){
             $hotelIdFilter = (int)$hotelId;
         }
+        $roomCategoryFilter = null;
+        if($roomCategoryId && is_numeric($roomCategoryId)){
+            $roomCategoryFilter = (int)$roomCategoryId;
+        }
 
         [$rangeStart, $rangeEnd] = $this->resolveCalendarRange($start, $end);
-        $bookings = $this->buildBookingsPayload($vendorId, $rangeStart, $rangeEnd, $hotelIdFilter);
-        $rooms = $this->buildRoomsPayload($vendorId, $rangeStart, $rangeEnd, $bookings, $hotelIdFilter);
+        $bookings = $this->buildBookingsPayload($vendorId, $rangeStart, $rangeEnd, $hotelIdFilter, $roomCategoryFilter);
+        $rooms = $this->buildRoomsPayload($vendorId, $rangeStart, $rangeEnd, $bookings, $hotelIdFilter, $roomCategoryFilter);
 
         return response()->json([
             'rooms' => $rooms,

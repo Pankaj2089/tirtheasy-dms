@@ -70,11 +70,13 @@ $siteUrl = env('APP_URL');
                                     </select>
 
                                     <select class="form-select form-select-sm mobile-room"
-                                        style="width: 210px; display: none;">
-                                        <option>Room Type</option>
-                                        <option>Villa</option>
-                                        <option>Deluxe</option>
-                                        <option>Suite</option>
+                                        style="width: 210px; display: none;" data-room-type-selector="true">
+                                        <option value="">All Room Types</option>
+                                        @if(isset($roomCategories) && (is_array($roomCategories) || is_iterable($roomCategories)))
+                                            @foreach($roomCategories as $category)
+                                                <option value="{{ $category->id }}">{{ $category->title }}</option>
+                                            @endforeach
+                                        @endif
                                     </select>
                                     <button class="btn btn-outline-danger btn-sm text-nowrap assign-desktop"
                                         data-bs-toggle="modal" data-bs-target="#assign">Assign Rooms</button>
@@ -86,11 +88,13 @@ $siteUrl = env('APP_URL');
                 <div class="date-header-scroll shadow-sm">
                     <div class="date-header-container">
                         <div class="d-flex align-items-center px-3 bg-light desktop-room">
-                            <select class="form-select form-select-sm" style="width: 210px;">
-                                <option>Room Type</option>
-                                <option>Villa</option>
-                                <option>Deluxe</option>
-                                <option>Suite</option>
+                            <select class="form-select form-select-sm" style="width: 210px;" data-room-type-selector="true">
+                                <option value="">All Room Types</option>
+                                @if(isset($roomCategories) && (is_array($roomCategories) || is_iterable($roomCategories)))
+                                    @foreach($roomCategories as $category)
+                                        <option value="{{ $category->id }}">{{ $category->title }}</option>
+                                    @endforeach
+                                @endif
                             </select>
                         </div>
                         <div class="d-flex align-items-center position-relative gap-2 flex-wrap flex-md-nowrap">
@@ -1689,6 +1693,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const calendarDataEndpoint = @json(route('calendar.data'));
     const assetBaseUrl = @json($siteUrl.'public/assets/img/');
     const DAY_IN_MS = 24 * 60 * 60 * 1000;
+    const roomTypeSelectors = Array.from(document.querySelectorAll('[data-room-type-selector="true"]'));
 
     if (!dateColumnsEl || !roomsContainer) {
         return;
@@ -2019,12 +2024,16 @@ document.addEventListener('DOMContentLoaded', function () {
             setCalendarLoading(true);
             const hotelSelector = document.getElementById('hotelSelector');
             const selectedHotelId = hotelSelector ? hotelSelector.value : '';
+            const selectedRoomTypeId = roomTypeSelectors.length ? roomTypeSelectors[0].value : '';
             const params = new URLSearchParams({
                 start_date: startIso,
                 end_date: endIso
             });
             if(selectedHotelId){
                 params.append('hotel_id', selectedHotelId);
+            }
+            if(selectedRoomTypeId){
+                params.append('room_category_id', selectedRoomTypeId);
             }
             const fetchUrl = `${calendarDataEndpoint}?${params.toString()}`;
             const response = await fetch(fetchUrl, {
@@ -3236,6 +3245,20 @@ document.addEventListener('DOMContentLoaded', function () {
     hotelSelector?.addEventListener('change', () => {
         fetchCalendarDataForCurrentView();
     });
+
+    if (roomTypeSelectors.length) {
+        roomTypeSelectors.forEach((selector) => {
+            selector.addEventListener('change', (event) => {
+                const value = event.target.value || '';
+                roomTypeSelectors.forEach((other) => {
+                    if (other !== event.target) {
+                        other.value = value;
+                    }
+                });
+                fetchCalendarDataForCurrentView();
+            });
+        });
+    }
 
     syncDatePicker();
     renderCalendar();
