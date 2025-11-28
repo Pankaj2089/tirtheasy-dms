@@ -126,9 +126,14 @@
     color: #000;
     height: 15px;
 }
+.price-label .no-availability{
+    color: #dc3545;
+}
 .room-grid .booking-block{
     height: 19px;
-    margin-top: 6px;
+    margin-top: 7px;
+    width: 80%;
+    margin-left: 10%;
 }
 
 

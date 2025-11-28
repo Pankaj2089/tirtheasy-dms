@@ -28,6 +28,8 @@ use Illuminate\Support\Facades\Hash;
 
 class UsersController extends Controller{
 
+    private const DEFAULT_VIEW_SPAN_DAYS = 9;
+
     private static $UserModel;
     private static $TokenHelper;
 	private static $HotelsModel;
@@ -102,7 +104,13 @@ class UsersController extends Controller{
 		}
     }
 
-	private function buildRoomsPayload($vendorId){
+    private function buildRoomsPayload($vendorId, $startDate = null, $endDate = null, $preloadedBookings = null, $hotelId = null){
+        [$rangeStartIso, $rangeEndIso] = $this->resolveCalendarRange($startDate, $endDate);
+        $rangeStart = Carbon::parse($rangeStartIso)->startOfDay();
+        $rangeEnd = Carbon::parse($rangeEndIso)->startOfDay();
+        $dateSequence = $this->buildDateSequence($rangeStart, $rangeEnd);
+        $bookings = $preloadedBookings ?? $this->buildBookingsPayload($vendorId, $rangeStartIso, $rangeEndIso, $hotelId);
+        $bookingLookup = $this->buildRoomBookingLookup($bookings, $rangeStart, $rangeEnd);
         $rooms = [];
         DB::statement("SET SQL_MODE=''");
         $recQry = self::$HotelsModel
@@ -114,8 +122,13 @@ class UsersController extends Controller{
                 'rooms.title as room_title',
                 'rooms.id as room_id'
             ])
-            ->where('hotel.status', 1)
-            ->groupBy('hotel.id');
+            ->where('hotel.status', 1);
+        
+        if($hotelId){
+            $recQry->where('hotel.id', $hotelId);
+        }
+        
+        $recQry->groupBy('hotel.id');
 
         $hotels = $recQry->get();
         if($hotels->count() > 0){
@@ -133,18 +146,31 @@ class UsersController extends Controller{
                         ];
                     }
 
+                    $totalRooms = count($roomNums);
+                    $overrides = [];
+                    foreach($dateSequence as $isoDate){
+                        $bookedCount = 0;
+                        foreach($roomNums as $roomMeta){
+                            $roomNumberId = $roomMeta['id'];
+                            if(isset($bookingLookup[$roomNumberId]) && isset($bookingLookup[$roomNumberId][$isoDate])){
+                                $bookedCount++;
+                            }
+                        }
+                        $available = max($totalRooms - $bookedCount, 0);
+                        $overrides[$isoDate] = [
+                            'count' => $available,
+                            'tooltip' => sprintf('%d of %d rooms available', $available, $totalRooms)
+                        ];
+                    }
+
                     $rooms[] = [
                         'hostelName' => $hotelData->title,
                         'title' => $hotelData->room_title,
                         'summary' => [
-                            'defaultCount' => 0,
+                            'defaultCount' => $totalRooms,
                             'defaultPrice' => $hotelData->lowest_price,
-                            'tooltip' => 'Available villas / base rate',
-                            'overrides' => [
-                                '2025-11-24' => ['count' => 0, 'price' => 2000],
-                                '2025-11-25' => ['count' => 2, 'price' => 2000],
-                                '2025-11-26' => ['count' => 1, 'price' => 2000],
-                            ],
+                            'tooltip' => 'Available rooms / base rate',
+                            'overrides' => $overrides,
                         ],
                         'rooms' => $roomNums,
                     ];
@@ -156,9 +182,93 @@ class UsersController extends Controller{
         return $rooms;
     }
 
-    private function buildBookingsPayload($vendorId, $startDate = null, $endDate = null){
+    private function buildDateSequence(Carbon $start, Carbon $end){
+        $dates = [];
+        $cursor = $start->copy();
+        while($cursor->lte($end)){
+            $dates[] = $cursor->toDateString();
+            $cursor->addDay();
+        }
+        return $dates;
+    }
+
+    private function buildRoomBookingLookup(array $bookings, Carbon $rangeStart, Carbon $rangeEnd){
+        $lookup = [];
+        foreach($bookings as $booking){
+            $roomId = $booking['room_id'] ?? $booking['roomId'] ?? null;
+            $bookingStart = $booking['start_date'] ?? $booking['startDate'] ?? null;
+            $bookingEnd = $booking['end_date'] ?? $booking['endDate'] ?? $bookingStart;
+            if(!$roomId || !$bookingStart){
+                continue;
+            }
+            try{
+                $start = Carbon::parse($bookingStart)->startOfDay();
+                $end = Carbon::parse($bookingEnd)->startOfDay();
+            }catch(\Exception $exception){
+                continue;
+            }
+            if($end->lt($start)){
+                [$start, $end] = [$end->copy(), $start->copy()];
+            }
+
+            $cursor = $start->copy();
+            while($cursor->lte($end)){
+                if($cursor->lt($rangeStart)){
+                    $cursor->addDay();
+                    continue;
+                }
+                if($cursor->gt($rangeEnd)){
+                    break;
+                }
+                $lookup[$roomId][$cursor->toDateString()] = true;
+                $cursor->addDay();
+            }
+        }
+        return $lookup;
+    }
+
+    private function resolveCalendarRange(?string $startDate = null, ?string $endDate = null){
+        try{
+            $start = $startDate ? Carbon::parse($startDate)->startOfDay() : null;
+        }catch(\Exception $exception){
+            $start = null;
+        }
+
+        try{
+            $end = $endDate ? Carbon::parse($endDate)->startOfDay() : null;
+        }catch(\Exception $exception){
+            $end = null;
+        }
+
+        if(!$start && $end){
+            $start = $end->copy()->subDays(self::DEFAULT_VIEW_SPAN_DAYS);
+        }
+
+        if(!$start){
+            $start = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        }
+
+        if(!$end){
+            $end = $start->copy()->addDays(self::DEFAULT_VIEW_SPAN_DAYS);
+        }
+
+        if($end->lt($start)){
+            [$start, $end] = [$end->copy(), $start->copy()];
+        }
+
+        return [$start->toDateString(), $end->toDateString()];
+    }
+
+    private function buildBookingsPayload($vendorId, $startDate = null, $endDate = null, $hotelId = null){
         $bookings = [];
-        $blocksQuery = self::$MaintenanceBlocksModel->where('vendor_id', $vendorId);
+        $blocksQuery = self::$MaintenanceBlocksModel
+            ->join('room_numbers', 'maintenance_blocks.room_number_id', '=', 'room_numbers.id')
+            ->join('rooms', 'room_numbers.room_id', '=', 'rooms.id')
+            ->where('maintenance_blocks.vendor_id', $vendorId);
+        
+        if($hotelId){
+            $blocksQuery->where('rooms.hotel_id', $hotelId);
+        }
 
         if($startDate){
             $start = Carbon::parse($startDate)->startOfDay()->toDateString();
@@ -174,20 +284,20 @@ class UsersController extends Controller{
 
         if($start && $end){
             $blocksQuery->where(function($query) use ($start, $end){
-                $query->whereBetween('start_date', [$start, $end])
-                    ->orWhereBetween('end_date', [$start, $end])
+                $query->whereBetween('maintenance_blocks.start_date', [$start, $end])
+                    ->orWhereBetween('maintenance_blocks.end_date', [$start, $end])
                     ->orWhere(function($inner) use ($start, $end){
-                        $inner->where('start_date', '<=', $start)
-                            ->where('end_date', '>=', $end);
+                        $inner->where('maintenance_blocks.start_date', '<=', $start)
+                            ->where('maintenance_blocks.end_date', '>=', $end);
                     });
             });
         }elseif($start){
-            $blocksQuery->where('end_date', '>=', $start);
+            $blocksQuery->where('maintenance_blocks.end_date', '>=', $start);
         }elseif($end){
-            $blocksQuery->where('start_date', '<=', $end);
+            $blocksQuery->where('maintenance_blocks.start_date', '<=', $end);
         }
 
-        $maintenanceBlocks = $blocksQuery->get();
+        $maintenanceBlocks = $blocksQuery->select('maintenance_blocks.*')->get();
         if($maintenanceBlocks->count() > 0){
             foreach($maintenanceBlocks as $maintenanceBlock){
                 $bookings[] = [
@@ -208,6 +318,10 @@ class UsersController extends Controller{
         $ordersQuery = self::$OrdersModel
             ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
             ->where('hotel.vendor_id', $vendorId);
+        
+        if($hotelId){
+            $ordersQuery->where('hotel.id', $hotelId);
+        }
 
         if($start && $end){
             $ordersQuery->where(function($query) use ($start, $end){
@@ -267,16 +381,28 @@ class UsersController extends Controller{
         return $bookings;
     }
 
+    private function getVendorHotels($vendorId){
+        $hotels = self::$HotelsModel
+            ->where('vendor_id', $vendorId)
+            ->where('status', 1)
+            ->select('id', 'title')
+            ->orderBy('title', 'ASC')
+            ->get();
+        return $hotels;
+    }
+
 	# admin dashboard page
     public function calendar(Request $request){
 		if(!$request->session()->has('vendor_login_id')){return redirect('/');}
 
         $vendorId = $request->session()->get('vendor_id');
-        $rooms = $this->buildRoomsPayload($vendorId);
-        $bookings = $this->buildBookingsPayload($vendorId);
+        [$rangeStart, $rangeEnd] = $this->resolveCalendarRange();
+        $bookings = $this->buildBookingsPayload($vendorId, $rangeStart, $rangeEnd);
+        $rooms = $this->buildRoomsPayload($vendorId, $rangeStart, $rangeEnd, $bookings);
         $quickReservationRooms = $this->buildQuickReservationRooms($vendorId);
+        $hotels = $this->getVendorHotels($vendorId);
 
-		return view('/calendar/index', compact('rooms', 'bookings', 'quickReservationRooms'));
+		return view('/calendar/index', compact('rooms', 'bookings', 'quickReservationRooms', 'hotels'));
     }
 
     public function calendarData(Request $request){
@@ -287,6 +413,7 @@ class UsersController extends Controller{
         $vendorId = $request->session()->get('vendor_id');
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
+        $hotelId = $request->query('hotel_id');
 
         try{
             $start = $startDate ? Carbon::parse($startDate)->toDateString() : null;
@@ -299,15 +426,21 @@ class UsersController extends Controller{
             return response()->json(['message' => 'Start date must be before end date.'], 422);
         }
 
-        $rooms = $this->buildRoomsPayload($vendorId);
-        $bookings = $this->buildBookingsPayload($vendorId, $start, $end);
+        $hotelIdFilter = null;
+        if($hotelId && is_numeric($hotelId)){
+            $hotelIdFilter = (int)$hotelId;
+        }
+
+        [$rangeStart, $rangeEnd] = $this->resolveCalendarRange($start, $end);
+        $bookings = $this->buildBookingsPayload($vendorId, $rangeStart, $rangeEnd, $hotelIdFilter);
+        $rooms = $this->buildRoomsPayload($vendorId, $rangeStart, $rangeEnd, $bookings, $hotelIdFilter);
 
         return response()->json([
             'rooms' => $rooms,
             'bookings' => $bookings,
             'range' => [
-                'start_date' => $start,
-                'end_date' => $end,
+                'start_date' => $rangeStart,
+                'end_date' => $rangeEnd,
             ]
         ]);
     }

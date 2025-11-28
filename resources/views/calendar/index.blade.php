@@ -60,10 +60,13 @@ $siteUrl = env('APP_URL');
                             <!-- Property Selector & Assign Button -->
                             <div class="col-12 col-md-auto">
                                 <div class="d-flex gap-4">
-                                    <select class="form-select form-select-sm">
-                                        <option>Select Property</option>
-                                        <option>Property 1</option>
-                                        <option>Property 2</option>
+                                    <select class="form-select form-select-sm" id="hotelSelector">
+                                        <option value="">All Properties</option>
+                                        @if(isset($hotels) && (is_array($hotels) || is_iterable($hotels)))
+                                            @foreach($hotels as $hotel)
+                                                <option value="{{ $hotel->id }}">{{ $hotel->title }}</option>
+                                            @endforeach
+                                        @endif
                                     </select>
 
                                     <select class="form-select form-select-sm mobile-room"
@@ -2014,10 +2017,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         try {
             setCalendarLoading(true);
+            const hotelSelector = document.getElementById('hotelSelector');
+            const selectedHotelId = hotelSelector ? hotelSelector.value : '';
             const params = new URLSearchParams({
                 start_date: startIso,
                 end_date: endIso
             });
+            if(selectedHotelId){
+                params.append('hotel_id', selectedHotelId);
+            }
             const fetchUrl = `${calendarDataEndpoint}?${params.toString()}`;
             const response = await fetch(fetchUrl, {
                 headers: {
@@ -2536,8 +2544,18 @@ document.addEventListener('DOMContentLoaded', function () {
             cell.className = 'grid-cell bg-transparent border-0';
             const priceLabel = document.createElement('div');
             priceLabel.className = 'price-label';
-            const priceMarkup = price !== null ? `<br>${formatPrice(price)}` : '';
-            priceLabel.innerHTML = `<span>${count}</span>${priceMarkup || '<br>&nbsp;'}`;
+            const hasCount = typeof count === 'number' && !Number.isNaN(count);
+            const countMarkup = hasCount ? `<span${count <= 0 ? ' class="no-availability"' : ''}>${count}</span>` : '';
+            const hasPrice = price !== null && price !== undefined;
+            let priceMarkup = '';
+            if (hasPrice) {
+                priceMarkup = hasCount ? `<br>${formatPrice(price)}` : formatPrice(price);
+            } else if (hasCount) {
+                priceMarkup = '<br>&nbsp;';
+            } else {
+                priceMarkup = '&nbsp;';
+            }
+            priceLabel.innerHTML = `${countMarkup}${priceMarkup}`;
             if (tooltip) {
                 priceLabel.setAttribute('title', tooltip);
                 priceLabel.dataset.bsToggle = 'tooltip';
@@ -3213,6 +3231,11 @@ document.addEventListener('DOMContentLoaded', function () {
     prevRangeBtn?.addEventListener('click', () => shiftRange(-1));
     nextRangeBtn?.addEventListener('click', () => shiftRange(1));
     datePicker?.addEventListener('change', handleDatePickerChange);
+    
+    const hotelSelector = document.getElementById('hotelSelector');
+    hotelSelector?.addEventListener('change', () => {
+        fetchCalendarDataForCurrentView();
+    });
 
     syncDatePicker();
     renderCalendar();
