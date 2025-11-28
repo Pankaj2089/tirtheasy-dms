@@ -2765,6 +2765,8 @@ document.addEventListener('DOMContentLoaded', function () {
             event.preventDefault();
         }
         hideSelectionTooltip();
+        // Clear all previous selections when starting a new selection
+        roomSelections.clear();
         selectionState.isDragging = true;
         selectionState.activeRoomId = room.id;
         selectionState.dragStartDate = iso;
