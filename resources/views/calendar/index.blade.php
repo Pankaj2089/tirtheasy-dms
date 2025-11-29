@@ -130,10 +130,6 @@ $siteUrl = env('APP_URL');
             <!-- Room Rows -->
             <div class="rooms-container">
                 <!-- 4 ICR Villa Section -->
-                
-
-
-
                 <!-- Room Availability Footer -->
                 <div class="availability-footer fixed-bottom border-top">
                     <div class="footer-row position-relative">
