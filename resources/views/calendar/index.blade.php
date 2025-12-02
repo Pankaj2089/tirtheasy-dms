@@ -400,10 +400,10 @@ $siteUrl = env('APP_URL');
                             <div class="p-3 top">
                                 <div class="d-flex align-items-center">
                                     <div class="cat-badge"></div>
-                                    <h6>Mr. Chiranjeev Singh </h6> &nbsp;
+                                    <h6 id="bookingGuestName">-</h6> &nbsp;
                                     <img src="{{$siteUrl}}public/assets/img/users.svg" alt="">
                                 </div>
-                                <p>Folio #: <strong>35596895</strong> &nbsp; Date : <strong>08/01/2025</strong></p>
+                                <p>Folio #: <strong id="bookingFolio">-</strong> &nbsp; Date : <strong id="bookingDate">-</strong></p>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -435,43 +435,39 @@ $siteUrl = env('APP_URL');
                                 <ul class="d-flex flex-wrap justify-content-between">
                                     <li class="mb-4">
                                         <p>Reservation Number</p>
-                                        <p><small class="">Rdo 0215635</small></p>
+                                        <p><small class="" id="bookingReservationNumber">-</small></p>
                                     </li>
                                     <li class="mb-4">
-                                        <p>Arival Date</p>
-                                        <p><small class="">19 Sept. 2025 11:25:22</small></p>
+                                        <p>Arrival Date</p>
+                                        <p><small class="" id="bookingArrivalDate">-</small></p>
                                     </li>
                                     <li class="mb-4">
                                         <p>Booking Date</p>
-                                        <p><small class="">15 Sept. 2025</small></p>
+                                        <p><small class="" id="bookingBookingDate">-</small></p>
                                     </li>
                                     <li class="mb-4">
                                         <p>Departure Date</p>
-                                        <p><small class="">20 Sept. 2025 10:35:20</small></p>
+                                        <p><small class="" id="bookingDepartureDate">-</small></p>
                                     </li>
                                     <li class="mb-4">
                                         <p>Rate Plan</p>
-                                        <p><small class="">20 Sept. 2025</small></p>
+                                        <p><small class="" id="bookingRatePlan">-</small></p>
                                     </li>
                                     <li class="mb-4">
                                         <p>Room Number</p>
-                                        <p><small class="">V1205</small></p>
+                                        <p><small class="" id="bookingRoomNumber">-</small></p>
                                     </li>
                                     <li class="mb-4">
                                         <p>Room Type</p>
-                                        <p><small class="">Luxury</small></p>
+                                        <p><small class="" id="bookingRoomType">-</small></p>
                                     </li>
                                     <li class="mb-4">
                                         <p>Number Of Guest</p>
-                                        <p><small class="">13</small></p>
+                                        <p><small class="" id="bookingNumberOfGuest">-</small></p>
                                     </li>
                                     <li class="mb-4">
                                         <p>Room Booked</p>
-                                        <p><small class="">10</small></p>
-                                    </li>
-                                    <li class="">
-                                        <p>Rooms</p>
-                                        <p><small class="">231, 263, 265, 266, 265,</small></p>
+                                        <p><small class="" id="bookingRoomBooked">-</small></p>
                                     </li>
                                 </ul>
                             </div>
@@ -481,40 +477,40 @@ $siteUrl = env('APP_URL');
                             <div class="row">
                                 <div class="col-md-6 px-0 border-box">
                                     <div class="sub-heading px-3 d-flex justify-content-between">
-                                        <p class="mb-0"> Folio #: <strong> 35596895</strong></p>
-                                        <p class="mb-0">Date : <strong>08/01/2025</strong></p>
+                                        <p class="mb-0"> Folio #: <strong id="paymentFolio">-</strong></p>
+                                        <p class="mb-0">Date : <strong id="paymentDate">-</strong></p>
                                     </div>
                                     <hr class="mt-2 mb-0">
                                     <div class="p-details">
-                                        <h5 class="mt-3 mb-2 ms-3">Datails</h5>
+                                        <h5 class="mt-3 mb-2 ms-3">Details</h5>
                                         <ul class="list-unstyled">
                                             <li class="d-flex align-items-center justify-content-between my-2 px-2">
                                                 <p>Room Price</p>
-                                                <p><strong>Rs. 2000</strong></p>
+                                                <p><strong id="paymentRoomPrice">Rs. 0</strong></p>
                                             </li>
                                             <li class="d-flex align-items-center justify-content-between my-2 px-2">
                                                 <p>Total Charges</p>
-                                                <p><strong>Rs. 2000</strong></p>
+                                                <p><strong id="paymentTotalCharges">Rs. 0</strong></p>
                                             </li>
                                             <li class="d-flex align-items-center justify-content-between my-2 px-2">
                                                 <p>Total SGST</p>
-                                                <p><strong>Rs. 50</strong></p>
+                                                <p><strong id="paymentSGST">Rs. 0</strong></p>
                                             </li>
                                             <li class="d-flex align-items-center justify-content-between my-2 px-2">
                                                 <p>Total CGST</p>
-                                                <p><strong>Rs. 50</strong></p>
+                                                <p><strong id="paymentCGST">Rs. 0</strong></p>
                                             </li>
                                             <li class="d-flex align-items-center justify-content-between my-2 px-2">
                                                 <p>Extra Charges</p>
-                                                <p><strong>Rs. 400</strong></p>
+                                                <p><strong id="paymentExtraCharges">Rs. 0</strong></p>
                                             </li>
                                             <li class="d-flex align-items-center justify-content-between my-2 px-2">
                                                 <p>Total Payable</p>
-                                                <p><strong>Rs. 2500</strong></p>
+                                                <p><strong id="paymentTotalPayable">Rs. 0</strong></p>
                                             </li>
                                             <li class="d-flex align-items-center justify-content-between my-2 px-2">
                                                 <p>Balance</p>
-                                                <p><strong>Rs. 2000</strong></p>
+                                                <p><strong id="paymentBalance">Rs. 0</strong></p>
                                             </li>
                                         </ul>
                                     </div>
@@ -690,15 +686,15 @@ $siteUrl = env('APP_URL');
                         <div class="col-md-6">
                             <div class="d-flex justify-content-between align-items-center my-1">
                                 <p class="mb-0 fw-bold">Total</p>
-                                <p class="mb-0 fw-bold">Rs. 1,48,680</p>
+                                <p class="mb-0 fw-bold" id="footerTotal">Rs. 0</p>
                             </div>
                             <div class="d-flex justify-content-between align-items-center my-1">
                                 <p class="mb-0">Paid</p>
-                                <p class="mb-0">Rs. 0.00</p>
+                                <p class="mb-0" id="footerPaid">Rs. 0.00</p>
                             </div>
                             <div class="d-flex justify-content-between align-items-center my-1">
                                 <p class="mb-0">Balance</p>
-                                <p class="mb-0 text-danger">Rs. 1,48,680</p>
+                                <p class="mb-0 text-danger" id="footerBalance">Rs. 0</p>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -2073,6 +2069,95 @@ document.addEventListener('DOMContentLoaded', function () {
             maintenanceRoomIdInput.value = context.roomId || context.meta?.roomId || '';
         }
     }
+    
+    async function showMaintenanceBlockDetails(booking) {
+        if (!booking || !booking.id) {
+            console.error('No booking object or ID provided for maintenance block');
+            return;
+        }
+        
+        // Open the maintenance block popup modal
+        const maintenanceModal = document.getElementById('maintenance-block-pop');
+        if (!maintenanceModal) {
+            console.error('Maintenance modal element not found');
+            return;
+        }
+        
+        // Fetch maintenance block details
+        try {
+            const bookingId = encodeURIComponent(booking.id);
+            const baseUrl = `{{ url('/booking') }}`;
+            const bookingEndpoint = `${baseUrl}/${bookingId}`;
+            
+            const response = await fetch(bookingEndpoint, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Failed to fetch maintenance block details: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.success && data.booking) {
+                const maintenanceData = data.booking;
+                
+                // Populate maintenance modal with fetched data
+                if (maintenanceStartInput) {
+                    maintenanceStartInput.value = maintenanceData.check_in_date || maintenanceData.start_date || '';
+                }
+                if (maintenanceEndInput) {
+                    maintenanceEndInput.value = maintenanceData.check_out_date || maintenanceData.end_date || maintenanceData.check_in_date || maintenanceData.start_date || '';
+                }
+                if (maintenanceRoomIdInput) {
+                    // Get room number ID from booking - for maintenance blocks, room_id is the room number ID
+                    const roomNumberId = booking.roomId || maintenanceData.room_id;
+                    maintenanceRoomIdInput.value = roomNumberId || '';
+                }
+                if (maintenanceReasonInput) {
+                    maintenanceReasonInput.value = maintenanceData.guest_name || maintenanceData.reason || '';
+                }
+                
+                // Disable form fields since we're viewing, not editing
+                if (maintenanceStartInput) maintenanceStartInput.disabled = true;
+                if (maintenanceEndInput) maintenanceEndInput.disabled = true;
+                if (maintenanceRoomIdInput) maintenanceRoomIdInput.disabled = true;
+                if (maintenanceReasonInput) maintenanceReasonInput.disabled = true;
+                
+                // Hide submit button or change it to "Close"
+                const submitBtn = document.getElementById('blockDatesBtn');
+                if (submitBtn) {
+                    submitBtn.style.display = 'none';
+                }
+            } else {
+                throw new Error(data.message || 'Maintenance block not found');
+            }
+        } catch (error) {
+            console.error('Error fetching maintenance block details:', error);
+            // Still open modal but show error
+            if (maintenanceReasonInput) {
+                maintenanceReasonInput.value = `Error: ${error.message}`;
+                maintenanceReasonInput.disabled = true;
+            }
+        }
+        
+        // Open modal
+        try {
+            if (window.bootstrap?.Modal) {
+                const modalInstance = window.bootstrap.Modal.getOrCreateInstance(maintenanceModal);
+                modalInstance.show();
+            } else {
+                maintenanceModal.classList.add('show');
+                maintenanceModal.style.display = 'block';
+                maintenanceModal.removeAttribute('aria-hidden');
+            }
+        } catch (modalError) {
+            console.error('Error opening maintenance modal:', modalError);
+        }
+    }
 
     function populateQuickReservationDates(startDate, endDate) {
         const checkInInput = document.getElementById('quickCheckInDate');
@@ -2090,13 +2175,35 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function getSelectionContextForModal() {
+        // Collect all selected room number IDs from roomSelections
+        const selectedRoomNumberIds = [];
+        roomSelections.forEach((context, roomId) => {
+            if (context && roomId) {
+                selectedRoomNumberIds.push(roomId);
+            }
+        });
+        
+        // If we have active selection, include it too
+        if (activeSelectionContext?.range && activeSelectionContext.roomId) {
+            if (!selectedRoomNumberIds.includes(activeSelectionContext.roomId)) {
+                selectedRoomNumberIds.push(activeSelectionContext.roomId);
+            }
+        }
+        
+        let context = null;
         if (activeSelectionContext?.range) {
-            return activeSelectionContext;
+            context = {
+                ...activeSelectionContext,
+                roomNumberIds: selectedRoomNumberIds
+            };
+        } else if (lastCommittedSelectionContext?.range) {
+            context = {
+                ...lastCommittedSelectionContext,
+                roomNumberIds: selectedRoomNumberIds
+            };
         }
-        if (lastCommittedSelectionContext?.range) {
-            return lastCommittedSelectionContext;
-        }
-        return null;
+        
+        return context;
     }
 
     function openModalById(modalId) {
@@ -2256,12 +2363,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         const normalized = [];
         data.forEach((entry, index) => {
-            const roomIds = Array.isArray(entry.room_ids || entry.roomIds)
-                ? (entry.room_ids || entry.roomIds)
-                : [entry.room_id ?? entry.roomId];
             const start = ensureISODate(entry.start_date ?? entry.startDate);
             const end = ensureISODate(entry.end_date ?? entry.endDate ?? entry.start_date ?? entry.startDate);
-            if (!roomIds?.length || !start) {
+            if (!start) {
                 return;
             }
             const normalizedRange = (start && end && start > end)
@@ -2270,8 +2374,30 @@ document.addEventListener('DOMContentLoaded', function () {
             const isBlocked = Boolean(entry.is_blocked || entry.isBlocked);
             const inclusiveEnd = Boolean(entry.inclusive_end ?? entry.inclusiveEnd);
             const statusValue = (entry.status || '').toLowerCase() || (isBlocked ? 'blocked' : 'reserved');
+            const isMaintenance = statusValue === 'maintenance' || isBlocked;
 
-            roomIds.filter(Boolean).forEach((roomId) => {
+            let roomIds = [];
+            
+            // Maintenance blocks use old method - room_id is the room number ID directly
+            if (isMaintenance) {
+                const roomNumberId = entry.room_id ?? entry.roomId;
+                if (roomNumberId) {
+                    roomIds = [Number(roomNumberId)];
+                }
+            } else {
+                // Regular bookings: Only show if room_number_ids exists
+                if (!entry.room_number_ids || typeof entry.room_number_ids !== 'string' || !entry.room_number_ids.trim()) {
+                    return;
+                }
+                // Parse comma-separated room number IDs
+                roomIds = entry.room_number_ids.split(',').map(id => id.trim()).filter(Boolean).map(Number);
+            }
+            
+            if (roomIds.length === 0) {
+                return;
+            }
+
+            roomIds.forEach((roomId) => {
                 normalized.push({
                     id: entry.id ?? `booking-${index}-${roomId}`,
                     roomId: Number(roomId),
@@ -2281,7 +2407,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     tooltip: entry.tooltip || entry.notes || entry.source || '',
                     status: statusValue,
                     isBlocked,
-                    inclusiveEnd: inclusiveEnd || isBlocked
+                    inclusiveEnd: inclusiveEnd || isBlocked,
+                    room_number_ids: entry.room_number_ids || null,
+                    // Preserve original entry data for maintenance blocks
+                    guest_name: entry.guest_name,
+                    source: entry.source
                 });
             });
         });
@@ -2599,7 +2729,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     cell.classList.add('cell-blocked');
                 }
                 cell.title = bookingAtDate.tooltip || `${bookingAtDate.label} (${bookingAtDate.startDate} - ${bookingAtDate.endDate})`;
-               cell.addEventListener('click', () => showBookingSummary(bookingAtDate));
+                // Open maintenance popup for maintenance blocks, booking popup for regular bookings
+                if (bookingAtDate.isBlocked || bookingAtDate.status === 'maintenance') {
+                    cell.addEventListener('click', () => showMaintenanceBlockDetails(bookingAtDate));
+                } else {
+                    cell.addEventListener('click', () => showBookingSummary(bookingAtDate));
+                }
             } else {
                 cell.addEventListener('mousedown', (event) => {
                     handleCellMouseDown(event, room, category, iso);
@@ -2655,15 +2790,45 @@ document.addEventListener('DOMContentLoaded', function () {
                 labelWrapper.appendChild(icon);
             }
             const labelText = document.createElement('span');
-            if ((booking.isBlocked || booking.status === 'maintenance') && booking.roomNumber) {
-                labelText.textContent = `${booking.roomNumber} ${booking.label}`;
-            } else {
-                labelText.textContent = booking.label;
+            let displayLabel = booking.label;
+            
+            // Get room numbers from room_number_ids if available
+            if (booking.room_number_ids) {
+                const roomNumberIds = booking.room_number_ids.split(',').map(id => id.trim()).filter(Boolean);
+                const roomNumberNames = [];
+                roomNumberIds.forEach((roomNumberId) => {
+                    // Find room number name from roomsData
+                    let found = false;
+                    roomsData.forEach((category) => {
+                        if (category.rooms && Array.isArray(category.rooms)) {
+                            const room = category.rooms.find((r) => String(r.id) === String(roomNumberId));
+                            if (room) {
+                                roomNumberNames.push(room.number);
+                                found = true;
+                            }
+                        }
+                    });
+                    if (!found) {
+                        roomNumberNames.push(`#${roomNumberId}`);
+                    }
+                });
+                if (roomNumberNames.length > 0) {
+                    displayLabel = `${roomNumberNames.join(', ')} - ${booking.label}`;
+                }
+            } else if ((booking.isBlocked || booking.status === 'maintenance') && booking.roomNumber) {
+                displayLabel = `${booking.roomNumber} ${booking.label}`;
             }
+            
+            labelText.textContent = displayLabel;
             labelWrapper.appendChild(labelText);
 
             block.appendChild(labelWrapper);
-            block.addEventListener('click', () => showBookingSummary(booking));
+            // Open maintenance popup for maintenance blocks, booking popup for regular bookings
+            if (booking.isBlocked || booking.status === 'maintenance') {
+                block.addEventListener('click', () => showMaintenanceBlockDetails(booking));
+            } else {
+                block.addEventListener('click', () => showBookingSummary(booking));
+            }
             gridEl.appendChild(block);
         });
     }
@@ -2738,22 +2903,196 @@ document.addEventListener('DOMContentLoaded', function () {
         }, meta);
     }
 
-    function showBookingSummary(booking) {
+    async function showBookingSummary(booking) {
         if (!booking) {
+            console.error('No booking object provided');
             return;
         }
-        const lines = [
-            booking.label || 'Reservation',
-            booking.roomNumber ? `Room ${booking.roomNumber}` : `Room ID ${booking.roomId}`,
-            `${booking.startDate} → ${booking.endDate}`
-        ];
-        if (booking.hostelName || booking.categoryTitle) {
-            lines.splice(1, 0, [booking.hostelName, booking.categoryTitle].filter(Boolean).join(' • '));
+        
+        // Check if booking has an ID
+        if (!booking.id) {
+            console.error('Booking object missing id:', booking);
+            return;
         }
-        if (booking.tooltip) {
-            lines.push(booking.tooltip);
+        
+        // If it's a maintenance block, don't open booking popup - open maintenance popup instead
+        if (booking.isBlocked || booking.status === 'maintenance' || booking.type === 'maintenance') {
+            showMaintenanceBlockDetails(booking);
+            return;
         }
-        alert(lines.join('\n'));
+        
+        // Open the booking popup modal
+        const bookingModal = document.getElementById('booking-pop');
+        if (!bookingModal) {
+            console.error('Booking modal element not found');
+            return;
+        }
+        
+        // Show loading state
+        populateBookingModal({ loading: true });
+        
+        // Open modal first
+        try {
+            if (window.bootstrap?.Modal) {
+                const modalInstance = window.bootstrap.Modal.getOrCreateInstance(bookingModal);
+                modalInstance.show();
+            } else {
+                bookingModal.classList.add('show');
+                bookingModal.style.display = 'block';
+                bookingModal.removeAttribute('aria-hidden');
+            }
+        } catch (modalError) {
+            console.error('Error opening modal:', modalError);
+        }
+        
+        // Fetch booking details
+        try {
+            const bookingId = encodeURIComponent(booking.id);
+            // Build the endpoint URL - Laravel route helper needs proper replacement
+            const baseUrl = `{{ url('/booking') }}`;
+            const bookingEndpoint = `${baseUrl}/${bookingId}`;
+            
+            const response = await fetch(bookingEndpoint, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Failed to fetch booking details: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.success && data.booking) {
+                populateBookingModal(data.booking);
+            } else {
+                throw new Error(data.message || 'Booking not found');
+            }
+        } catch (error) {
+            console.error('Error fetching booking details:', error);
+            populateBookingModal({ error: error.message || 'Failed to load booking details' });
+        }
+    }
+    
+    function populateBookingModal(booking) {
+        if (booking.loading) {
+            document.getElementById('bookingGuestName').textContent = 'Loading...';
+            return;
+        }
+        
+        if (booking.error) {
+            document.getElementById('bookingGuestName').textContent = booking.error;
+            return;
+        }
+        
+        // Format date helper
+        const formatDate = (dateString) => {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        };
+        
+        const formatDateTime = (dateString, timeString) => {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const dateStr = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            if (timeString) {
+                return `${dateStr} ${timeString}`;
+            }
+            return dateStr;
+        };
+        
+        const formatCurrency = (amount) => {
+            if (!amount && amount !== 0) return 'Rs. 0';
+            return `Rs. ${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        };
+        
+        const isMaintenance = booking.type === 'maintenance' || booking.id?.startsWith('MB-');
+        
+        // Populate header
+        document.getElementById('bookingGuestName').textContent = booking.guest_name || (isMaintenance ? 'Maintenance Block' : '-');
+        document.getElementById('bookingFolio').textContent = booking.invoice_id || booking.id || '-';
+        document.getElementById('bookingDate').textContent = formatDate(booking.created_at || booking.check_in_date);
+        
+        // Populate Booking Details tab
+        document.getElementById('bookingReservationNumber').textContent = booking.invoice_id || booking.id || '-';
+        document.getElementById('bookingArrivalDate').textContent = formatDateTime(booking.check_in_date, booking.check_in_time);
+        document.getElementById('bookingBookingDate').textContent = formatDate(booking.created_at);
+        document.getElementById('bookingDepartureDate').textContent = formatDateTime(booking.check_out_date, booking.check_out_time);
+        
+        // For maintenance blocks, show "Maintenance" as rate plan, otherwise show reservation type
+        if (isMaintenance) {
+            document.getElementById('bookingRatePlan').textContent = 'Maintenance';
+        } else {
+            document.getElementById('bookingRatePlan').textContent = booking.reservation_type ? booking.reservation_type.charAt(0).toUpperCase() + booking.reservation_type.slice(1) : '-';
+        }
+        
+        // Room number - handle both array and single value
+        const roomNumberDisplay = Array.isArray(booking.room_numbers) 
+            ? booking.room_numbers.join(', ') 
+            : (booking.room_number || '-');
+        document.getElementById('bookingRoomNumber').textContent = roomNumberDisplay;
+        document.getElementById('bookingRoomType').textContent = booking.room_type || '-';
+        
+        // For maintenance blocks, these fields don't apply
+        if (isMaintenance) {
+            document.getElementById('bookingNumberOfGuest').textContent = '-';
+            document.getElementById('bookingRoomBooked').textContent = '-';
+        } else {
+            document.getElementById('bookingNumberOfGuest').textContent = booking.adults ? `${booking.adults}${booking.children ? ' + ' + booking.children + ' children' : ''}` : '-';
+            document.getElementById('bookingRoomBooked').textContent = booking.rooms || '-';
+        }
+        
+        // Populate Payment Details tab
+        document.getElementById('paymentFolio').textContent = booking.invoice_id || booking.id || '-';
+        document.getElementById('paymentDate').textContent = formatDate(booking.created_at || booking.check_in_date);
+        
+        // For maintenance blocks, payment details don't apply
+        if (isMaintenance) {
+            document.getElementById('paymentRoomPrice').textContent = formatCurrency(0);
+            document.getElementById('paymentTotalCharges').textContent = formatCurrency(0);
+            document.getElementById('paymentSGST').textContent = formatCurrency(0);
+            document.getElementById('paymentCGST').textContent = formatCurrency(0);
+            document.getElementById('paymentExtraCharges').textContent = formatCurrency(0);
+            document.getElementById('paymentTotalPayable').textContent = formatCurrency(0);
+            document.getElementById('paymentBalance').textContent = formatCurrency(0);
+            
+            // For maintenance blocks, set footer to zero
+            document.getElementById('footerTotal').textContent = formatCurrency(0);
+            document.getElementById('footerPaid').textContent = formatCurrency(0);
+            document.getElementById('footerBalance').textContent = formatCurrency(0);
+        } else {
+            // Get grand_total from orders table - ensure it's a number
+            const grandTotal = parseFloat(booking.grand_total) || 0;
+            const roomPrice = parseFloat(booking.room_price) || 0;
+            const subTotal = parseFloat(booking.sub_total) || 0;
+            const discount = parseFloat(booking.discount) || 0;
+            
+            document.getElementById('paymentRoomPrice').textContent = formatCurrency(roomPrice);
+            document.getElementById('paymentTotalCharges').textContent = formatCurrency(subTotal);
+            document.getElementById('paymentSGST').textContent = formatCurrency(0); // SGST not in current data
+            document.getElementById('paymentCGST').textContent = formatCurrency(0); // CGST not in current data
+            document.getElementById('paymentExtraCharges').textContent = formatCurrency(0); // Extra charges not in current data
+            // Total Payable shows grand_total from orders table
+            document.getElementById('paymentTotalPayable').textContent = formatCurrency(grandTotal);
+            const balance = grandTotal - discount;
+            document.getElementById('paymentBalance').textContent = formatCurrency(balance);
+            
+            // Populate footer section with dynamic values
+            document.getElementById('footerTotal').textContent = formatCurrency(grandTotal);
+            
+            // Calculate paid amount based on payment_status
+            // If payment is completed/paid, paid = grand_total, otherwise paid = 0
+            const paymentStatus = (booking.payment_status || '').toUpperCase();
+            const isPaid = paymentStatus === 'PAID' || paymentStatus === 'COMPLETED' || paymentStatus === 'SUCCESS';
+            const paidAmount = isPaid ? grandTotal : 0;
+            const footerBalance = isPaid ? 0 : balance;
+            
+            document.getElementById('footerPaid').textContent = formatCurrency(paidAmount);
+            document.getElementById('footerBalance').textContent = formatCurrency(footerBalance);
+        }
     }
 
     function handleCellMouseDown(event, room, category, iso) {
@@ -3075,19 +3414,46 @@ document.addEventListener('DOMContentLoaded', function () {
                 showErrors(['Please select both check-in and check-out dates.']);
                 return null;
             }
+            
+            // Get selected room number IDs from selection context
+            const selectionContext = getSelectionContextForModal();
+            const selectedRoomNumberIds = selectionContext?.roomNumberIds || [];
+            
+            // Build mapping from room number ID to room type ID from roomsData
+            const roomNumberToRoomTypeMap = new Map();
+            roomsData.forEach((category) => {
+                if (category.rooms && Array.isArray(category.rooms)) {
+                    // Find matching room type in quickReservationRooms by title
+                    const matchingRoomType = quickReservationRooms.find((rt) => rt.title === category.title);
+                    if (matchingRoomType) {
+                        category.rooms.forEach((room) => {
+                            roomNumberToRoomTypeMap.set(room.id, matchingRoomType.id);
+                        });
+                    }
+                }
+            });
+            
             const roomLines = [];
             detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
                 const roomId = row.querySelector('.room-type-select')?.value;
                 const rateId = row.querySelector('.room-rate-select')?.value;
                 const qty = row.querySelector('.room-qty-input')?.value;
                 if (roomId && rateId && qty) {
+                    // Get room number IDs for this specific room type from the selection
+                    const roomTypeId = Number(roomId);
+                    const roomNumberIdsForThisRoom = selectedRoomNumberIds.filter((roomNumberId) => {
+                        const mappedRoomTypeId = roomNumberToRoomTypeMap.get(roomNumberId);
+                        return mappedRoomTypeId === roomTypeId;
+                    });
+                    
                     roomLines.push({
-                        room_id: Number(roomId),
+                        room_id: roomTypeId,
                         room_price_id: Number(rateId),
                         rooms: Number(qty),
                         adults: Number(row.querySelector('.room-adult-input')?.value || 0),
                         children: Number(row.querySelector('.room-child-input')?.value || 0),
-                        price: Number(row.querySelector('.room-price-input')?.value || 0)
+                        price: Number(row.querySelector('.room-price-input')?.value || 0),
+                        room_number_ids: roomNumberIdsForThisRoom.length > 0 ? roomNumberIdsForThisRoom.join(',') : null
                     });
                 }
             });

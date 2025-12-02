@@ -113,70 +113,86 @@ class UsersController extends Controller{
         $bookingLookup = $this->buildRoomBookingLookup($bookings, $rangeStart, $rangeEnd);
         $rooms = [];
         DB::statement("SET SQL_MODE=''");
-        $recQry = self::$HotelsModel
-            ->join('rooms', 'hotel.id', '=', 'rooms.hotel_id')
-            ->where('hotel.vendor_id', $vendorId)
-            ->select([
-                'hotel.*',
-                DB::raw('MIN(rooms.price) as lowest_price'),
-                'rooms.title as room_title',
-                'rooms.id as room_id'
-            ])
-            ->where('hotel.status', 1);
+        
+        // First get all hotels
+        $hotelsQuery = self::$HotelsModel
+            ->where('vendor_id', $vendorId)
+            ->where('status', 1);
         
         if($hotelId){
-            $recQry->where('hotel.id', $hotelId);
-        }
-        if($roomCategoryId){
-            $recQry->where('rooms.room_category_id', $roomCategoryId);
+            $hotelsQuery->where('id', $hotelId);
         }
         
-        $recQry->groupBy('hotel.id');
-
-        $hotels = $recQry->get();
+        $hotels = $hotelsQuery->get();
+        
         if($hotels->count() > 0){
             foreach($hotels as $hotelData){
-                $roomNumbers = self::$RoomNumbersModel
-                    ->where('status', 1)
-                    ->where('room_id', $hotelData->room_id)
-                    ->get();
-                if($roomNumbers->count() > 0){
-                    $roomNums = [];
-                    foreach($roomNumbers as $roomNumberData){
-                        $roomNums[] = [
-                            'id' => $roomNumberData->id,
-                            'number' => $roomNumberData->full_title
-                        ];
-                    }
-
-                    $totalRooms = count($roomNums);
-                    $overrides = [];
-                    foreach($dateSequence as $isoDate){
-                        $bookedCount = 0;
-                        foreach($roomNums as $roomMeta){
-                            $roomNumberId = $roomMeta['id'];
-                            if(isset($bookingLookup[$roomNumberId]) && isset($bookingLookup[$roomNumberId][$isoDate])){
-                                $bookedCount++;
-                            }
+                // Get all rooms for this hotel
+                $roomsQuery = self::$RoomsModel
+                    ->where('hotel_id', $hotelData->id)
+                    ->where('status', 1);
+                
+                if($roomCategoryId){
+                    $roomsQuery->where('room_category_id', $roomCategoryId);
+                }
+                
+                $hotelRooms = $roomsQuery->get();
+                
+                // Process each room type for this hotel
+                foreach($hotelRooms as $roomData){
+                    $roomNumbers = self::$RoomNumbersModel
+                        ->where('status', 1)
+                        ->where('room_id', $roomData->id)
+                        ->get();
+                    
+                    if($roomNumbers->count() > 0){
+                        $roomNums = [];
+                        foreach($roomNumbers as $roomNumberData){
+                            $roomNums[] = [
+                                'id' => $roomNumberData->id,
+                                'number' => $roomNumberData->full_title
+                            ];
                         }
-                        $available = max($totalRooms - $bookedCount, 0);
-                        $overrides[$isoDate] = [
-                            'count' => $available,
-                            'tooltip' => sprintf('%d of %d rooms available', $available, $totalRooms)
+
+                        $totalRooms = count($roomNums);
+                        $overrides = [];
+                        foreach($dateSequence as $isoDate){
+                            $bookedCount = 0;
+                            foreach($roomNums as $roomMeta){
+                                $roomNumberId = $roomMeta['id'];
+                                if(isset($bookingLookup[$roomNumberId]) && isset($bookingLookup[$roomNumberId][$isoDate])){
+                                    $bookedCount++;
+                                }
+                            }
+                            $available = max($totalRooms - $bookedCount, 0);
+                            $overrides[$isoDate] = [
+                                'count' => $available,
+                                'tooltip' => sprintf('%d of %d rooms available', $available, $totalRooms)
+                            ];
+                        }
+
+                        // Get lowest price for this room type
+                        $lowestPrice = self::$RoomPricesModel
+                            ->where('room_id', $roomData->id)
+                            ->where('status', 1)
+                            ->min('price');
+                        
+                        if(!$lowestPrice){
+                            $lowestPrice = $roomData->price ?? null;
+                        }
+
+                        $rooms[] = [
+                            'hostelName' => $hotelData->title,
+                            'title' => $roomData->title,
+                            'summary' => [
+                                'defaultCount' => $totalRooms,
+                                'defaultPrice' => $lowestPrice,
+                                'tooltip' => 'Available rooms / base rate',
+                                'overrides' => $overrides,
+                            ],
+                            'rooms' => $roomNums,
                         ];
                     }
-
-                    $rooms[] = [
-                        'hostelName' => $hotelData->title,
-                        'title' => $hotelData->room_title,
-                        'summary' => [
-                            'defaultCount' => $totalRooms,
-                            'defaultPrice' => $hotelData->lowest_price,
-                            'tooltip' => 'Available rooms / base rate',
-                            'overrides' => $overrides,
-                        ],
-                        'rooms' => $roomNums,
-                    ];
                 }
             }
         }
@@ -357,7 +373,8 @@ class UsersController extends Controller{
             'orders.other_details',
             'orders.payment_status',
             'orders.invoice_id',
-            'orders.created_at'
+            'orders.created_at',
+            'orders.room_number_ids'
         ]);
 
         if($orders->count() > 0){
@@ -383,6 +400,7 @@ class UsersController extends Controller{
                     'source' => $order->order_platform ?? 'DMS',
                     'is_blocked' => false,
                     'inclusive_end' => true,
+                    'room_number_ids' => $order->room_number_ids ?? null,
                 ];
             }
         }
@@ -392,10 +410,15 @@ class UsersController extends Controller{
 
     private function getVendorHotels($vendorId){
         $hotels = self::$HotelsModel
-            ->where('vendor_id', $vendorId)
-            ->where('status', 1)
-            ->select('id', 'title')
-            ->orderBy('title', 'ASC')
+            ->join('rooms', 'hotel.id', '=', 'rooms.hotel_id')
+            ->join('room_numbers', 'rooms.id', '=', 'room_numbers.room_id')
+            ->where('hotel.vendor_id', $vendorId)
+            ->where('hotel.status', 1)
+            ->where('rooms.status', 1)
+            ->where('room_numbers.status', 1)
+            ->select('hotel.id', 'hotel.title')
+            ->distinct()
+            ->orderBy('hotel.title', 'ASC')
             ->get();
         return $hotels;
     }
@@ -563,6 +586,7 @@ class UsersController extends Controller{
             'room_details.*.adults' => 'required|integer|min:1',
             'room_details.*.children' => 'nullable|integer|min:0',
             'room_details.*.price' => 'required|numeric|min:0',
+            'room_details.*.room_number_ids' => 'nullable|string',
         ],[
             'check_in_date.required' => 'Please select check-in date.',
             'check_in_date.after_or_equal' => 'Check-in date cannot be in the past.',
@@ -761,6 +785,7 @@ class UsersController extends Controller{
                     'billing_address' => null,
                     'billing_city' => null,
                     'billing_state' => null,
+                    'room_number_ids' => !empty($detail['room_number_ids']) ? $detail['room_number_ids'] : null,
                     'payment_status' => 'PENDING',
                     'payment_method_type' => 'OFFLINE',
                     'order_platform' => 'DMS',
@@ -819,6 +844,121 @@ class UsersController extends Controller{
             return 'cancelled';
         }
         return 'reserved';
+    }
+
+    public function getBookingDetails(Request $request, $id){
+        if(!$request->session()->has('vendor_login_id')){
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+        
+        // Check if it's a maintenance block (MB- prefix) or order (ORD- prefix)
+        if(strpos($id, 'MB-') === 0){
+            $maintenanceBlockId = (int)str_replace('MB-', '', $id);
+            $maintenanceBlock = self::$MaintenanceBlocksModel
+                ->join('room_numbers', 'maintenance_blocks.room_number_id', '=', 'room_numbers.id')
+                ->join('rooms', 'room_numbers.room_id', '=', 'rooms.id')
+                ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
+                ->where('maintenance_blocks.id', $maintenanceBlockId)
+                ->where('maintenance_blocks.vendor_id', $vendorId)
+                ->select('maintenance_blocks.*', 'room_numbers.full_title as room_number', 'rooms.title as room_type', 'hotel.title as hotel_name')
+                ->first();
+            
+            if(!$maintenanceBlock){
+                return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'booking' => [
+                    'id' => 'MB-'.$maintenanceBlock->id,
+                    'type' => 'maintenance',
+                    'guest_name' => $maintenanceBlock->reason,
+                    'room_number' => $maintenanceBlock->room_number,
+                    'room_type' => $maintenanceBlock->room_type,
+                    'hotel_name' => $maintenanceBlock->hotel_name,
+                    'check_in_date' => $maintenanceBlock->start_date,
+                    'check_out_date' => $maintenanceBlock->end_date,
+                    'created_at' => $maintenanceBlock->created_at ?? $maintenanceBlock->start_date,
+                ]
+            ]);
+        } else if(strpos($id, 'ORD-') === 0){
+            $orderId = (int)str_replace('ORD-', '', $id);
+            $order = self::$OrdersModel
+                ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
+                ->join('rooms', 'orders.room_id', '=', 'rooms.id')
+                ->where('orders.id', $orderId)
+                ->where('hotel.vendor_id', $vendorId)
+                ->select('orders.*', 'rooms.title as room_type', 'hotel.title as hotel_name')
+                ->first();
+            
+            if(!$order){
+                return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+            }
+            
+            // Get room numbers with full details from room_number_ids
+            $roomNumbers = [];
+            $roomNumbersDetails = [];
+            if($order->room_number_ids){
+                $roomNumberIds = explode(',', $order->room_number_ids);
+                $roomNumberRecords = self::$RoomNumbersModel
+                    ->whereIn('id', $roomNumberIds)
+                    ->where('status', 1)
+                    ->get(['id', 'full_title', 'title', 'prefix']);
+                $roomNumbers = $roomNumberRecords->pluck('full_title')->toArray();
+                $roomNumbersDetails = $roomNumberRecords->map(function($room) {
+                    return [
+                        'id' => $room->id,
+                        'full_title' => $room->full_title,
+                        'title' => $room->title,
+                        'prefix' => $room->prefix
+                    ];
+                })->toArray();
+            }
+            
+            $otherDetails = [];
+            if(!empty($order->other_details)){
+                $decoded = json_decode($order->other_details, true);
+                if(json_last_error() === JSON_ERROR_NONE){
+                    $otherDetails = $decoded;
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'booking' => [
+                    'id' => 'ORD-'.$order->id,
+                    'type' => 'reservation',
+                    'invoice_id' => $order->invoice_id,
+                    'guest_name' => $order->billing_name ?? 'Guest',
+                    'guest_email' => $order->billing_email,
+                    'guest_phone' => $order->billing_phone,
+                    'room_numbers' => $roomNumbers,
+                    'room_numbers_details' => $roomNumbersDetails,
+                    'room_type' => $order->room_type,
+                    'hotel_name' => $order->hotel_name,
+                    'check_in_date' => $order->check_in_date,
+                    'check_out_date' => $order->check_out_date,
+                    'check_in_time' => $otherDetails['check_in_time'] ?? null,
+                    'check_out_time' => $otherDetails['check_out_time'] ?? null,
+                    'adults' => $order->adults,
+                    'children' => $order->childs ?? 0,
+                    'rooms' => $order->rooms,
+                    'number_of_nights' => $order->number_of_nights,
+                    'room_price' => $order->room_price,
+                    'sub_total' => $order->sub_total,
+                    'discount' => $order->discount ?? 0,
+                    'grand_total' => $order->grand_total,
+                    'payment_status' => $order->payment_status,
+                    'reservation_type' => $otherDetails['reservation_type'] ?? 'confirmed',
+                    'notes' => $otherDetails['notes'] ?? null,
+                    'created_at' => $order->created_at,
+                ]
+            ]);
+        }
+        
+        return response()->json(['success' => false, 'message' => 'Invalid booking ID'], 400);
     }
 
 }
