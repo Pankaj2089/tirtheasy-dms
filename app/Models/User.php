@@ -38,6 +38,7 @@ class User extends Authenticatable
 		'dob',
 		'property_id',
 		'login_id',
+		'vendor_id',
     ];
 
     /**

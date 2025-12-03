@@ -667,6 +667,7 @@ class UsersController extends Controller{
         if(!$guestUser){
             $newGuest = [
                 'type' => 'Guest',
+                'vendor_id' => $vendorId,
                 'name' => $guestPayload['name'],
                 'email' => $guestPayload['email'] ?? null,
                 'mobile' => $guestPayload['mobile'],

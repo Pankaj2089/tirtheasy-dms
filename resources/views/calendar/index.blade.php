@@ -2564,6 +2564,35 @@ document.addEventListener('DOMContentLoaded', function () {
         return roomMap ? roomMap.get(iso) : null;
     }
 
+    /**
+     * Check if any date in the given range is booked for the specified room
+     * @param {number} roomId - The room ID to check
+     * @param {string} startIso - Start date in ISO format (YYYY-MM-DD)
+     * @param {string} endIso - End date in ISO format (YYYY-MM-DD)
+     * @returns {boolean} - Returns true if any date in the range is booked
+     */
+    function isDateRangeBooked(roomId, startIso, endIso) {
+        if (!roomId || !startIso || !endIso) {
+            return false;
+        }
+        const roomMap = bookingDateLookup.get(roomId);
+        if (!roomMap) {
+            return false;
+        }
+        const range = normalizeRange(startIso, endIso);
+        if (!range) {
+            return false;
+        }
+        // Check each date in the range
+        let hasBooking = false;
+        eachDateInRange(range.start, range.end, (iso) => {
+            if (roomMap.has(iso)) {
+                hasBooking = true;
+            }
+        });
+        return hasBooking;
+    }
+
     function isWeekend(date) {
         const day = date.getDay();
         return day === 0 || day === 6;
@@ -2733,7 +2762,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (bookingAtDate.isBlocked || bookingAtDate.status === 'maintenance') {
                     cell.addEventListener('click', () => showMaintenanceBlockDetails(bookingAtDate));
                 } else {
-                    cell.addEventListener('click', () => showBookingSummary(bookingAtDate));
+               cell.addEventListener('click', () => showBookingSummary(bookingAtDate));
                 }
             } else {
                 cell.addEventListener('mousedown', (event) => {
@@ -2827,7 +2856,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (booking.isBlocked || booking.status === 'maintenance') {
                 block.addEventListener('click', () => showMaintenanceBlockDetails(booking));
             } else {
-                block.addEventListener('click', () => showBookingSummary(booking));
+            block.addEventListener('click', () => showBookingSummary(booking));
             }
             gridEl.appendChild(block);
         });
@@ -2879,9 +2908,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 && selectionState.activeRoomId === roomId
                 && iso >= previewRange.start
                 && iso <= previewRange.end;
+            
+            // Check if this cell is booked
+            const isBooked = Boolean(getBookingForCell(roomId, iso));
+            
+            // Check if preview range includes booked dates (for visual feedback)
+            const isInvalidPreview = isPreview && isBooked;
 
             cell.classList.toggle('selected-range', Boolean(isStored));
-            cell.classList.toggle('drag-preview', Boolean(isPreview));
+            cell.classList.toggle('drag-preview', Boolean(isPreview) && !isInvalidPreview);
+            cell.classList.toggle('drag-preview-invalid', Boolean(isInvalidPreview));
         });
     }
 
@@ -3099,6 +3135,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (event) {
             event.preventDefault();
         }
+        // Check if the initial date is already booked
+        if (isDateRangeBooked(room.id, iso, iso)) {
+            // Prevent selection if the date is booked
+            return;
+        }
         hideSelectionTooltip();
         // Clear all previous selections when starting a new selection
         roomSelections.clear();
@@ -3119,6 +3160,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!selectionState.isDragging || selectionState.activeRoomId !== roomId) {
             return;
         }
+        // Check if the current cell itself is booked
+        if (getBookingForCell(roomId, iso)) {
+            // Don't allow extending selection to a booked date
+            return;
+        }
+        // Check if extending the selection to this date would include any booked dates
+        const currentStart = selectionState.dragStartDate;
+        const proposedRange = normalizeRange(currentStart, iso);
+        if (proposedRange && isDateRangeBooked(roomId, proposedRange.start, proposedRange.end)) {
+            // Don't allow extending selection into booked dates
+            // Keep the end date at the last valid (non-booked) position
+            return;
+        }
+        // Only update if the proposed range doesn't include booked dates
         selectionState.dragEndDate = iso;
         updateSelectionClasses();
     }
@@ -3129,6 +3184,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const range = normalizeRange(selectionState.dragStartDate, selectionState.dragEndDate || selectionState.dragStartDate);
+        
+        // Final validation: check if any date in the range is booked
+        if (isDateRangeBooked(selectionState.activeRoomId, range.start, range.end)) {
+            // Cancel selection if any date in the range is booked
+            resetDragging();
+            updateSelectionClasses();
+            // Optionally show an alert to the user
+            alert('Cannot select dates that are already booked. Please choose different dates.');
+            return;
+        }
+
         const committedContext = {
             roomId: selectionState.activeRoomId,
             startDate: range.start,
