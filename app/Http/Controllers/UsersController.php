@@ -104,7 +104,7 @@ class UsersController extends Controller{
 		}
     }
 
-    private function buildRoomsPayload($vendorId, $startDate = null, $endDate = null, $preloadedBookings = null, $hotelId = null, $roomCategoryId = null){
+    private function buildRoomsPayload($vendorId, $startDate = null, $endDate = null, $preloadedBookings = null, $hotelId = null, $roomCategoryId = null, $roomId = null){
         [$rangeStartIso, $rangeEndIso] = $this->resolveCalendarRange($startDate, $endDate);
         $rangeStart = Carbon::parse($rangeStartIso)->startOfDay();
         $rangeEnd = Carbon::parse($rangeEndIso)->startOfDay();
@@ -127,19 +127,20 @@ class UsersController extends Controller{
         
         if($hotels->count() > 0){
             foreach($hotels as $hotelData){
-                // Get all rooms for this hotel
+                // Get all rooms for this hotel (ignore room category - work based on individual rooms)
                 $roomsQuery = self::$RoomsModel
                     ->where('hotel_id', $hotelData->id)
                     ->where('status', 1);
-                
-                if($roomCategoryId){
-                    $roomsQuery->where('room_category_id', $roomCategoryId);
-                }
                 
                 $hotelRooms = $roomsQuery->get();
                 
                 // Process each room type for this hotel
                 foreach($hotelRooms as $roomData){
+                    // Filter by room_id if specified
+                    if($roomId && $roomData->id != $roomId){
+                        continue;
+                    }
+                    
                     $roomNumbers = self::$RoomNumbersModel
                         ->where('status', 1)
                         ->where('room_id', $roomData->id)
@@ -184,6 +185,7 @@ class UsersController extends Controller{
                         $rooms[] = [
                             'hostelName' => $hotelData->title,
                             'title' => $roomData->title,
+                            'roomId' => $roomData->id, // Add room type ID for filtering
                             'summary' => [
                                 'defaultCount' => $totalRooms,
                                 'defaultPrice' => $lowestPrice,
@@ -214,12 +216,38 @@ class UsersController extends Controller{
     private function buildRoomBookingLookup(array $bookings, Carbon $rangeStart, Carbon $rangeEnd){
         $lookup = [];
         foreach($bookings as $booking){
-            $roomId = $booking['room_id'] ?? $booking['roomId'] ?? null;
             $bookingStart = $booking['start_date'] ?? $booking['startDate'] ?? null;
             $bookingEnd = $booking['end_date'] ?? $booking['endDate'] ?? $bookingStart;
-            if(!$roomId || !$bookingStart){
+            if(!$bookingStart){
                 continue;
             }
+            
+            // Get specific room number IDs if available
+            $roomNumberIds = [];
+            if(!empty($booking['room_number_ids'])){
+                $roomNumberIdsString = $booking['room_number_ids'];
+                if(is_string($roomNumberIdsString)){
+                    $roomNumberIds = array_filter(array_map(function($id) {
+                        return (int)trim($id);
+                    }, explode(',', $roomNumberIdsString)));
+                } elseif(is_array($roomNumberIdsString)){
+                    $roomNumberIds = array_map('intval', $roomNumberIdsString);
+                }
+            }
+            
+            // For maintenance blocks, room_id is actually the room_number_id
+            if(empty($roomNumberIds) && isset($booking['is_blocked']) && $booking['is_blocked']){
+                $roomId = $booking['room_id'] ?? $booking['roomId'] ?? null;
+                if($roomId){
+                    $roomNumberIds = [(int)$roomId];
+                }
+            }
+            
+            // If no specific room numbers, skip this booking (can't determine which rooms are booked)
+            if(empty($roomNumberIds)){
+                continue;
+            }
+            
             try{
                 $start = Carbon::parse($bookingStart)->startOfDay();
                 $end = Carbon::parse($bookingEnd)->startOfDay();
@@ -230,8 +258,21 @@ class UsersController extends Controller{
                 [$start, $end] = [$end->copy(), $start->copy()];
             }
 
+            // Check if end date should be included (for maintenance blocks)
+            $inclusiveEnd = isset($booking['inclusive_end']) && $booking['inclusive_end'];
+            $isBlocked = isset($booking['is_blocked']) && $booking['is_blocked'];
+            
+            // For regular bookings (check-out date), the room is available again, so exclude the end date
+            // For maintenance blocks (inclusive_end = true), include the end date
             $cursor = $start->copy();
-            while($cursor->lte($end)){
+            while(true){
+                // Check if we should include this date based on inclusive_end flag
+                $shouldInclude = $inclusiveEnd || $isBlocked ? $cursor->lte($end) : $cursor->lt($end);
+                
+                if(!$shouldInclude){
+                    break;
+                }
+                
                 if($cursor->lt($rangeStart)){
                     $cursor->addDay();
                     continue;
@@ -239,7 +280,11 @@ class UsersController extends Controller{
                 if($cursor->gt($rangeEnd)){
                     break;
                 }
-                $lookup[$roomId][$cursor->toDateString()] = true;
+                
+                $dateString = $cursor->toDateString();
+                foreach($roomNumberIds as $roomNumberId){
+                    $lookup[$roomNumberId][$dateString] = true;
+                }
                 $cursor->addDay();
             }
         }
@@ -288,9 +333,7 @@ class UsersController extends Controller{
         if($hotelId){
             $blocksQuery->where('rooms.hotel_id', $hotelId);
         }
-        if($roomCategoryId){
-            $blocksQuery->where('rooms.room_category_id', $roomCategoryId);
-        }
+        // Removed room_category_id filter - work based on individual rooms
 
         if($startDate){
             $start = Carbon::parse($startDate)->startOfDay()->toDateString();
@@ -344,9 +387,7 @@ class UsersController extends Controller{
         if($hotelId){
             $ordersQuery->where('hotel.id', $hotelId);
         }
-        if($roomCategoryId){
-            $ordersQuery->where('rooms.room_category_id', $roomCategoryId);
-        }
+        // Removed room_category_id filter - work based on individual rooms
 
         if($start && $end){
             $ordersQuery->where(function($query) use ($start, $end){
@@ -424,14 +465,17 @@ class UsersController extends Controller{
     }
 
     private function getVendorRoomCategories($vendorId){
-        return DB::table('room_categories as rc')
-            ->join('rooms', 'rooms.room_category_id', '=', 'rc.id')
+        // Changed to return room types instead of room categories - work based on individual rooms
+        // Only show room types that have at least one available room number
+        return DB::table('rooms')
             ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
+            ->join('room_numbers', 'rooms.id', '=', 'room_numbers.room_id')
             ->where('hotel.vendor_id', $vendorId)
             ->where('rooms.status', 1)
-            ->select('rc.id', 'rc.title')
+            ->where('room_numbers.status', 1)
+            ->select('rooms.id', 'rooms.title')
             ->distinct()
-            ->orderBy('rc.title', 'ASC')
+            ->orderBy('rooms.title', 'ASC')
             ->get();
     }
 
@@ -459,7 +503,7 @@ class UsersController extends Controller{
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
         $hotelId = $request->query('hotel_id');
-        $roomCategoryId = $request->query('room_category_id');
+        $roomId = $request->query('room_id'); // Changed from room_category_id to room_id
 
         try{
             $start = $startDate ? Carbon::parse($startDate)->toDateString() : null;
@@ -476,14 +520,21 @@ class UsersController extends Controller{
         if($hotelId && is_numeric($hotelId)){
             $hotelIdFilter = (int)$hotelId;
         }
-        $roomCategoryFilter = null;
-        if($roomCategoryId && is_numeric($roomCategoryId)){
-            $roomCategoryFilter = (int)$roomCategoryId;
+        $roomIdFilter = null;
+        if($roomId && is_numeric($roomId)){
+            $roomIdFilter = (int)$roomId;
         }
 
         [$rangeStart, $rangeEnd] = $this->resolveCalendarRange($start, $end);
-        $bookings = $this->buildBookingsPayload($vendorId, $rangeStart, $rangeEnd, $hotelIdFilter, $roomCategoryFilter);
-        $rooms = $this->buildRoomsPayload($vendorId, $rangeStart, $rangeEnd, $bookings, $hotelIdFilter, $roomCategoryFilter);
+        $bookings = $this->buildBookingsPayload($vendorId, $rangeStart, $rangeEnd, $hotelIdFilter, null); // Removed room category filter
+        $rooms = $this->buildRoomsPayload($vendorId, $rangeStart, $rangeEnd, $bookings, $hotelIdFilter, null, $roomIdFilter); // Added room_id filter
+        
+        // Filter rooms by room_id if specified
+        if($roomIdFilter){
+            $rooms = array_values(array_filter($rooms, function($room) use ($roomIdFilter) {
+                return isset($room['roomId']) && $room['roomId'] == $roomIdFilter;
+            }));
+        }
 
         return response()->json([
             'rooms' => $rooms,

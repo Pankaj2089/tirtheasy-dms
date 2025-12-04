@@ -13,7 +13,52 @@ $siteUrl = env('APP_URL');
         display: none !important;
     }
     
+    /* Room Number Dropdown Styles */
+    .room-number-select-wrapper {
+        position: relative;
+    }
     
+    .room-number-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        margin-top: 2px;
+    }
+    
+    .room-number-dropdown .list-group-item {
+        cursor: pointer;
+        padding: 8px 12px;
+        border: none;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .room-number-dropdown .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .room-number-dropdown .list-group-item:last-child {
+        border-bottom: none;
+    }
+    
+    .selected-room-numbers .badge {
+        font-size: 0.875rem;
+        padding: 4px 8px;
+    }
+    
+    .selected-room-numbers .btn-close {
+        margin-left: 4px;
+        opacity: 0.8;
+    }
+    
+    .selected-room-numbers .btn-close:hover {
+        opacity: 1;
+    }
 </style>
 
    
@@ -255,18 +300,9 @@ $siteUrl = env('APP_URL');
                                     <input type="time" class="form-control" id="quickCheckOutTime" name="check_out_time">
                                 </div>
                             </div>
-                            <div class="col-md-2 d-flex flex-column">
-                                <label class="form-label">Rooms</label>
-                                <input type="number" class="form-control" id="quickRoomsCount" name="total_rooms" readonly placeholder="0">
-                            </div>
-                            <div class="col-md-2 d-flex flex-column">
-                                <label class="form-label">Reservation Type</label>
-                                <select class="form-control" id="quickReservationType" name="reservation_type">
-                                    <option value="confirmed">Confirm</option>
-                                    <option value="hold">Hold</option>
-                                    <option value="inquiry">Inquiry</option>
-                                </select>
-                            </div>
+                            <!-- Hidden fields -->
+                            <input type="hidden" id="quickRoomsCount" name="total_rooms" value="0">
+                            <input type="hidden" id="quickReservationType" name="reservation_type" value="confirmed">
                         </div>
 
                         <div class="row mb-3">
@@ -277,8 +313,22 @@ $siteUrl = env('APP_URL');
                             <div class="col-12">
                                 <div id="roomDetailsContainer" class="room-details-container"></div>
                             </div>
-                            <div class="col-md-3 add-rom text-center mx-auto">
-                                <button type="button" class="theme-btn-text text-white w-100 h-auto" id="addRoomDetailBtn">+ Add Room</button>
+                        </div>
+
+                        <!-- Room Number Selection -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <h5 class="mt-3 mb-2">Room Number Selection</h5>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Select Room Numbers</label>
+                                <div class="room-number-select-wrapper position-relative">
+                                    <input type="text" id="quickRoomNumberSearch" class="form-control" placeholder="Search and select room numbers..." autocomplete="off">
+                                    <div id="quickRoomNumberDropdown" class="room-number-dropdown" style="display: none;"></div>
+                                    <input type="hidden" id="quickRoomNumberIds" name="room_number_ids" value="">
+                                    <small class="form-text text-muted">Type to search. Only available rooms for selected dates will be shown.</small>
+                                    <div id="quickSelectedRoomNumbers" class="selected-room-numbers mt-2"></div>
+                                </div>
                             </div>
                         </div>
 
@@ -2025,7 +2075,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 params.append('hotel_id', selectedHotelId);
             }
             if(selectedRoomTypeId){
-                params.append('room_category_id', selectedRoomTypeId);
+                params.append('room_id', selectedRoomTypeId); // Changed from room_category_id to room_id
             }
             const fetchUrl = `${calendarDataEndpoint}?${params.toString()}`;
             const response = await fetch(fetchUrl, {
@@ -2159,17 +2209,38 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function populateQuickReservationDates(startDate, endDate) {
+    function populateQuickReservationDates(startDate, endDate, isFromSelection = false) {
         const checkInInput = document.getElementById('quickCheckInDate');
         const checkOutInput = document.getElementById('quickCheckOutDate');
         const startValue = ensureISODate(startDate);
         const endValue = ensureISODate(endDate) || startValue;
+        
         if (checkInInput && startValue) {
             checkInInput.value = startValue;
+            // Set readonly if dates come from calendar selection
+            if (isFromSelection) {
+                checkInInput.setAttribute('readonly', 'readonly');
+                checkInInput.style.backgroundColor = '#e9ecef';
+                checkInInput.style.cursor = 'not-allowed';
+            } else {
+                checkInInput.removeAttribute('readonly');
+                checkInInput.style.backgroundColor = '';
+                checkInInput.style.cursor = '';
+            }
             checkInInput.dispatchEvent(new Event('change'));
         }
         if (checkOutInput && endValue) {
             checkOutInput.value = endValue;
+            // Set readonly if dates come from calendar selection
+            if (isFromSelection) {
+                checkOutInput.setAttribute('readonly', 'readonly');
+                checkOutInput.style.backgroundColor = '#e9ecef';
+                checkOutInput.style.cursor = 'not-allowed';
+            } else {
+                checkOutInput.removeAttribute('readonly');
+                checkOutInput.style.backgroundColor = '';
+                checkOutInput.style.cursor = '';
+            }
             checkOutInput.dispatchEvent(new Event('change'));
         }
     }
@@ -2188,6 +2259,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!selectedRoomNumberIds.includes(activeSelectionContext.roomId)) {
                 selectedRoomNumberIds.push(activeSelectionContext.roomId);
             }
+        }
+        
+        // If we have lastCommittedSelectionContext, include its roomId too (for single date clicks)
+        if (lastCommittedSelectionContext?.roomId && !selectedRoomNumberIds.includes(lastCommittedSelectionContext.roomId)) {
+            selectedRoomNumberIds.push(lastCommittedSelectionContext.roomId);
         }
         
         let context = null;
@@ -2270,8 +2346,27 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (action === 'reservation') {
             const context = getSelectionContextForModal();
+            const reservationModal = document.getElementById('reservation-pop');
+            
             if (context?.range) {
-                populateQuickReservationDates(context.range.start, context.range.end);
+                // Dates selected from calendar - set readonly
+                populateQuickReservationDates(context.range.start, context.range.end, true);
+                // Set data attribute to indicate dates are from calendar selection
+                if (reservationModal) {
+                    reservationModal.dataset.datesFromCalendar = 'true';
+                }
+            } else {
+                // No dates selected - set default dates (today and tomorrow) and make editable
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const todayIso = today.toISOString().split('T')[0];
+                const tomorrowIso = tomorrow.toISOString().split('T')[0];
+                populateQuickReservationDates(todayIso, tomorrowIso, false);
+                // Set data attribute to indicate dates are NOT from calendar selection
+                if (reservationModal) {
+                    reservationModal.dataset.datesFromCalendar = 'false';
+                }
             }
             openModalById('reservation-pop');
         } else if (action === 'maintenance') {
@@ -2671,10 +2766,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function formatPrice(amount) {
-        if (amount === null || amount === undefined) {
+        if (amount === null || amount === undefined || amount === '') {
             return '';
         }
-        return currencyFormatter.format(amount);
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+        if (isNaN(numAmount)) {
+            return '';
+        }
+        return currencyFormatter.format(numAmount);
     }
 
     function getCategorySummary(category) {
@@ -2710,10 +2809,12 @@ document.addEventListener('DOMContentLoaded', function () {
             priceLabel.className = 'price-label';
             const hasCount = typeof count === 'number' && !Number.isNaN(count);
             const countMarkup = hasCount ? `<span${count <= 0 ? ' class="no-availability"' : ''}>${count}</span>` : '';
-            const hasPrice = price !== null && price !== undefined;
+            const numPrice = price !== null && price !== undefined ? (typeof price === 'string' ? parseFloat(price) : price) : null;
+            const hasPrice = numPrice !== null && !Number.isNaN(numPrice);
             let priceMarkup = '';
             if (hasPrice) {
-                priceMarkup = hasCount ? `<br>${formatPrice(price)}` : formatPrice(price);
+                const formattedPrice = formatPrice(numPrice);
+                priceMarkup = hasCount ? `<br>${formattedPrice}` : formattedPrice;
             } else if (hasCount) {
                 priceMarkup = '<br>&nbsp;';
             } else {
@@ -3270,7 +3371,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         const detailsContainer = document.getElementById('roomDetailsContainer');
-        const addRoomBtn = document.getElementById('addRoomDetailBtn');
         const totalRoomsInput = document.getElementById('quickRoomsCount');
         const totalAmountLabel = document.getElementById('quickTotalAmountLabel');
         const paidAmountLabel = document.getElementById('quickPaidAmountLabel');
@@ -3278,10 +3378,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const errorsBox = document.getElementById('quickReservationErrors');
         const checkInDateInput = document.getElementById('quickCheckInDate');
         const checkOutDateInput = document.getElementById('quickCheckOutDate');
+        const roomNumberSearchInput = document.getElementById('quickRoomNumberSearch');
+        const roomNumberDropdown = document.getElementById('quickRoomNumberDropdown');
+        const roomNumberIdsInput = document.getElementById('quickRoomNumberIds');
+        const selectedRoomNumbersDiv = document.getElementById('quickSelectedRoomNumbers');
         const endpoint = form.dataset.endpoint;
-        if (!detailsContainer || !addRoomBtn) {
+        if (!detailsContainer) {
             return;
         }
+        
+        // Track if dates are from calendar selection
+        let isDatesFromCalendarSelection = false;
+        
+        // Track selected room numbers
+        let selectedRoomNumbers = new Map(); // Map<roomNumberId, {id, number, roomType}>
 
         const csrfToken = form.querySelector('input[name="_token"]')?.value
             || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -3299,9 +3409,60 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         let rowIndex = 0;
 
+        // Function to filter available room types based on calendar availability
+        function getAvailableRoomTypes() {
+            const checkInDate = checkInDateInput?.value;
+            const checkOutDate = checkOutDateInput?.value;
+            
+            if (!checkInDate || !checkOutDate || !serverRoomsData || !Array.isArray(serverRoomsData)) {
+                return roomsList; // Return all if dates not set or data not available
+            }
+            
+            // Filter room types that have availability for the selected dates
+            const availableRoomTypes = [];
+            const checkIn = new Date(checkInDate);
+            const checkOut = new Date(checkOutDate);
+            
+            roomsList.forEach((roomType) => {
+                // Find matching room type in serverRoomsData
+                const roomData = serverRoomsData.find((rd) => rd.title === roomType.title);
+                if (!roomData || !roomData.summary) {
+                    return;
+                }
+                
+                // Check availability for each date in the range
+                let hasAvailability = false;
+                const currentDate = new Date(checkIn);
+                
+                while (currentDate < checkOut) {
+                    const dateIso = currentDate.toISOString().split('T')[0];
+                    const summary = roomData.summary;
+                    const overrides = summary.overrides || {};
+                    const override = overrides[dateIso];
+                    
+                    // Get count for this date (override or default)
+                    const count = override?.count ?? summary.defaultCount ?? 0;
+                    
+                    if (count > 0) {
+                        hasAvailability = true;
+                        break;
+                    }
+                    
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                if (hasAvailability) {
+                    availableRoomTypes.push(roomType);
+                }
+            });
+            
+            return availableRoomTypes.length > 0 ? availableRoomTypes : roomsList; // Fallback to all if none available
+        }
+
         const roomOptionsMarkup = (() => {
             const options = ['<option value="">Select</option>'];
-            roomsList.forEach((room) => {
+            const availableRooms = getAvailableRoomTypes();
+            availableRooms.forEach((room) => {
                 options.push(`<option value="${room.id}">${room.title}</option>`);
             });
             return options.join('');
@@ -3319,11 +3480,160 @@ document.addEventListener('DOMContentLoaded', function () {
             return options.join('');
         }
 
-        function addRoomRow(initial = {}) {
+        // Function to get available rooms count for a room type
+        function getAvailableRoomsCount(roomTypeTitle) {
+            const checkInDate = checkInDateInput?.value;
+            const checkOutDate = checkOutDateInput?.value;
+            
+            if (!checkInDate || !checkOutDate || !serverRoomsData || !Array.isArray(serverRoomsData)) {
+                return null; // Return null if dates not set
+            }
+            
+            // Find matching room type in serverRoomsData
+            const roomData = serverRoomsData.find((rd) => rd.title === roomTypeTitle);
+            if (!roomData || !roomData.summary) {
+                return null;
+            }
+            
+            // Find minimum availability across all dates in the range
+            const checkIn = new Date(checkInDate);
+            const checkOut = new Date(checkOutDate);
+            let minAvailability = Infinity;
+            const currentDate = new Date(checkIn);
+            
+            while (currentDate < checkOut) {
+                const dateIso = currentDate.toISOString().split('T')[0];
+                const summary = roomData.summary;
+                const overrides = summary.overrides || {};
+                const override = overrides[dateIso];
+                
+                // Get count for this date (override or default)
+                const count = override?.count ?? summary.defaultCount ?? 0;
+                
+                if (count < minAvailability) {
+                    minAvailability = count;
+                }
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            return minAvailability === Infinity ? null : minAvailability;
+        }
+
+        // Function to get available room numbers for a room type based on dates
+        function getAvailableRoomNumbers(roomTypeId) {
+            const checkInDate = checkInDateInput?.value;
+            const checkOutDate = checkOutDateInput?.value;
+            
+            if (!checkInDate || !checkOutDate || !serverRoomsData || !Array.isArray(serverRoomsData)) {
+                return []; // Return empty if dates not set
+            }
+            
+            // Find room type in serverRoomsData
+            const roomTypeSelect = detailsContainer.querySelector('.room-type-select');
+            if (!roomTypeSelect || !roomTypeSelect.value) {
+                return [];
+            }
+            
+            const roomTypeTitle = roomTypeSelect.options[roomTypeSelect.selectedIndex]?.text || '';
+            const roomData = serverRoomsData.find((rd) => rd.title === roomTypeTitle);
+            
+            if (!roomData || !roomData.rooms || !Array.isArray(roomData.rooms)) {
+                return [];
+            }
+            
+            // Get booking lookup from bookingData
+            const checkIn = new Date(checkInDate);
+            const checkOut = new Date(checkOutDate);
+            const bookingLookup = new Map();
+            
+            // Build booking lookup from bookingData
+            if (bookingData && Array.isArray(bookingData)) {
+                bookingData.forEach((booking) => {
+                    const bookingStart = booking.start_date || booking.startDate;
+                    const bookingEnd = booking.end_date || booking.endDate || bookingStart;
+                    if (!bookingStart) return;
+                    
+                    try {
+                        const start = new Date(bookingStart);
+                        const end = new Date(bookingEnd);
+                        const inclusiveEnd = booking.inclusive_end || booking.is_blocked;
+                        
+                        let currentDate = new Date(start);
+                        while (true) {
+                            const shouldInclude = inclusiveEnd ? currentDate <= end : currentDate < end;
+                            if (!shouldInclude) break;
+                            
+                            if (currentDate >= checkIn && currentDate < checkOut) {
+                                const dateIso = currentDate.toISOString().split('T')[0];
+                                
+                                // Get room number IDs from booking
+                                let roomNumberIds = [];
+                                if (booking.room_number_ids) {
+                                    roomNumberIds = booking.room_number_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                                } else if (booking.is_blocked && booking.room_id) {
+                                    roomNumberIds = [parseInt(booking.room_id)];
+                                }
+                                
+                                roomNumberIds.forEach((roomNumberId) => {
+                                    if (!bookingLookup.has(roomNumberId)) {
+                                        bookingLookup.set(roomNumberId, new Set());
+                                    }
+                                    bookingLookup.get(roomNumberId).add(dateIso);
+                                });
+                            }
+                            
+                            currentDate.setDate(currentDate.getDate() + 1);
+                            if (currentDate > end) break;
+                        }
+                    } catch (e) {
+                        // Skip invalid dates
+                    }
+                });
+            }
+            
+            // Filter available room numbers
+            const availableRooms = [];
+            roomData.rooms.forEach((room) => {
+                const roomNumberId = room.id;
+                const bookedDates = bookingLookup.get(roomNumberId);
+                
+                // Check if room is available for all dates in the range
+                let isAvailable = true;
+                const currentDate = new Date(checkIn);
+                
+                while (currentDate < checkOut) {
+                    const dateIso = currentDate.toISOString().split('T')[0];
+                    if (bookedDates && bookedDates.has(dateIso)) {
+                        isAvailable = false;
+                        break;
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                if (isAvailable) {
+                    availableRooms.push({
+                        id: roomNumberId,
+                        number: room.number,
+                        roomType: roomTypeTitle
+                    });
+                }
+            });
+            
+            return availableRooms;
+        }
+
+        function addRoomRow(initial = {}, isFromCalendarSelection = false) {
             const currentIndex = rowIndex++;
             const wrapper = document.createElement('div');
             wrapper.className = 'room-detail-item';
             wrapper.dataset.index = currentIndex;
+            
+            // Determine rooms input attributes based on whether dates are from calendar selection
+            const roomsReadonly = isFromCalendarSelection ? 'readonly' : '';
+            const roomsValue = isFromCalendarSelection ? '1' : (initial.rooms || '1');
+            const roomsStyle = isFromCalendarSelection ? 'style="background-color: #e9ecef; cursor: not-allowed;"' : '';
+            
             wrapper.innerHTML = `
                 <div class="row g-2 align-items-end">
                     <div class="col-md-3">
@@ -3340,7 +3650,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Rooms</label>
-                        <input type="number" class="form-control room-qty-input" name="room_details[${currentIndex}][rooms]" min="1" value="1">
+                        <input type="number" class="form-control room-qty-input" name="room_details[${currentIndex}][rooms]" min="1" max="" value="${roomsValue}" ${roomsReadonly} ${roomsStyle}>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Adults</label>
@@ -3354,19 +3664,28 @@ document.addEventListener('DOMContentLoaded', function () {
                         <label class="form-label">Price</label>
                         <input type="number" readonly class="form-control room-price-input" name="room_details[${currentIndex}][price]" min="0" step="0.01" placeholder="0.00">
                     </div>
-                    <div class="col-12 d-flex justify-content-between align-items-center mt-2">
-                        <p class="mb-0 small text-muted">Line Total: Rs. <span class="room-line-total">0.00</span></p>
-                        <button type="button" class="btn btn-link text-danger p-0 remove-room-row">Remove</button>
-                    </div>
                 </div>
             `;
             detailsContainer.appendChild(wrapper);
             const roomSelect = wrapper.querySelector('.room-type-select');
+            const roomsInput = wrapper.querySelector('.room-qty-input');
+            
             if (initial.room_id) {
                 roomSelect.value = initial.room_id;
             }
+            
+            // Update rooms field max value based on selected room type (if not from calendar selection)
+            if (!isFromCalendarSelection && roomSelect.value) {
+                const selectedRoomType = roomsList.find(r => r.id == roomSelect.value);
+                if (selectedRoomType) {
+                    const availableCount = getAvailableRoomsCount(selectedRoomType.title);
+                    if (availableCount !== null) {
+                        roomsInput.setAttribute('max', availableCount);
+                    }
+                }
+            }
+            
             updateRateOptions(wrapper, roomSelect.value || null, initial.room_price_id);
-            wrapper.querySelector('.room-qty-input').value = initial.rooms || 1;
             wrapper.querySelector('.room-adult-input').value = initial.adults || 1;
             wrapper.querySelector('.room-child-input').value = initial.children || 0;
             if (initial.price) {
@@ -3481,9 +3800,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 return null;
             }
             
-            // Get selected room number IDs from selection context
+            // Get selected room number IDs from the room number selection field or selection context
+            let selectedRoomNumberIds = [];
+            
+            // First, try to get from room number selection field
+            if (roomNumberIdsInput && roomNumberIdsInput.value) {
+                selectedRoomNumberIds = roomNumberIdsInput.value.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            }
+            
+            // Fallback to selection context if no room numbers selected in field
+            if (selectedRoomNumberIds.length === 0) {
             const selectionContext = getSelectionContextForModal();
-            const selectedRoomNumberIds = selectionContext?.roomNumberIds || [];
+                selectedRoomNumberIds = selectionContext?.roomNumberIds || [];
+            }
             
             // Build mapping from room number ID to room type ID from roomsData
             const roomNumberToRoomTypeMap = new Map();
@@ -3532,7 +3861,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     check_out_date: checkOutDate,
                     check_in_time: document.getElementById('quickCheckInTime')?.value || null,
                     check_out_time: document.getElementById('quickCheckOutTime')?.value || null,
-                    reservation_type: document.getElementById('quickReservationType')?.value,
+                    reservation_type: 'confirmed', // Always set to confirmed
                     room_details: roomLines,
                     guest: {
                         name: document.getElementById('quickGuestName')?.value,
@@ -3543,10 +3872,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 };
         }
 
-        addRoomBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            addRoomRow();
-        });
+        // Removed add room button functionality - single entry only
 
         detailsContainer.addEventListener('change', (event) => {
             const row = event.target.closest('.room-detail-item');
@@ -3555,33 +3881,177 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (event.target.classList.contains('room-type-select')) {
                 updateRateOptions(row, event.target.value);
+                
+                // Update rooms field max value based on selected room type (if not readonly)
+                const roomsInput = row.querySelector('.room-qty-input');
+                if (roomsInput && !roomsInput.hasAttribute('readonly')) {
+                    const selectedRoomType = roomsList.find(r => r.id == event.target.value);
+                    if (selectedRoomType) {
+                        const availableCount = getAvailableRoomsCount(selectedRoomType.title);
+                        if (availableCount !== null) {
+                            roomsInput.setAttribute('max', availableCount);
+                            // If current value exceeds max, set to max
+                            if (parseInt(roomsInput.value, 10) > availableCount) {
+                                roomsInput.value = availableCount;
+                            }
+                        }
+                    }
+                }
+                
+                // Update room number options when room type changes
+                updateRoomNumberOptions();
             } else if (event.target.classList.contains('room-rate-select')) {
                 updateRateOptions(row, row.querySelector('.room-type-select')?.value, event.target.value);
             }
             recalcSummary();
         });
 
+        // Function to update room number dropdown options
+        function updateRoomNumberOptions() {
+            if (!roomNumberSearchInput || !roomNumberDropdown) {
+                return;
+            }
+            
+            const roomTypeSelect = detailsContainer.querySelector('.room-type-select');
+            if (!roomTypeSelect || !roomTypeSelect.value) {
+                roomNumberDropdown.innerHTML = '';
+                roomNumberDropdown.style.display = 'none';
+                return;
+            }
+            
+            const availableRooms = getAvailableRoomNumbers(roomTypeSelect.value);
+            
+            // Store available rooms for search
+            roomNumberDropdown.dataset.availableRooms = JSON.stringify(availableRooms);
+            
+            // Set readonly state based on calendar selection
+            if (isDatesFromCalendarSelection) {
+                roomNumberSearchInput.setAttribute('readonly', 'readonly');
+                roomNumberSearchInput.style.backgroundColor = '#e9ecef';
+                roomNumberSearchInput.style.cursor = 'not-allowed';
+            } else {
+                roomNumberSearchInput.removeAttribute('readonly');
+                roomNumberSearchInput.style.backgroundColor = '';
+                roomNumberSearchInput.style.cursor = '';
+            }
+        }
+        
+        // Function to render selected room numbers
+        function renderSelectedRoomNumbers() {
+            if (!selectedRoomNumbersDiv) return;
+            
+            if (selectedRoomNumbers.size === 0) {
+                selectedRoomNumbersDiv.innerHTML = '';
+                roomNumberIdsInput.value = '';
+                return;
+            }
+            
+            const selectedIds = Array.from(selectedRoomNumbers.keys());
+            roomNumberIdsInput.value = selectedIds.join(',');
+            
+            let html = '<div class="d-flex flex-wrap gap-2">';
+            selectedRoomNumbers.forEach((room, id) => {
+                html += `<span class="badge bg-primary d-flex align-items-center gap-1">
+                    ${room.number}
+                    ${!isDatesFromCalendarSelection ? `<button type="button" class="btn-close btn-close-white" style="font-size: 0.7em;" data-room-id="${id}"></button>` : ''}
+                </span>`;
+            });
+            html += '</div>';
+            selectedRoomNumbersDiv.innerHTML = html;
+            
+            // Add remove handlers
+            selectedRoomNumbersDiv.querySelectorAll('[data-room-id]').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const roomId = parseInt(e.target.dataset.roomId);
+                    selectedRoomNumbers.delete(roomId);
+                    renderSelectedRoomNumbers();
+                    roomNumberSearchInput.value = '';
+                    roomNumberDropdown.style.display = 'none';
+                });
+            });
+        }
+        
+        // Room number search functionality
+        if (roomNumberSearchInput && roomNumberDropdown) {
+            let searchTimeout = null;
+            
+            roomNumberSearchInput.addEventListener('input', (e) => {
+                if (isDatesFromCalendarSelection) {
+                    return; // Don't allow search if readonly
+                }
+                
+                const searchTerm = e.target.value.toLowerCase().trim();
+                
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const availableRoomsJson = roomNumberDropdown.dataset.availableRooms;
+                    if (!availableRoomsJson) {
+                        updateRoomNumberOptions();
+                return;
+            }
+                    
+                    const availableRooms = JSON.parse(availableRoomsJson);
+                    const filtered = availableRooms.filter(room => {
+                        // Filter out already selected rooms
+                        if (selectedRoomNumbers.has(room.id)) {
+                            return false;
+                        }
+                        // Filter by search term
+                        return room.number.toLowerCase().includes(searchTerm);
+                    });
+                    
+                    if (filtered.length === 0 || !searchTerm) {
+                        roomNumberDropdown.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Render dropdown
+                    let dropdownHtml = '<div class="list-group" style="max-height: 200px; overflow-y: auto;">';
+                    filtered.forEach((room) => {
+                        dropdownHtml += `<a href="#" class="list-group-item list-group-item-action" data-room-id="${room.id}" data-room-number="${room.number}">${room.number}</a>`;
+                    });
+                    dropdownHtml += '</div>';
+                    roomNumberDropdown.innerHTML = dropdownHtml;
+                    roomNumberDropdown.style.display = 'block';
+                    
+                    // Add click handlers
+                    roomNumberDropdown.querySelectorAll('[data-room-id]').forEach((item) => {
+                        item.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const roomId = parseInt(e.target.dataset.roomId);
+                            const roomNumber = e.target.dataset.roomNumber;
+                            const roomType = e.target.closest('.room-detail-item')?.querySelector('.room-type-select')?.options[detailsContainer.querySelector('.room-type-select')?.selectedIndex]?.text || '';
+                            
+                            selectedRoomNumbers.set(roomId, {
+                                id: roomId,
+                                number: roomNumber,
+                                roomType: roomType
+                            });
+                            
+                            renderSelectedRoomNumbers();
+                            roomNumberSearchInput.value = '';
+                            roomNumberDropdown.style.display = 'none';
+                        });
+                    });
+                }, 300);
+            });
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!roomNumberSearchInput.contains(e.target) && !roomNumberDropdown.contains(e.target)) {
+                    roomNumberDropdown.style.display = 'none';
+                }
+            });
+        }
+
         detailsContainer.addEventListener('input', (event) => {
             if (event.target.classList.contains('room-qty-input')
                 || event.target.classList.contains('room-price-input')) {
-                recalcSummary();
+            recalcSummary();
             }
         });
 
-        detailsContainer.addEventListener('click', (event) => {
-            if (!event.target.classList.contains('remove-room-row')) {
-                return;
-            }
-            event.preventDefault();
-            const row = event.target.closest('.room-detail-item');
-            if (row) {
-                row.remove();
-            }
-            if (!detailsContainer.querySelector('.room-detail-item')) {
-                addRoomRow();
-            }
-            recalcSummary();
-        });
+        // Removed remove room button functionality - single entry only
 
         checkInDateInput?.addEventListener('change', () => {
             const minDate = checkInDateInput.value || todayIso;
@@ -3591,10 +4061,90 @@ document.addEventListener('DOMContentLoaded', function () {
                     checkOutDateInput.value = minDate;
                 }
             }
+            // Update room type options based on new dates
+            updateRoomTypeOptions();
+            // Update rooms max value for all rows (if not readonly)
+            updateRoomsMaxValues();
             recalcSummary();
         });
 
-        checkOutDateInput?.addEventListener('change', recalcSummary);
+        checkOutDateInput?.addEventListener('change', () => {
+            // Update room type options based on new dates
+            updateRoomTypeOptions();
+            // Update rooms max value for all rows (if not readonly)
+            updateRoomsMaxValues();
+            recalcSummary();
+        });
+        
+        // Function to update max value for rooms input fields
+        function updateRoomsMaxValues() {
+            if (isDatesFromCalendarSelection) {
+                return; // Don't update if from calendar selection (readonly)
+            }
+            detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
+                const roomsInput = row.querySelector('.room-qty-input');
+                const roomSelect = row.querySelector('.room-type-select');
+                if (roomsInput && !roomsInput.hasAttribute('readonly') && roomSelect?.value) {
+                    const selectedRoomType = roomsList.find(r => r.id == roomSelect.value);
+                    if (selectedRoomType) {
+                        const availableCount = getAvailableRoomsCount(selectedRoomType.title);
+                        if (availableCount !== null) {
+                            roomsInput.setAttribute('max', availableCount);
+                            // If current value exceeds max, set to max
+                            if (parseInt(roomsInput.value, 10) > availableCount) {
+                                roomsInput.value = availableCount;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Function to update room type dropdown options based on availability
+        function updateRoomTypeOptions(preserveValue = null) {
+            const availableRooms = getAvailableRoomTypes();
+            const roomSelects = detailsContainer.querySelectorAll('.room-type-select');
+            roomSelects.forEach((select) => {
+                const currentValue = preserveValue !== null ? preserveValue : select.value;
+                const wasDisabled = select.disabled;
+                select.innerHTML = '<option value="">Select</option>';
+                
+                // Add available rooms
+                availableRooms.forEach((room) => {
+                    const option = document.createElement('option');
+                    option.value = room.id;
+                    option.textContent = room.title;
+                    select.appendChild(option);
+                });
+                
+                // If preserveValue is set (from calendar selection) and not in available list, add it
+                if (preserveValue !== null && !availableRooms.find(r => r.id == preserveValue)) {
+                    const preservedRoomType = roomsList.find(r => r.id == preserveValue);
+                    if (preservedRoomType) {
+                        const option = document.createElement('option');
+                        option.value = preservedRoomType.id;
+                        option.textContent = preservedRoomType.title;
+                        select.appendChild(option);
+                    }
+                }
+                
+                // Restore previous selection if still available, or if preserveValue is set (from calendar selection)
+                if (currentValue) {
+                    if (availableRooms.find(r => r.id == currentValue) || preserveValue !== null) {
+                        select.value = currentValue;
+                    }
+                }
+                
+                // Restore disabled state if it was disabled
+                if (wasDisabled) {
+                    select.disabled = true;
+                    select.style.backgroundColor = '#e9ecef';
+                    select.style.cursor = 'not-allowed';
+                }
+            });
+        }
+
+        // checkOutDateInput change handler is already added above with updateRoomTypeOptions
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -3642,7 +4192,45 @@ document.addEventListener('DOMContentLoaded', function () {
                 form.reset();
                 detailsContainer.innerHTML = '';
                 rowIndex = 0;
-                addRoomRow();
+                
+                // Clear selected room numbers
+                selectedRoomNumbers.clear();
+                renderSelectedRoomNumbers();
+                if (roomNumberSearchInput) {
+                    roomNumberSearchInput.value = '';
+                    roomNumberSearchInput.removeAttribute('readonly');
+                    roomNumberSearchInput.style.backgroundColor = '';
+                    roomNumberSearchInput.style.cursor = '';
+                }
+                if (roomNumberDropdown) {
+                    roomNumberDropdown.style.display = 'none';
+                    roomNumberDropdown.innerHTML = '';
+                }
+                
+                // Reset date fields to editable state
+                const checkInInput = document.getElementById('quickCheckInDate');
+                const checkOutInput = document.getElementById('quickCheckOutDate');
+                if (checkInInput) {
+                    checkInInput.removeAttribute('readonly');
+                    checkInInput.style.backgroundColor = '';
+                    checkInInput.style.cursor = '';
+                }
+                if (checkOutInput) {
+                    checkOutInput.removeAttribute('readonly');
+                    checkOutInput.style.backgroundColor = '';
+                    checkOutInput.style.cursor = '';
+                }
+                // Set default dates (today and tomorrow)
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const todayIso = today.toISOString().split('T')[0];
+                const tomorrowIso = tomorrow.toISOString().split('T')[0];
+                if (checkInInput) checkInInput.value = todayIso;
+                if (checkOutInput) checkOutInput.value = tomorrowIso;
+                addRoomRow({}, false);
+                updateRoomTypeOptions();
+                updateRoomNumberOptions();
                 recalcSummary();
                 if (typeof window.fetchCalendarDataForCurrentView === 'function') {
                     window.fetchCalendarDataForCurrentView();
@@ -3655,7 +4243,244 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        addRoomRow();
+        // Set default dates on initial load if not set
+        if (!checkInDateInput?.value || !checkOutDateInput?.value) {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const todayIso = today.toISOString().split('T')[0];
+            const tomorrowIso = tomorrow.toISOString().split('T')[0];
+            if (checkInDateInput) checkInDateInput.value = todayIso;
+            if (checkOutDateInput) checkOutDateInput.value = tomorrowIso;
+        }
+        
+        // Handle modal show event - set default dates if opened directly
+        const reservationModal = document.getElementById('reservation-pop');
+        if (reservationModal) {
+            reservationModal.addEventListener('show.bs.modal', () => {
+                // Check if dates are from calendar selection
+                isDatesFromCalendarSelection = reservationModal.dataset.datesFromCalendar === 'true';
+                
+                // Also check if dates are already populated and readonly (indicates calendar selection)
+                const hasDates = checkInDateInput?.value && checkOutDateInput?.value;
+                if (!isDatesFromCalendarSelection && hasDates && checkInDateInput?.hasAttribute('readonly')) {
+                    isDatesFromCalendarSelection = true;
+                    reservationModal.dataset.datesFromCalendar = 'true';
+                }
+                
+                // Check if dates are already set (from calendar selection)
+                if (!checkInDateInput?.value || !checkOutDateInput?.value) {
+                    // No dates set - set default dates (today and tomorrow) and make editable
+                    const today = new Date();
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const todayIso = today.toISOString().split('T')[0];
+                    const tomorrowIso = tomorrow.toISOString().split('T')[0];
+                    populateQuickReservationDates(todayIso, tomorrowIso, false);
+                    isDatesFromCalendarSelection = false;
+                    reservationModal.dataset.datesFromCalendar = 'false';
+                    updateRoomTypeOptions();
+                }
+                
+                // Clear and re-add room row with correct flag
+                detailsContainer.innerHTML = '';
+                rowIndex = 0;
+                
+                // If dates are from calendar selection, find room type ID first
+                let roomTypeId = null;
+                if (isDatesFromCalendarSelection) {
+                    const selectionContext = getSelectionContextForModal();
+                    let contextRoomNumberIds = selectionContext?.roomNumberIds || [];
+                    
+                    // Also check if roomId is directly available in the context (for single date clicks)
+                    if (contextRoomNumberIds.length === 0 && selectionContext?.roomId) {
+                        contextRoomNumberIds = [selectionContext.roomId];
+                    }
+                    
+                    // Find room type ID from the selected room number
+                    if (contextRoomNumberIds.length > 0 && roomsData && Array.isArray(roomsData)) {
+                        const firstRoomNumberId = Number(contextRoomNumberIds[0]);
+                        // Find room type ID by matching room number ID in roomsData
+                        for (const category of roomsData) {
+                            if (category.rooms && Array.isArray(category.rooms)) {
+                                const room = category.rooms.find(r => Number(r.id) === firstRoomNumberId);
+                                if (room) {
+                                    // Find matching room type in quickReservationRooms by title
+                                    const matchingRoomType = quickReservationRooms.find((rt) => rt.title === category.title);
+                                    if (matchingRoomType) {
+                                        roomTypeId = matchingRoomType.id;
+                                        break; // Found it, no need to continue
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Add room row with pre-selected room type if from calendar selection
+                addRoomRow(roomTypeId ? { room_id: roomTypeId } : {}, isDatesFromCalendarSelection);
+                
+                // Update room type options, preserving the room type ID if from calendar selection
+                updateRoomTypeOptions(isDatesFromCalendarSelection && roomTypeId ? roomTypeId : null);
+                
+                if (!isDatesFromCalendarSelection) {
+                    updateRoomsMaxValues();
+                }
+                
+                // If dates are from calendar selection, make room type readonly
+                if (isDatesFromCalendarSelection && roomTypeId) {
+                    const roomTypeSelect = detailsContainer.querySelector('.room-type-select');
+                    if (roomTypeSelect) {
+                        // Ensure value is set
+                        roomTypeSelect.value = roomTypeId;
+                        // Make it readonly
+                        roomTypeSelect.disabled = true;
+                        roomTypeSelect.style.backgroundColor = '#e9ecef';
+                        roomTypeSelect.style.cursor = 'not-allowed';
+                        
+                        // Update rate options for the selected room type
+                        updateRateOptions(detailsContainer.querySelector('.room-detail-item'), roomTypeId, null);
+                    }
+                }
+                
+                // If dates are from calendar selection, populate room numbers
+                if (isDatesFromCalendarSelection) {
+                    const selectionContext = getSelectionContextForModal();
+                    let contextRoomNumberIds = selectionContext?.roomNumberIds || [];
+                    
+                    // If no room number IDs in array, check if roomId is directly available (for single date clicks)
+                    if (contextRoomNumberIds.length === 0 && selectionContext?.roomId) {
+                        contextRoomNumberIds = [selectionContext.roomId];
+                    }
+                    
+                    // Populate selected room numbers from context
+                    selectedRoomNumbers.clear();
+                    if (contextRoomNumberIds.length > 0 && roomsData && Array.isArray(roomsData)) {
+                        contextRoomNumberIds.forEach((roomNumberId) => {
+                            const roomNumberIdNum = Number(roomNumberId);
+                            // Find room number in roomsData
+                            for (const category of roomsData) {
+                                if (category.rooms && Array.isArray(category.rooms)) {
+                                    const room = category.rooms.find(r => Number(r.id) === roomNumberIdNum);
+                                    if (room) {
+                                        selectedRoomNumbers.set(roomNumberIdNum, {
+                                            id: roomNumberIdNum,
+                                            number: room.number,
+                                            roomType: category.title
+                                        });
+                                        break; // Found it, no need to continue searching
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    renderSelectedRoomNumbers();
+                    
+                    // Update room number options (will set readonly state)
+                    updateRoomNumberOptions();
+                } else {
+                    // Clear selected room numbers if not from calendar selection
+                    selectedRoomNumbers.clear();
+                    renderSelectedRoomNumbers();
+                    
+                    // Update room number options
+                    updateRoomNumberOptions();
+                }
+                
+                recalcSummary();
+            });
+            
+            // Handle modal close event - reset form fields
+            reservationModal.addEventListener('hidden.bs.modal', () => {
+                // Reset form
+                form.reset();
+                clearErrors();
+                
+                // Clear room details container
+                detailsContainer.innerHTML = '';
+                rowIndex = 0;
+                
+                // Reset flag
+                isDatesFromCalendarSelection = false;
+                if (reservationModal) {
+                    reservationModal.dataset.datesFromCalendar = 'false';
+                }
+                
+                // Clear selected room numbers
+                selectedRoomNumbers.clear();
+                renderSelectedRoomNumbers();
+                if (roomNumberSearchInput) {
+                    roomNumberSearchInput.value = '';
+                    roomNumberSearchInput.removeAttribute('readonly');
+                    roomNumberSearchInput.style.backgroundColor = '';
+                    roomNumberSearchInput.style.cursor = '';
+                }
+                if (roomNumberDropdown) {
+                    roomNumberDropdown.style.display = 'none';
+                    roomNumberDropdown.innerHTML = '';
+                }
+                
+                // Reset room type select to editable (will be set when re-adding row)
+                // This is handled by addRoomRow({}, false) below
+                
+                // Re-add initial room row after clearing
+                addRoomRow({}, false);
+                
+                // Reset date fields to editable state
+                if (checkInDateInput) {
+                    checkInDateInput.removeAttribute('readonly');
+                    checkInDateInput.style.backgroundColor = '';
+                    checkInDateInput.style.cursor = '';
+                }
+                if (checkOutDateInput) {
+                    checkOutDateInput.removeAttribute('readonly');
+                    checkOutDateInput.style.backgroundColor = '';
+                    checkOutDateInput.style.cursor = '';
+                }
+                
+                // Reset to default dates (today and tomorrow)
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const todayIso = today.toISOString().split('T')[0];
+                const tomorrowIso = tomorrow.toISOString().split('T')[0];
+                if (checkInDateInput) checkInDateInput.value = '';
+                if (checkOutDateInput) checkOutDateInput.value = '';
+                
+                // Reset guest fields
+                const guestNameInput = document.getElementById('quickGuestName');
+                const guestEmailInput = document.getElementById('quickGuestEmail');
+                const guestMobileInput = document.getElementById('quickGuestMobile');
+                const guestGenderInput = document.getElementById('quickGuestGender');
+                if (guestNameInput) guestNameInput.value = '';
+                if (guestEmailInput) guestEmailInput.value = '';
+                if (guestMobileInput) guestMobileInput.value = '';
+                if (guestGenderInput) guestGenderInput.value = '';
+                
+                // Reset time fields
+                const checkInTimeInput = document.getElementById('quickCheckInTime');
+                const checkOutTimeInput = document.getElementById('quickCheckOutTime');
+                if (checkInTimeInput) checkInTimeInput.value = '';
+                if (checkOutTimeInput) checkOutTimeInput.value = '';
+                
+                // Reset notes
+                const notesInput = document.getElementById('quickNotes');
+                if (notesInput) notesInput.value = '';
+                
+                // Reset summary fields
+                if (totalRoomsInput) totalRoomsInput.value = '0';
+                if (totalAmountLabel) totalAmountLabel.textContent = '0.00';
+                if (paidAmountLabel) paidAmountLabel.textContent = '0.00';
+                if (balanceAmountLabel) balanceAmountLabel.textContent = '0.00';
+                
+                // Update room type options
+                updateRoomTypeOptions();
+                recalcSummary();
+            });
+        }
+        
+        addRoomRow({}, isDatesFromCalendarSelection);
+        updateRoomTypeOptions();
         recalcSummary();
     }
 
