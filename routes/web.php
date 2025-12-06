@@ -11,4 +11,6 @@ Route::get('/calendar/data',[UsersController::class, 'calendarData'])->name('cal
 Route::get('/booking/{id}',[UsersController::class, 'getBookingDetails'])->name('booking.details');
 Route::post('/save-maintenance-block',[MaintenanceBlockController::class, 'saveMaintenanceBlock'])->name('saveMaintenanceBlock');
 Route::post('/quick-reservations',[UsersController::class, 'saveQuickReservation'])->name('quickReservations.store');
+Route::get('/order-payments/{orderId}',[UsersController::class, 'getOrderPayments'])->name('order.payments');
+Route::post('/booking/save-charges-payments',[UsersController::class, 'saveBookingChargesPayments'])->name('booking.saveChargesPayments');
 Route::get('/logout',[UsersController::class, 'logout'])->name('logout');

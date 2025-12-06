@@ -17,6 +17,7 @@ use App\Models\RoomPrices;
 use App\Models\RoomNumbers;
 use App\Models\MaintenanceBlocks;
 use App\Models\Orders;
+use App\Models\OrderPayments;
 use Session;
 use Validator;
 use Mail;
@@ -38,6 +39,7 @@ class UsersController extends Controller{
 	private static $RoomNumbersModel;
 	private static $MaintenanceBlocksModel;
     private static $OrdersModel;
+    private static $OrderPaymentsModel;
     public function __construct(){
         self::$UserModel = new User();
 		self::$TokenHelper = new TokenHelper();
@@ -47,6 +49,7 @@ class UsersController extends Controller{
 		self::$RoomNumbersModel = new RoomNumbers();
 		self::$MaintenanceBlocksModel = new MaintenanceBlocks();
         self::$OrdersModel = new Orders();
+        self::$OrderPaymentsModel = new OrderPayments();
     }
 	
     #login page
@@ -638,6 +641,20 @@ class UsersController extends Controller{
             'room_details.*.children' => 'nullable|integer|min:0',
             'room_details.*.price' => 'required|numeric|min:0',
             'room_details.*.room_number_ids' => 'nullable|string',
+            // Charges and Payments validation
+            'charges' => 'nullable|array',
+            'charges.*.comment' => 'required|string|max:255',
+            'charges.*.amount' => 'required|numeric|min:0',
+            'payments' => 'nullable|array',
+            'payments.*.type' => 'required|string|in:Cash,Online',
+            'payments.*.method' => 'required|string|max:50',
+            'payments.*.comment' => 'nullable|string|max:255',
+            'payments.*.amount' => 'required|numeric|min:0',
+            // Calculated totals
+            'room_total' => 'nullable|numeric|min:0',
+            'total_charges' => 'nullable|numeric|min:0',
+            'total_payments' => 'nullable|numeric|min:0',
+            'grand_total' => 'nullable|numeric|min:0',
         ],[
             'check_in_date.required' => 'Please select check-in date.',
             'check_in_date.after_or_equal' => 'Check-in date cannot be in the past.',
@@ -655,6 +672,11 @@ class UsersController extends Controller{
         }
 
         $input = $request->all();
+        
+        // Debug: Log incoming charges and payments
+        \Log::info('Quick Reservation Charges:', $input['charges'] ?? []);
+        \Log::info('Quick Reservation Payments:', $input['payments'] ?? []);
+        
         $vendorId = $request->session()->get('vendor_id');
         $roomDetails = collect($input['room_details']);
         $roomIds = $roomDetails->pluck('room_id')->unique()->values();
@@ -778,6 +800,12 @@ class UsersController extends Controller{
         $reservationType = strtoupper($input['reservation_type']);
         $createdOrders = [];
         $totalAmount = 0;
+        
+        // Get charges and payments from input
+        $charges = $input['charges'] ?? [];
+        $payments = $input['payments'] ?? [];
+        $totalChargesAmount = collect($charges)->sum('amount');
+        $totalPaymentsAmount = collect($payments)->sum('amount');
 
         DB::beginTransaction();
         try{
@@ -790,7 +818,9 @@ class UsersController extends Controller{
                 $adults = (int)$detail['adults'];
                 $children = (int)($detail['children'] ?? 0);
                 $subTotal = $pricePerNight * $roomsCount * $nightCount;
-                $grandTotal = $subTotal;
+                
+                // Calculate grand total including charges
+                $grandTotal = $subTotal + $totalChargesAmount;
                 $totalAmount += $grandTotal;
 
                 $paddedNo = str_pad($nextInvoiceNo, 3, "0", STR_PAD_LEFT);
@@ -855,6 +885,32 @@ class UsersController extends Controller{
                     'amount' => $grandTotal,
                     'room_title' => $rooms[$detail['room_id']]->title
                 ];
+                
+                // Save charges to order_payments table (only for first order)
+                if($index === 0 && !empty($charges)){
+                    foreach($charges as $charge){
+                        self::$OrderPaymentsModel->CreateRecord([
+                            'order_id' => $orderRecord->id,
+                            'type' => 'Charge',
+                            'comment' => $charge['comment'] ?? null,
+                            'amount' => $charge['amount'],
+                        ]);
+                    }
+                }
+                
+                // Save payments to order_payments table (only for first order)
+                if($index === 0 && !empty($payments)){
+                    foreach($payments as $payment){
+                        self::$OrderPaymentsModel->CreateRecord([
+                            'order_id' => $orderRecord->id,
+                            'type' => 'Payment',
+                            'payment_type' => $payment['type'],
+                            'payment_method' => $payment['method'],
+                            'comment' => $payment['comment'] ?? null,
+                            'amount' => $payment['amount'],
+                        ]);
+                    }
+                }
             }
 
             DB::commit();
@@ -863,7 +919,10 @@ class UsersController extends Controller{
             report($throwable);
             return response()->json([
                 'success' => false,
-                'message' => 'Unable to save reservation right now. Please try again.'
+                'message' => 'Unable to save reservation right now. Please try again.',
+                'error' => $throwable->getMessage(),
+                'line' => $throwable->getLine(),
+                'file' => basename($throwable->getFile())
             ], 500);
         }
 
@@ -875,6 +934,135 @@ class UsersController extends Controller{
                 'orders' => $createdOrders
             ]
         ]);
+    }
+
+    public function getOrderPayments($orderId){
+        try {
+            \Log::info('Fetching order payments for order_id: ' . $orderId);
+            
+            $payments = self::$OrderPaymentsModel->GetRecords([
+                'order_id' => $orderId
+            ]);
+            
+            \Log::info('Found payments count: ' . $payments->count());
+            \Log::info('Payments data: ' . json_encode($payments));
+            
+            return response()->json([
+                'success' => true,
+                'payments' => $payments
+            ]);
+        } catch(\Throwable $throwable) {
+            \Log::error('Error fetching order payments: ' . $throwable->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch payment history',
+                'error' => $throwable->getMessage(),
+                'line' => $throwable->getLine(),
+                'file' => basename($throwable->getFile())
+            ], 500);
+        }
+    }
+
+    public function saveBookingChargesPayments(Request $request){
+        if(!$request->session()->has('vendor_login_id')){
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        \Log::info('saveBookingChargesPayments Request:', $request->all());
+
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'charges' => 'nullable|array',
+            'charges.*.comment' => 'required|string',
+            'charges.*.amount' => 'required|numeric|min:0',
+            'payments' => 'nullable|array',
+            'payments.*.type' => 'required|in:Cash,Online',
+            'payments.*.method' => 'required|string',
+            'payments.*.comment' => 'nullable|string',
+            'payments.*.amount' => 'required|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $orderId = $request->order_id;
+            $charges = $request->charges ?? [];
+            $payments = $request->payments ?? [];
+            
+            \Log::info('Processing order_id: ' . $orderId);
+            \Log::info('Charges count: ' . count($charges));
+            \Log::info('Payments count: ' . count($payments));
+            
+            $totalCharges = 0;
+            $totalPayments = 0;
+
+            // Save charges
+            foreach($charges as $charge){
+                self::$OrderPaymentsModel->CreateRecord([
+                    'order_id' => $orderId,
+                    'type' => 'Charge',
+                    'payment_type' => null,
+                    'payment_method' => null,
+                    'comment' => $charge['comment'],
+                    'amount' => $charge['amount'],
+                ]);
+                $totalCharges += $charge['amount'];
+            }
+
+            // Save payments
+            foreach($payments as $payment){
+                self::$OrderPaymentsModel->CreateRecord([
+                    'order_id' => $orderId,
+                    'type' => 'Payment',
+                    'payment_type' => $payment['type'],
+                    'payment_method' => $payment['method'],
+                    'comment' => $payment['comment'] ?? null,
+                    'amount' => $payment['amount'],
+                ]);
+                $totalPayments += $payment['amount'];
+            }
+
+            // Update order grand_total
+            $order = self::$OrdersModel->GetRecordById($orderId);
+            \Log::info('Order found:', ['order' => $order]);
+            
+            if($order){
+                $newGrandTotal = $order->grand_total + $totalCharges;
+                
+                \Log::info('Updating order:', [
+                    'old_grand_total' => $order->grand_total,
+                    'total_charges' => $totalCharges,
+                    'new_grand_total' => $newGrandTotal,
+                    'total_payments' => $totalPayments
+                ]);
+                
+                self::$OrdersModel->UpdateRecord([
+                    'id' => $orderId,
+                    'grand_total' => $newGrandTotal,
+                ]);
+                
+                \Log::info('Order updated successfully');
+            } else {
+                \Log::warning('Order not found for id: ' . $orderId);
+            }
+
+            DB::commit();
+            \Log::info('Transaction committed successfully');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Charges and payments saved successfully'
+            ]);
+        } catch(\Throwable $throwable) {
+            DB::rollBack();
+            report($throwable);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save charges and payments',
+                'error' => $throwable->getMessage(),
+                'line' => $throwable->getLine(),
+                'file' => basename($throwable->getFile())
+            ], 500);
+        }
     }
 
     # admin dashboard page
@@ -981,6 +1169,7 @@ class UsersController extends Controller{
                 'success' => true,
                 'booking' => [
                     'id' => 'ORD-'.$order->id,
+                    'order_id' => $order->id,
                     'type' => 'reservation',
                     'invoice_id' => $order->invoice_id,
                     'guest_name' => $order->billing_name ?? 'Guest',

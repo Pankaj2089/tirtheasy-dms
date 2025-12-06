@@ -275,7 +275,7 @@ $siteUrl = env('APP_URL');
                         aria-selected="true">Normal Booking</button>
                     <button class="nav-link" id="nav-profile-tab" data-bs-toggle="tab"
                         data-bs-target="#nav-profile" type="button" role="tab" aria-controls="nav-profile"
-                        aria-selected="false">Group Booking</button>
+                        aria-selected="false">Payment Details</button>
                 </div>
             </nav>
             <div class="tab-content bl-tab-cont" id="nav-tabContent">
@@ -355,7 +355,7 @@ $siteUrl = env('APP_URL');
                             </div>
                             <div class="col-md-3 d-flex flex-column">
                                 <label class="form-label">Mobile</label>
-                                <input type="tel" class="form-control" id="quickGuestMobile" name="guest[mobile]" placeholder="+91 0123456789">
+                                <input type="tel" class="form-control" maxlength="10" id="quickGuestMobile" name="guest[mobile]" placeholder="0123456789">
                             </div>
                         </div>
 
@@ -376,7 +376,162 @@ $siteUrl = env('APP_URL');
                                 </div>
                             </div>
                             <div class="col-md-4 d-flex justify-content-end gap-2">
-                                <button type="submit" class="theme-btn text-white ms-auto text-center text-decoration-none" id="quickReservationSubmitBtn">
+                                <button type="button" class="theme-btn text-white ms-auto text-center text-decoration-none" id="quickReservationPaymentBtn">
+                                    Payment
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">
+                            <div class="row">
+                                <div class="col-md-6 px-0 border-box">
+                                    <div class="sub-heading px-3 d-flex justify-content-between">
+                                        <p class="mb-0">Date : <strong id="quickPaymentDate">-</strong></p>
+                                    </div>
+                                    <hr class="mt-2 mb-0">
+                                    <div class="p-details">
+                                        <h5 class="mt-3 mb-2 ">Details</h5>
+                                        <ul class="list-unstyled">
+                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                                                <p>Room Price</p>
+                                                <p><strong id="quickPaymentRoomPrice">Rs. 0</strong></p>
+                                            </li>
+                                            <!-- <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                                                <p>Total Charges</p>
+                                                <p><strong id="quickPaymentTotalCharges">Rs. 0</strong></p>
+                                            </li> -->
+                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                                                <p>Total SGST</p>
+                                                <p><strong id="quickPaymentSGST">Rs. 0</strong></p>
+                                            </li>
+                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                                                <p>Total CGST</p>
+                                                <p><strong id="quickPaymentCGST">Rs. 0</strong></p>
+                                            </li>
+                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                                                <p>Extra Charges</p>
+                                                <p><strong id="quickPaymentExtraCharges">Rs. 0</strong></p>
+                                            </li>
+                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                                                <p>Total Payable</p>
+                                                <p><strong id="quickPaymentTotalPayable">Rs. 0</strong></p>
+                                            </li>
+                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                                                <p>Balance</p>
+                                                <p><strong id="quickPaymentBalance">Rs. 0</strong></p>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <h5 class="mt-4 mb-2">Folio History</h5>
+                                    <div class="p-details">
+                                        <!-- Charges & Payments History with Summary -->
+                                        <div id="quickFolioHistoryDetails"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 bl-main-popup">
+                                    <div class="p-details">
+                                        <h5 class="mt-3 mb-2">Add Charges</h5>
+                                        <div class="row align-items-center mb-3">
+                                            <div class="col-md-6 d-flex flex-column mb-3">
+                                                <div class="shadow-sm p-2 rounded bg-light border">
+                                                    <label for="quickChargeComment" class="form-label mt-0">Comment</label>
+                                                    <input type="text" id="quickChargeComment" class="form-control bg-white" placeholder="Enter comment">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 d-flex flex-column mb-3">
+                                                <div class="shadow-sm p-2 rounded bg-light border">
+                                                    <label for="quickChargeAmount" class="form-label mt-0">Amount</label>
+                                                    <input type="number" id="quickChargeAmount" class="form-control bg-white" placeholder="0.00" step="0.01" min="0">
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-12 d-flex align-items-center justify-content-end">
+                                                <div class="bl-btn">
+                                                    <button type="button" id="quickChargeAddBtn" class="theme-btn-sm rounded text-white text-center text-decoration-none border-0">Add Charge</button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Added Charges List -->
+                                            <div class="col-md-12 mt-3">
+                                                <div id="quickChargesList"></div>
+                                            </div>
+
+                                            <div class="col-md-12 px-0">
+                                                <hr>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                        <div class="p-details">
+                                        <h5 class="mt-3 mb-2">Add Payment</h5>
+                                        <div class="row align-items-center mb-3">
+                                            <div class="col-md-6 d-flex flex-column mb-3">
+                                                <div class="shadow-sm p-2 rounded bg-light border">
+                                                    <label for="quickPaymentType" class="form-label mt-0">Type</label>
+                                                    <select id="quickPaymentType" class="form-control bg-white">
+                                                        <option value="">Select Type</option>
+                                                        <option value="Cash">Cash</option>
+                                                        <option value="Online">Online</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 d-flex flex-column mb-3">
+                                                <div class="shadow-sm p-2 rounded bg-light border">
+                                                    <label for="quickPaymentMethod" class="form-label mt-0">Method</label>
+                                                    <select id="quickPaymentMethod" class="form-control bg-white" disabled>
+                                                        <option value="">Select Method</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 d-flex flex-column mb-3">
+                                                <div class="shadow-sm p-2 rounded bg-light border">
+                                                    <label for="quickPaymentComment" class="form-label mt-0">Comment</label>
+                                                    <input type="text" id="quickPaymentComment" placeholder="Add comment..." class="form-control bg-white">
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6 d-flex flex-column mb-3">
+                                                <div class="shadow-sm p-2 rounded bg-light border">
+                                                    <label for="quickPaymentAmount" class="form-label mt-0">Amount</label>
+                                                    <input type="number" id="quickPaymentAmount" class="form-control bg-white" placeholder="0.00" step="0.01" min="0">
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-12 d-flex align-items-center justify-content-end">
+                                                <div class="bl-btn">
+                                                    <button type="button" id="quickPaymentAddBtn" class="theme-btn-sm rounded text-white text-center text-decoration-none border-0">Add Payment</button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Added Payments List -->
+                                            <div class="col-md-12 mt-3">
+                                                <div id="quickPaymentsList"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+
+                        <div class="row justify-content-between   position-absolute align-items-center reservation-footer w-100">
+                            <hr>
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between align-items-center my-1">
+                                    <p class="mb-0 fw-bold">Total</p>
+                                    <p class="mb-0 fw-bold">Rs. <span id="quickPaymentFooterTotal">0.00</span></p>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center my-1">
+                                    <p class="mb-0">Paid</p>
+                                    <p class="mb-0">Rs. <span id="quickPaymentFooterPaid">0.00</span></p>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center my-1">
+                                    <p class="mb-0 text-info">Balance</p>
+                                    <p class="mb-0 text-info">Rs. <span id="quickPaymentFooterBalance">0.00</span></p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 d-flex justify-content-end gap-2">
+                                <button type="button" class="theme-btn text-white ms-auto text-center text-decoration-none" id="quickPaymentConfirmBtn" disabled style="opacity: 0.5; cursor: not-allowed;">
                                     <span class="label-default">Confirm</span>
                                     <span class="label-loading d-none">
                                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -385,10 +540,6 @@ $siteUrl = env('APP_URL');
                                 </button>
                             </div>
                         </div>
-                    </form>
-                </div>
-                <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">
-
                 </div>
             </div>
         </div>
@@ -481,7 +632,7 @@ $siteUrl = env('APP_URL');
                     <div class="tab-content " id="nav-tabContent">
                         <div class="tab-pane p-3 fade active show book-cont" id="Booking" role="tabpanel"
                             aria-labelledby="Booking-tab">
-                            <div class="bottom pb-2">
+                            <div class="bottom pb-4">
                                 <ul class="d-flex flex-wrap justify-content-between">
                                     <li class="mb-4">
                                         <p>Reservation Number</p>
@@ -522,7 +673,7 @@ $siteUrl = env('APP_URL');
                                 </ul>
                             </div>
                         </div>
-                        <div class="tab-pane p-2 fade" id="Payment" role="tabpanel"
+                        <div class="tab-pane p-4 fade" id="Payment" role="tabpanel"
                             aria-labelledby="Payment-tab">
                             <div class="row">
                                 <div class="col-md-6 px-0 border-box">
@@ -538,10 +689,10 @@ $siteUrl = env('APP_URL');
                                                 <p>Room Price</p>
                                                 <p><strong id="paymentRoomPrice">Rs. 0</strong></p>
                                             </li>
-                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                                            <!-- <li class="d-flex align-items-center justify-content-between my-2 px-2">
                                                 <p>Total Charges</p>
                                                 <p><strong id="paymentTotalCharges">Rs. 0</strong></p>
-                                            </li>
+                                            </li> -->
                                             <li class="d-flex align-items-center justify-content-between my-2 px-2">
                                                 <p>Total SGST</p>
                                                 <p><strong id="paymentSGST">Rs. 0</strong></p>
@@ -565,161 +716,89 @@ $siteUrl = env('APP_URL');
                                         </ul>
                                     </div>
                                     <div class="p-details">
-                                        <h5 class="mt-4 mb-2 ms-3">Folio History</h5>
-                                        <ul class="list-unstyled">
-                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
-                                                <p>Room Price</p>
-                                                <p>Rs. 2000</p>
-                                            </li>
-                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
-                                                <p>Total Charges</p>
-                                                <p>Rs. 2000</p>
-                                            </li>
-                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
-                                                <p>Total SGST</p>
-                                                <p>Rs. 50</p>
-                                            </li>
-                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
-                                                <p>Total CGST</p>
-                                                <p>Rs. 50</p>
-                                            </li>
-                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
-                                                <p>Extra Charges</p>
-                                                <p>Rs. 400</p>
-                                            </li>
-                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
-                                                <p>Total Payable</p>
-                                                <p>Rs. 2500</p>
-                                            </li>
-                                            <li class="d-flex align-items-center justify-content-between my-2 px-2">
-                                                <p>Balance</p>
-                                                <p>Rs. 2000</p>
-                                            </li>
-                                        </ul>
+                                        <h5 class="mt-4 mb-2">Folio History</h5>
+                                        <!-- Existing & New Charges & Payments History -->
+                                        <div id="bookingFolioHistoryDetails"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6 bl-main-popup">
                                     <div class="p-details">
                                         <h5 class="mt-3 mb-2">Add Charges</h5>
                                         <div class="row align-items-center mb-3">
-
                                             <div class="col-md-6 d-flex flex-column mb-3">
                                                 <div class="shadow-sm p-2 rounded bg-light border">
-                                                <label for="check-out" class="form-label mt-0">Room Charges</label>
-                                                <select name="" id="" class="form-control bg-white">
-                                                    <option value="Normal">Normal</option>
-                                                    <option value="Mint">Mint</option>
-                                                    <option value="Deluxe">Deluxe</option>
-                                                    <option value="Non Deluxe">Non Deluxe</option>
-                                                </select>
+                                                    <label for="bookingChargeComment" class="form-label mt-0">Comment</label>
+                                                    <input type="text" id="bookingChargeComment" class="form-control bg-white" placeholder="Enter comment">
                                                 </div>
                                             </div>
                                             <div class="col-md-6 d-flex flex-column mb-3">
                                                 <div class="shadow-sm p-2 rounded bg-light border">
-                                                <label for="check-out" class="form-label mt-0">Room Quantity</label>
-                                                <select name="" id="" class="form-control bg-white">
-                                                    <option value="Select">Select</option>
-                                                </select>
-                                            </div>
-                                            </div>
-                                            <div class="col-md-6 d-flex flex-column mb-3">
-                                                <div class="shadow-sm p-2 rounded bg-light border">
-                                                <label for="check-out" class="form-label mt-0">Comment</label>
-                                                <select name="" id="" class="form-control bg-white">
-                                                    <option value="1">1</option>
-                                                    <option value="2">2</option>
-                                                    <option value="3">3</option>
-                                                    <option value="4">4</option>
-                                                    <option value="5">5</option>
-                                                </select>
-                                            </div>
+                                                    <label for="bookingChargeAmount" class="form-label mt-0">Amount</label>
+                                                    <input type="number" id="bookingChargeAmount" class="form-control bg-white" placeholder="0.00" step="0.01" min="0">
+                                                </div>
                                             </div>
 
-                                            <div class="col-md-6 d-flex flex-column mb-3">
-                                                <div class="shadow-sm p-2 rounded bg-light border">
-                                                <label for="check-out" class="form-label mt-0">Amount</label>
-                                                <select name="" id="" class="form-control bg-white">
-                                                    <option value="1">1</option>
-                                                    <option value="2">2</option>
-                                                    <option value="3">3</option>
-                                                    <option value="4">4</option>
-                                                    <option value="5">5</option>
-                                                </select>
-                                            </div>
-                                            </div>
-
-                                            <div class="col-md-6 ms-auto d-flex align-items-center justify-content-end">
+                                            <div class="col-md-12 d-flex align-items-center justify-content-end">
                                                 <div class="bl-btn">
-                                                    <a href=""
-                                                        class="theme-outline-btn-sm rounded text-center text-decoration-none">Cancel</a>
+                                                    <button type="button" id="bookingChargeAddBtn" class="theme-btn-sm rounded text-white text-center text-decoration-none border-0">Add Charge</button>
                                                 </div>
-                                                <div class="bl-btn">
-                                                    <a href=""
-                                                        class="theme-btn-sm rounded text-white text-center text-decoration-none">Save</a>
-                                                </div>
+                                            </div>
+
+                                            <!-- Added Charges List -->
+                                            <div class="col-md-12 mt-3">
+                                                <div id="bookingChargesList"></div>
                                             </div>
 
                                             <div class="col-md-12 px-0">
                                                 <hr>
                                             </div>
-
-
-
                                         </div>
                                     </div>
 
                                         <div class="p-details">
                                         <h5 class="mt-3 mb-2">Add Payment</h5>
                                         <div class="row align-items-center mb-3">
-
                                             <div class="col-md-6 d-flex flex-column mb-3">
                                                 <div class="shadow-sm p-2 rounded bg-light border">
-                                                    <label for="check-out" class="form-label mt-0">Type</label>
-                                                <select name="" id="" class="form-control bg-white">
-                                                    <option value="Normal">Normal</option>
-                                                    <option value="Mint">Mint</option>
-                                                    <option value="Deluxe">Deluxe</option>
-                                                    <option value="Non Deluxe">Non Deluxe</option>
-                                                </select>
+                                                    <label for="bookingPaymentType" class="form-label mt-0">Type</label>
+                                                    <select id="bookingPaymentType" class="form-control bg-white">
+                                                        <option value="">Select Type</option>
+                                                        <option value="Cash">Cash</option>
+                                                        <option value="Online">Online</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div class="col-md-6 d-flex flex-column mb-3">
                                                 <div class="shadow-sm p-2 rounded bg-light border">
-                                                <label for="check-out" class="form-label mt-0">Method</label>
-                                                <select name="" id="" class="form-control bg-white">
-                                                    <option value="Select">Select</option>
-                                                </select>
+                                                    <label for="bookingPaymentMethod" class="form-label mt-0">Method</label>
+                                                    <select id="bookingPaymentMethod" class="form-control bg-white" disabled>
+                                                        <option value="">Select Method</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div class="col-md-6 d-flex flex-column mb-3">
                                                 <div class="shadow-sm p-2 rounded bg-light border">
-                                                <label for="check-out" class="form-label mt-0">Comment</label>
-                                                <input type="text" placeholder="Add comm..." class="form-control bg-white comment">
-                                            </div>
+                                                    <label for="bookingPaymentComment" class="form-label mt-0">Comment</label>
+                                                    <input type="text" id="bookingPaymentComment" placeholder="Add comment..." class="form-control bg-white">
+                                                </div>
                                             </div>
 
                                             <div class="col-md-6 d-flex flex-column mb-3">
                                                 <div class="shadow-sm p-2 rounded bg-light border">
-                                                <label for="check-out" class="form-label mt-0">Amount</label>
-                                                <select name="" id="" class="form-control bg-white">
-                                                    <option value="1">1</option>
-                                                    <option value="2">2</option>
-                                                    <option value="3">3</option>
-                                                    <option value="4">4</option>
-                                                    <option value="5">5</option>
-                                                </select>
-                                            </div>
+                                                    <label for="bookingPaymentAmount" class="form-label mt-0">Amount</label>
+                                                    <input type="number" id="bookingPaymentAmount" class="form-control bg-white" placeholder="0.00" step="0.01" min="0">
+                                                </div>
                                             </div>
 
-                                            <div class="col-md-6 ms-auto d-flex align-items-center justify-content-end">
+                                            <div class="col-md-12 d-flex align-items-center justify-content-end">
                                                 <div class="bl-btn">
-                                                    <a href=""
-                                                        class="theme-outline-btn-sm rounded text-center text-decoration-none">Cancel</a>
+                                                    <button type="button" id="bookingPaymentAddBtn" class="theme-btn-sm rounded text-white text-center text-decoration-none border-0">Add Payment</button>
                                                 </div>
-                                                <div class="bl-btn">
-                                                    <a href=""
-                                                        class="theme-btn-sm rounded text-white text-center text-decoration-none">Save</a>
-                                                </div>
+                                            </div>
+
+                                            <!-- Added Payments List -->
+                                            <div class="col-md-12 mt-3">
+                                                <div id="bookingPaymentsList"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -749,8 +828,8 @@ $siteUrl = env('APP_URL');
                         </div>
                         <div class="col-md-3">
                             <div class="d-flex w-100 justify-content-end">
-                                <a href=""
-                                    class="theme-btn-sm rounded text-white text-center text-decoration-none">Payment</a>
+                                <button type="button" id="bookingSaveBtn" onclick="saveBookingChargesPayments()"
+                                    class="theme-btn-sm rounded text-white text-center text-decoration-none border-0">Save Changes</button>
                             </div>
                         </div>
                     </div>
@@ -1701,7 +1780,7 @@ function blockDates(event) {
             if (typeof swal === 'function') {
                 swal("Error!", error.message || 'Unable to block dates. Please try again.', "error");
             } else {
-                alert(error.message || 'Unable to block dates. Please try again.');
+                swal("Error!", error.message || 'Unable to block dates. Please try again.');
             }
         })
         .finally(() => {
@@ -2094,8 +2173,8 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Calendar data refresh failed:', error);
             if (typeof swal === 'function') {
                 swal("Error!", error.message || 'Unable to load calendar data.', "error");
-            } else {
-                alert(error.message || 'Unable to load calendar data.');
+            } else {                
+                swal("Error!", error.message || 'Unable to load calendar data.');
             }
         } finally {
             setCalendarLoading(false);
@@ -3149,57 +3228,83 @@ document.addEventListener('DOMContentLoaded', function () {
         const isMaintenance = booking.type === 'maintenance' || booking.id?.startsWith('MB-');
         
         // Populate header
-        document.getElementById('bookingGuestName').textContent = booking.guest_name || (isMaintenance ? 'Maintenance Block' : '-');
-        document.getElementById('bookingFolio').textContent = booking.invoice_id || booking.id || '-';
-        document.getElementById('bookingDate').textContent = formatDate(booking.created_at || booking.check_in_date);
+        const bookingGuestName = document.getElementById('bookingGuestName');
+        const bookingFolio = document.getElementById('bookingFolio');
+        const bookingDate = document.getElementById('bookingDate');
+        
+        if (bookingGuestName) bookingGuestName.textContent = booking.guest_name || (isMaintenance ? 'Maintenance Block' : '-');
+        if (bookingFolio) bookingFolio.textContent = booking.invoice_id || booking.id || '-';
+        if (bookingDate) bookingDate.textContent = formatDate(booking.created_at || booking.check_in_date);
         
         // Populate Booking Details tab
-        document.getElementById('bookingReservationNumber').textContent = booking.invoice_id || booking.id || '-';
-        document.getElementById('bookingArrivalDate').textContent = formatDateTime(booking.check_in_date, booking.check_in_time);
-        document.getElementById('bookingBookingDate').textContent = formatDate(booking.created_at);
-        document.getElementById('bookingDepartureDate').textContent = formatDateTime(booking.check_out_date, booking.check_out_time);
+        const bookingReservationNumber = document.getElementById('bookingReservationNumber');
+        const bookingArrivalDate = document.getElementById('bookingArrivalDate');
+        const bookingBookingDate = document.getElementById('bookingBookingDate');
+        const bookingDepartureDate = document.getElementById('bookingDepartureDate');
+        const bookingRatePlan = document.getElementById('bookingRatePlan');
+        const bookingRoomNumber = document.getElementById('bookingRoomNumber');
+        const bookingRoomType = document.getElementById('bookingRoomType');
+        const bookingNumberOfGuest = document.getElementById('bookingNumberOfGuest');
+        const bookingRoomBooked = document.getElementById('bookingRoomBooked');
+        
+        if (bookingReservationNumber) bookingReservationNumber.textContent = booking.invoice_id || booking.id || '-';
+        if (bookingArrivalDate) bookingArrivalDate.textContent = formatDateTime(booking.check_in_date, booking.check_in_time);
+        if (bookingBookingDate) bookingBookingDate.textContent = formatDate(booking.created_at);
+        if (bookingDepartureDate) bookingDepartureDate.textContent = formatDateTime(booking.check_out_date, booking.check_out_time);
         
         // For maintenance blocks, show "Maintenance" as rate plan, otherwise show reservation type
         if (isMaintenance) {
-            document.getElementById('bookingRatePlan').textContent = 'Maintenance';
+            if (bookingRatePlan) bookingRatePlan.textContent = 'Maintenance';
         } else {
-            document.getElementById('bookingRatePlan').textContent = booking.reservation_type ? booking.reservation_type.charAt(0).toUpperCase() + booking.reservation_type.slice(1) : '-';
+            if (bookingRatePlan) bookingRatePlan.textContent = booking.reservation_type ? booking.reservation_type.charAt(0).toUpperCase() + booking.reservation_type.slice(1) : '-';
         }
         
         // Room number - handle both array and single value
         const roomNumberDisplay = Array.isArray(booking.room_numbers) 
             ? booking.room_numbers.join(', ') 
             : (booking.room_number || '-');
-        document.getElementById('bookingRoomNumber').textContent = roomNumberDisplay;
-        document.getElementById('bookingRoomType').textContent = booking.room_type || '-';
+        if (bookingRoomNumber) bookingRoomNumber.textContent = roomNumberDisplay;
+        if (bookingRoomType) bookingRoomType.textContent = booking.room_type || '-';
         
         // For maintenance blocks, these fields don't apply
         if (isMaintenance) {
-            document.getElementById('bookingNumberOfGuest').textContent = '-';
-            document.getElementById('bookingRoomBooked').textContent = '-';
+            if (bookingNumberOfGuest) bookingNumberOfGuest.textContent = '-';
+            if (bookingRoomBooked) bookingRoomBooked.textContent = '-';
         } else {
-            document.getElementById('bookingNumberOfGuest').textContent = booking.adults ? `${booking.adults}${booking.children ? ' + ' + booking.children + ' children' : ''}` : '-';
-            document.getElementById('bookingRoomBooked').textContent = booking.rooms || '-';
+            if (bookingNumberOfGuest) bookingNumberOfGuest.textContent = booking.adults ? `${booking.adults}${booking.children ? ' + ' + booking.children + ' children' : ''}` : '-';
+            if (bookingRoomBooked) bookingRoomBooked.textContent = booking.rooms || '-';
         }
         
         // Populate Payment Details tab
-        document.getElementById('paymentFolio').textContent = booking.invoice_id || booking.id || '-';
-        document.getElementById('paymentDate').textContent = formatDate(booking.created_at || booking.check_in_date);
+        const paymentFolio = document.getElementById('paymentFolio');
+        const paymentDate = document.getElementById('paymentDate');
+        
+        if (paymentFolio) paymentFolio.textContent = booking.invoice_id || booking.id || '-';
+        if (paymentDate) paymentDate.textContent = formatDate(booking.created_at || booking.check_in_date);
         
         // For maintenance blocks, payment details don't apply
         if (isMaintenance) {
-            document.getElementById('paymentRoomPrice').textContent = formatCurrency(0);
-            document.getElementById('paymentTotalCharges').textContent = formatCurrency(0);
-            document.getElementById('paymentSGST').textContent = formatCurrency(0);
-            document.getElementById('paymentCGST').textContent = formatCurrency(0);
-            document.getElementById('paymentExtraCharges').textContent = formatCurrency(0);
-            document.getElementById('paymentTotalPayable').textContent = formatCurrency(0);
-            document.getElementById('paymentBalance').textContent = formatCurrency(0);
+            const paymentRoomPrice = document.getElementById('paymentRoomPrice');
+            const paymentTotalCharges = document.getElementById('paymentTotalCharges');
+            const paymentSGST = document.getElementById('paymentSGST');
+            const paymentCGST = document.getElementById('paymentCGST');
+            const paymentExtraCharges = document.getElementById('paymentExtraCharges');
+            const paymentTotalPayable = document.getElementById('paymentTotalPayable');
+            const paymentBalance = document.getElementById('paymentBalance');
+            const footerTotal = document.getElementById('footerTotal');
+            const footerPaid = document.getElementById('footerPaid');
+            const footerBalance = document.getElementById('footerBalance');
             
-            // For maintenance blocks, set footer to zero
-            document.getElementById('footerTotal').textContent = formatCurrency(0);
-            document.getElementById('footerPaid').textContent = formatCurrency(0);
-            document.getElementById('footerBalance').textContent = formatCurrency(0);
+            if (paymentRoomPrice) paymentRoomPrice.textContent = formatCurrency(0);
+            if (paymentTotalCharges) paymentTotalCharges.textContent = formatCurrency(0);
+            if (paymentSGST) paymentSGST.textContent = formatCurrency(0);
+            if (paymentCGST) paymentCGST.textContent = formatCurrency(0);
+            if (paymentExtraCharges) paymentExtraCharges.textContent = formatCurrency(0);
+            if (paymentTotalPayable) paymentTotalPayable.textContent = formatCurrency(0);
+            if (paymentBalance) paymentBalance.textContent = formatCurrency(0);
+            if (footerTotal) footerTotal.textContent = formatCurrency(0);
+            if (footerPaid) footerPaid.textContent = formatCurrency(0);
+            if (footerBalance) footerBalance.textContent = formatCurrency(0);
         } else {
             // Get grand_total from orders table - ensure it's a number
             const grandTotal = parseFloat(booking.grand_total) || 0;
@@ -3207,30 +3312,472 @@ document.addEventListener('DOMContentLoaded', function () {
             const subTotal = parseFloat(booking.sub_total) || 0;
             const discount = parseFloat(booking.discount) || 0;
             
-            document.getElementById('paymentRoomPrice').textContent = formatCurrency(roomPrice);
-            document.getElementById('paymentTotalCharges').textContent = formatCurrency(subTotal);
-            document.getElementById('paymentSGST').textContent = formatCurrency(0); // SGST not in current data
-            document.getElementById('paymentCGST').textContent = formatCurrency(0); // CGST not in current data
-            document.getElementById('paymentExtraCharges').textContent = formatCurrency(0); // Extra charges not in current data
-            // Total Payable shows grand_total from orders table
-            document.getElementById('paymentTotalPayable').textContent = formatCurrency(grandTotal);
+            const paymentRoomPrice = document.getElementById('paymentRoomPrice');
+            const paymentTotalCharges = document.getElementById('paymentTotalCharges');
+            const paymentSGST = document.getElementById('paymentSGST');
+            const paymentCGST = document.getElementById('paymentCGST');
+            const paymentExtraCharges = document.getElementById('paymentExtraCharges');
+            const paymentTotalPayable = document.getElementById('paymentTotalPayable');
+            const paymentBalance = document.getElementById('paymentBalance');
+            const footerTotal = document.getElementById('footerTotal');
+            const footerPaid = document.getElementById('footerPaid');
+            const footerBalance = document.getElementById('footerBalance');
+            
+            if (paymentRoomPrice) paymentRoomPrice.textContent = formatCurrency(roomPrice);
+            if (paymentTotalCharges) paymentTotalCharges.textContent = formatCurrency(subTotal);
+            if (paymentSGST) paymentSGST.textContent = formatCurrency(0); // SGST not in current data
+            if (paymentCGST) paymentCGST.textContent = formatCurrency(0); // CGST not in current data
+            if (paymentExtraCharges) paymentExtraCharges.textContent = formatCurrency(0); // Extra charges not in current data
+            if (paymentTotalPayable) paymentTotalPayable.textContent = formatCurrency(grandTotal);
+            
             const balance = grandTotal - discount;
-            document.getElementById('paymentBalance').textContent = formatCurrency(balance);
+            if (paymentBalance) paymentBalance.textContent = formatCurrency(balance);
             
             // Populate footer section with dynamic values
-            document.getElementById('footerTotal').textContent = formatCurrency(grandTotal);
+            if (footerTotal) footerTotal.textContent = formatCurrency(grandTotal);
             
             // Calculate paid amount based on payment_status
-            // If payment is completed/paid, paid = grand_total, otherwise paid = 0
             const paymentStatus = (booking.payment_status || '').toUpperCase();
             const isPaid = paymentStatus === 'PAID' || paymentStatus === 'COMPLETED' || paymentStatus === 'SUCCESS';
             const paidAmount = isPaid ? grandTotal : 0;
-            const footerBalance = isPaid ? 0 : balance;
+            const footerBalanceAmount = isPaid ? 0 : balance;
             
-            document.getElementById('footerPaid').textContent = formatCurrency(paidAmount);
-            document.getElementById('footerBalance').textContent = formatCurrency(footerBalance);
+            if (footerPaid) footerPaid.textContent = formatCurrency(paidAmount);
+            if (footerBalance) footerBalance.textContent = formatCurrency(footerBalanceAmount);
+        }
+        
+        // Store current booking data for calculations
+        currentBookingData = booking;
+        
+        // Fetch and display existing charges and payments
+        // Use numeric order_id if available, otherwise skip for maintenance blocks
+        if (booking.order_id) {
+            loadBookingPaymentHistory(booking.order_id);
+        } else if (!isMaintenance) {
+            // If no order_id but not maintenance, try to extract from id
+            const numericId = booking.id?.toString().replace(/[^0-9]/g, '');
+            if (numericId) {
+                loadBookingPaymentHistory(numericId);
+            } else {
+                console.warn('No valid order ID found for booking:', booking);
+                renderBookingFolioHistory(); // Show empty state
+            }
         }
     }
+    
+    // Booking Modal - Charges & Payments Functionality
+    let currentBookingId = null;
+    let currentBookingData = null;
+    let bookingCharges = [];
+    let bookingPayments = [];
+    
+    // Load existing charges and payments from database
+    async function loadBookingPaymentHistory(orderId) {
+        console.log('Loading payment history for order ID:', orderId);
+        currentBookingId = orderId;
+        bookingCharges = [];
+        bookingPayments = [];
+        
+        try {
+            const url = `{{ url('/order-payments') }}/${orderId}`;
+            console.log('Fetching from URL:', url);
+            const response = await fetch(url);
+            const data = await response.json();
+            console.log('Response data:', data);
+            
+            if (data.success && data.payments) {
+                console.log('Found payments:', data.payments.length);
+                console.log('Payments data:', data.payments);
+                // Separate charges and payments
+                data.payments.forEach(item => {
+                    console.log('Processing item:', item);
+                    if (item.type === 'Charge') {
+                        const charge = {
+                            id: item.id,
+                            comment: item.comment || 'Charge',
+                            amount: parseFloat(item.amount) || 0,
+                            display_date: new Date(item.created_at).toLocaleDateString('en-GB'),
+                            existing: true
+                        };
+                        console.log('Adding charge:', charge);
+                        bookingCharges.push(charge);
+                    } else if (item.type === 'Payment') {
+                        const payment = {
+                            id: item.id,
+                            type: item.payment_type || 'Cash',
+                            method: item.payment_method || 'Cash',
+                            comment: item.comment || 'Payment',
+                            amount: parseFloat(item.amount) || 0,
+                            display_date: new Date(item.created_at).toLocaleDateString('en-GB'),
+                            existing: true
+                        };
+                        console.log('Adding payment:', payment);
+                        bookingPayments.push(payment);
+                    }
+                });
+                console.log('Total charges loaded:', bookingCharges.length);
+                console.log('Total payments loaded:', bookingPayments.length);
+            } else {
+                console.warn('No payments data in response or not successful');
+            }
+        } catch (error) {
+            console.error('Error loading payment history:', error);
+        }
+        
+        console.log('Rendering lists...');
+        renderBookingChargesList();
+        renderBookingPaymentsList();
+        renderBookingFolioHistory();
+        recalcBookingSummary();
+        console.log('Rendering complete');
+    }
+    
+    // Handle payment type change
+    document.getElementById('bookingPaymentType').addEventListener('change', function() {
+        const methodSelect = document.getElementById('bookingPaymentMethod');
+        methodSelect.innerHTML = '<option value="">Select Method</option>';
+        
+        if (this.value === 'Cash') {
+            methodSelect.innerHTML += '<option value="Cash" selected>Cash</option>';
+            methodSelect.disabled = true;
+            methodSelect.value = 'Cash';
+        } else if (this.value === 'Online') {
+            methodSelect.innerHTML += `
+                <option value="UPI">UPI</option>
+                <option value="Card">Card</option>
+                <option value="Net Banking">Net Banking</option>
+            `;
+            methodSelect.disabled = false;
+        } else {
+            methodSelect.disabled = true;
+        }
+    });
+    
+    // Add Charge
+    document.getElementById('bookingChargeAddBtn').addEventListener('click', function() {
+        const commentInput = document.getElementById('bookingChargeComment');
+        const amountInput = document.getElementById('bookingChargeAmount');
+        
+        const comment = commentInput.value.trim();
+        const amount = parseFloat(amountInput.value);
+        
+        if (!comment) {
+            swal("Error!", 'Please enter a comment');    
+            return;
+        }
+        
+        if (!amount || amount <= 0) {
+            swal("Error!", 'Please enter a valid amount');
+            return;
+        }
+        
+        bookingCharges.push({
+            comment,
+            amount,
+            display_date: new Date().toLocaleDateString('en-GB'),
+            existing: false
+        });
+        
+        commentInput.value = '';
+        amountInput.value = '';
+        
+        renderBookingChargesList();
+        renderBookingFolioHistory();
+        recalcBookingSummary();
+    });
+    
+    // Add Payment
+    document.getElementById('bookingPaymentAddBtn').addEventListener('click', function() {
+        const typeSelect = document.getElementById('bookingPaymentType');
+        const methodSelect = document.getElementById('bookingPaymentMethod');
+        const commentInput = document.getElementById('bookingPaymentComment');
+        const amountInput = document.getElementById('bookingPaymentAmount');
+        
+        const type = typeSelect.value;
+        const method = methodSelect.value;
+        const comment = commentInput.value.trim();
+        const amount = parseFloat(amountInput.value);
+        
+        if (!type) {
+            swal("Error!", 'Please select a payment type');
+            return;
+        }
+        
+        if (!method) {
+            swal("Error!", 'Please select a payment method');
+            return;
+        }
+        
+        if (!amount || amount <= 0) {
+            swal("Error!", 'Please enter a valid amount');
+            return;
+        }
+        
+        bookingPayments.push({
+            type,
+            method,
+            comment: comment || 'Payment',
+            amount,
+            display_date: new Date().toLocaleDateString('en-GB'),
+            existing: false
+        });
+        
+        typeSelect.value = '';
+        methodSelect.value = '';
+        methodSelect.disabled = true;
+        commentInput.value = '';
+        amountInput.value = '';
+        
+        renderBookingPaymentsList();
+        renderBookingFolioHistory();
+        recalcBookingSummary();
+    });
+    
+    // Render charges list
+    function renderBookingChargesList() {
+        const container = document.getElementById('bookingChargesList');
+        if (!container) return;
+        
+        const newCharges = bookingCharges.filter(c => !c.existing);
+        
+        if (newCharges.length === 0) {
+            container.innerHTML = '<p class="text-muted small mb-0">No new charges added</p>';
+            return;
+        }
+        
+        container.innerHTML = newCharges.map((charge, index) => `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <div>
+                    <strong>${charge.comment}</strong>
+                    <br><small style="font-size: 12px;">${charge.display_date}</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="me-3">Rs. ${charge.amount.toFixed(2)}</span>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeBookingCharge(${bookingCharges.indexOf(charge)})">X</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Render payments list
+    function renderBookingPaymentsList() {
+        const container = document.getElementById('bookingPaymentsList');
+        if (!container) return;
+        
+        const newPayments = bookingPayments.filter(p => !p.existing);
+        
+        if (newPayments.length === 0) {
+            container.innerHTML = '<p class="text-muted small mb-0">No new payments added</p>';
+            return;
+        }
+        
+        container.innerHTML = newPayments.map((payment, index) => `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <div>
+                    <strong>${payment.comment}</strong>
+                    <br><small>${payment.type} - ${payment.method}</small>
+                    <br><small style="font-size: 12px;">${payment.display_date}</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="me-3">Rs. ${payment.amount.toFixed(2)}</span>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeBookingPayment(${bookingPayments.indexOf(payment)})">X</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Render folio history
+    function renderBookingFolioHistory() {
+        const container = document.getElementById('bookingFolioHistoryDetails');
+        if (!container) return;
+        
+        const formatAmount = (amount) => {
+            return parseFloat(amount).toFixed(2);
+        };
+        
+        let html = '<ul class="list-unstyled">';
+        
+        // Show all charges (existing + new)
+        bookingCharges.forEach((charge) => {
+            html += `
+            <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                <div>
+                    <p class="mb-0">${charge.comment}</p>
+                    <small class="text-muted" style="font-size: 12px;">${charge.display_date}</small>
+                </div>
+                <p class="mb-0 text-danger"><strong>+ Rs. ${formatAmount(charge.amount)}</strong></p>
+            </li>
+            `;
+        });
+        
+        // Show all payments (existing + new)
+        bookingPayments.forEach((payment) => {
+            html += `
+            <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                <div>
+                    <p class="mb-0">${payment.type} - ${payment.method}</p>
+                    <small class="text-muted" style="font-size: 12px;">${payment.comment} | ${payment.display_date}</small>
+                </div>
+                <p class="mb-0 text-success">- Rs. ${formatAmount(payment.amount)}</p>
+            </li>
+            `;
+        });
+        
+        html += '</ul>';
+        
+        if (bookingCharges.length === 0 && bookingPayments.length === 0) {
+            html = '<p class="text-muted">No charges or payments recorded yet.</p>';
+        }
+        
+        container.innerHTML = html;
+    }
+    
+    // Calculate summary
+    function recalcBookingSummary() {
+        if (!currentBookingData) return;
+        
+        const formatCurrency = (amount) => {
+            if (!amount && amount !== 0) return 'Rs. 0';
+            return `Rs. ${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        };
+        
+        // Calculate new charges and payments only (existing ones are already in grand_total)
+        const newCharges = bookingCharges.filter(c => !c.existing);
+        const newPayments = bookingPayments.filter(p => !p.existing);
+        
+        const totalNewCharges = newCharges.reduce((sum, c) => sum + c.amount, 0);
+        const totalNewPayments = newPayments.reduce((sum, p) => sum + p.amount, 0);
+        
+        // Calculate total existing payments from database
+        const totalExistingPayments = bookingPayments.filter(p => p.existing).reduce((sum, p) => sum + p.amount, 0);
+        
+        // Get original values
+        const originalGrandTotal = parseFloat(currentBookingData.grand_total) || 0;
+        
+        // Calculate new totals
+        const newGrandTotal = originalGrandTotal + totalNewCharges;
+        // Balance = Grand Total - All Payments (existing + new)
+        const newBalance = newGrandTotal - (totalExistingPayments + totalNewPayments);
+        
+        // Update Extra Charges display (show total new charges)
+        const paymentExtraCharges = document.getElementById('paymentExtraCharges');
+        if (paymentExtraCharges) {
+            paymentExtraCharges.textContent = formatCurrency(totalNewCharges);
+        }
+        
+        // Update Total Payable
+        const paymentTotalPayable = document.getElementById('paymentTotalPayable');
+        if (paymentTotalPayable) {
+            paymentTotalPayable.textContent = formatCurrency(newGrandTotal);
+        }
+        
+        // Update Balance
+        const paymentBalance = document.getElementById('paymentBalance');
+        if (paymentBalance) {
+            paymentBalance.textContent = formatCurrency(newBalance);
+        }
+        
+        // Update footer
+        const footerTotal = document.getElementById('footerTotal');
+        const footerPaid = document.getElementById('footerPaid');
+        const footerBalance = document.getElementById('footerBalance');
+        
+        if (footerTotal) footerTotal.textContent = formatCurrency(newGrandTotal);
+        if (footerPaid) footerPaid.textContent = formatCurrency(totalNewPayments);
+        if (footerBalance) footerBalance.textContent = formatCurrency(newBalance);
+    }
+    
+    // Remove charge
+    window.removeBookingCharge = function(index) {
+        bookingCharges.splice(index, 1);
+        renderBookingChargesList();
+        renderBookingFolioHistory();
+        recalcBookingSummary();
+    };
+    
+    // Remove payment
+    window.removeBookingPayment = function(index) {
+        bookingPayments.splice(index, 1);
+        renderBookingPaymentsList();
+        renderBookingFolioHistory();
+        recalcBookingSummary();
+    };
+    
+    // Save charges and payments to database
+    window.saveBookingChargesPayments = async function() {
+        if (!currentBookingId) {
+            swal("Error!", 'No booking selected');
+            return false;
+        }
+        
+        if (!currentBookingData || currentBookingData.type === 'maintenance') {
+            swal("Error!", 'Cannot add charges or payments to maintenance blocks');
+            return false;
+        }
+        
+        const newCharges = bookingCharges.filter(c => !c.existing);
+        const newPayments = bookingPayments.filter(p => !p.existing);
+        
+        if (newCharges.length === 0 && newPayments.length === 0) {
+            swal("Error!", 'No new charges or payments to save');
+            return true; // Nothing to save
+        }
+        
+        try {
+            const payload = {
+                order_id: currentBookingId,
+                charges: newCharges,
+                payments: newPayments
+            };
+            
+            console.log('Saving charges and payments:', payload);
+            
+            const response = await fetch('{{ route("booking.saveChargesPayments") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+            
+            if (data.success) {
+                swal("Success!", 'Charges and payments saved successfully!');
+                // Reload the payment history to show all as existing
+                await loadBookingPaymentHistory(currentBookingId);
+                return true;
+            } else {
+                let errorMessage = data.message || 'Failed to save charges and payments';
+                
+                // Show validation errors if available
+                if (data.errors) {
+                    const errorDetails = Object.values(data.errors).flat().join('\n');
+                    errorMessage += '\n\nValidation Errors:\n' + errorDetails;
+                }
+                
+                // Show technical error if available
+                if (data.error) {
+                    errorMessage += '\n\nError: ' + data.error;
+                    if (data.file && data.line) {
+                        errorMessage += '\nFile: ' + data.file + ' (Line ' + data.line + ')';
+                    }
+                }
+                
+                console.error('Save failed:', data);
+                swal("Error!", errorMessage);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error saving charges and payments:', error);
+            swal("Error!", 'An error occurred while saving: ' + error.message);
+            return false;
+        }
+    };
 
     function handleCellMouseDown(event, room, category, iso) {
         if (event) {
@@ -3291,8 +3838,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // Cancel selection if any date in the range is booked
             resetDragging();
             updateSelectionClasses();
-            // Optionally show an alert to the user
-            alert('Cannot select dates that are already booked. Please choose different dates.');
+            // Optionally show an alert to the user                            
+            swal("Error!", 'Cannot select dates that are already booked. Please choose different dates.');
             return;
         }
 
@@ -3757,6 +4304,88 @@ document.addEventListener('DOMContentLoaded', function () {
             if (balanceAmountLabel) {
                 balanceAmountLabel.textContent = formatAmount(totalAmount);
             }
+            
+            // Update Payment Details tab
+            updatePaymentDetails(totalAmount);
+            
+            // Update folio history with charges and payments
+            updatePaymentCalculations();
+        }
+
+        function updatePaymentDetails(totalAmount) {
+            // Get current date
+            const currentDate = new Date().toLocaleDateString('en-GB');
+            
+            // Update Payment Details section
+            const quickPaymentDate = document.getElementById('quickPaymentDate');
+            const quickPaymentRoomPrice = document.getElementById('quickPaymentRoomPrice');
+            const quickPaymentTotalCharges = document.getElementById('quickPaymentTotalCharges');
+            const quickPaymentTotalPayable = document.getElementById('quickPaymentTotalPayable');
+            const quickPaymentBalance = document.getElementById('quickPaymentBalance');
+            
+            // Update Folio History section
+            const quickFolioRoomPrice = document.getElementById('quickFolioRoomPrice');
+            const quickFolioTotalCharges = document.getElementById('quickFolioTotalCharges');
+            const quickFolioSGST = document.getElementById('quickFolioSGST');
+            const quickFolioCGST = document.getElementById('quickFolioCGST');
+            const quickFolioExtraCharges = document.getElementById('quickFolioExtraCharges');
+            const quickFolioTotalPayable = document.getElementById('quickFolioTotalPayable');
+            const quickFolioBalance = document.getElementById('quickFolioBalance');
+            
+            // Update Payment Details footer
+            const quickPaymentFooterTotal = document.getElementById('quickPaymentFooterTotal');
+            const quickPaymentFooterPaid = document.getElementById('quickPaymentFooterPaid');
+            const quickPaymentFooterBalance = document.getElementById('quickPaymentFooterBalance');
+            
+            if (quickPaymentDate) {
+                quickPaymentDate.textContent = currentDate;
+            }
+            if (quickPaymentRoomPrice) {
+                quickPaymentRoomPrice.textContent = 'Rs. ' + formatAmount(totalAmount);
+            }
+            if (quickPaymentTotalCharges) {
+                quickPaymentTotalCharges.textContent = 'Rs. ' + formatAmount(totalAmount);
+            }
+            if (quickPaymentTotalPayable) {
+                quickPaymentTotalPayable.textContent = 'Rs. ' + formatAmount(totalAmount);
+            }
+            if (quickPaymentBalance) {
+                quickPaymentBalance.textContent = 'Rs. ' + formatAmount(totalAmount);
+            }
+            
+            // Update Folio History section with same values
+            if (quickFolioRoomPrice) {
+                quickFolioRoomPrice.textContent = 'Rs. ' + formatAmount(totalAmount);
+            }
+            if (quickFolioTotalCharges) {
+                quickFolioTotalCharges.textContent = 'Rs. ' + formatAmount(totalAmount);
+            }
+            if (quickFolioSGST) {
+                quickFolioSGST.textContent = 'Rs. 0';
+            }
+            if (quickFolioCGST) {
+                quickFolioCGST.textContent = 'Rs. 0';
+            }
+            if (quickFolioExtraCharges) {
+                quickFolioExtraCharges.textContent = 'Rs. 0';
+            }
+            if (quickFolioTotalPayable) {
+                quickFolioTotalPayable.textContent = 'Rs. ' + formatAmount(totalAmount);
+            }
+            if (quickFolioBalance) {
+                quickFolioBalance.textContent = 'Rs. ' + formatAmount(totalAmount);
+            }
+            
+            // Update footer values
+            if (quickPaymentFooterTotal) {
+                quickPaymentFooterTotal.textContent = formatAmount(totalAmount);
+            }
+            if (quickPaymentFooterPaid) {
+                quickPaymentFooterPaid.textContent = formatAmount(0);
+            }
+            if (quickPaymentFooterBalance) {
+                quickPaymentFooterBalance.textContent = formatAmount(totalAmount);
+            }
         }
 
         function showErrors(messages) {
@@ -3873,6 +4502,35 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Removed add room button functionality - single entry only
+        
+        // Alias for form data collection (used by confirm button)
+        const collectFormData = buildPayload;
+
+        // Function to check if room type is selected and update Payment Details tab state
+        function updatePaymentDetailsTabState() {
+            const paymentDetailsTab = document.getElementById('nav-profile-tab');
+            if (!paymentDetailsTab) {
+                return;
+            }
+            
+            // Check if any room type is selected
+            const roomTypeSelect = detailsContainer.querySelector('.room-type-select');
+            const isRoomTypeSelected = roomTypeSelect && roomTypeSelect.value;
+            
+            if (isRoomTypeSelected) {
+                // Enable the Payment Details tab
+                paymentDetailsTab.classList.remove('disabled');
+                paymentDetailsTab.removeAttribute('aria-disabled');
+                paymentDetailsTab.style.pointerEvents = '';
+                paymentDetailsTab.style.opacity = '';
+            } else {
+                // Disable the Payment Details tab
+                paymentDetailsTab.classList.add('disabled');
+                paymentDetailsTab.setAttribute('aria-disabled', 'true');
+                paymentDetailsTab.style.pointerEvents = 'none';
+                paymentDetailsTab.style.opacity = '0.5';
+            }
+        }
 
         detailsContainer.addEventListener('change', (event) => {
             const row = event.target.closest('.room-detail-item');
@@ -3900,6 +4558,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 // Update room number options when room type changes
                 updateRoomNumberOptions();
+                
+                // Update Payment Details tab state
+                updatePaymentDetailsTabState();
             } else if (event.target.classList.contains('room-rate-select')) {
                 updateRateOptions(row, row.querySelector('.room-type-select')?.value, event.target.value);
             }
@@ -4187,7 +4848,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (typeof swal === 'function') {
                     swal("Success!", body.message || 'Reservation saved successfully.', "success");
                 } else {
-                    alert(body.message || 'Reservation saved successfully.');
+                    alert(body.message || 'Reservation saved successfully.');   
                 }
                 form.reset();
                 detailsContainer.innerHTML = '';
@@ -4327,6 +4988,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     updateRoomsMaxValues();
                 }
                 
+                // Update Payment Details tab state on modal show
+                updatePaymentDetailsTabState();
+                
                 // If dates are from calendar selection, make room type readonly
                 if (isDatesFromCalendarSelection && roomTypeId) {
                     const roomTypeSelect = detailsContainer.querySelector('.room-type-select');
@@ -4389,6 +5053,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 recalcSummary();
             });
+            
+            // Handle Payment Details tab click - update values
+            const paymentDetailsTab = document.getElementById('nav-profile-tab');
+            if (paymentDetailsTab) {
+                paymentDetailsTab.addEventListener('shown.bs.tab', () => {
+                    // Recalculate and update payment details when tab is shown
+                    const nights = calculateNights();
+                    let totalAmount = 0;
+                    detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
+                        const qty = parseInt(row.querySelector('.room-qty-input')?.value, 10) || 0;
+                        const price = parseFloat(row.querySelector('.room-price-input')?.value) || 0;
+                        const lineTotal = qty * price * nights;
+                        totalAmount += lineTotal;
+                    });
+                    updatePaymentDetails(totalAmount);
+                    updatePaymentCalculations(); // Update folio history with charges and payments
+                });
+            }
             
             // Handle modal close event - reset form fields
             reservationModal.addEventListener('hidden.bs.modal', () => {
@@ -4473,15 +5155,520 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (paidAmountLabel) paidAmountLabel.textContent = '0.00';
                 if (balanceAmountLabel) balanceAmountLabel.textContent = '0.00';
                 
+                // Reset Payment Details section
+                const quickPaymentDate = document.getElementById('quickPaymentDate');
+                const quickPaymentRoomPrice = document.getElementById('quickPaymentRoomPrice');
+                const quickPaymentTotalCharges = document.getElementById('quickPaymentTotalCharges');
+                const quickPaymentTotalPayable = document.getElementById('quickPaymentTotalPayable');
+                const quickPaymentBalance = document.getElementById('quickPaymentBalance');
+                const quickPaymentFooterTotal = document.getElementById('quickPaymentFooterTotal');
+                const quickPaymentFooterPaid = document.getElementById('quickPaymentFooterPaid');
+                const quickPaymentFooterBalance = document.getElementById('quickPaymentFooterBalance');
+                
+                if (quickPaymentDate) quickPaymentDate.textContent = '-';
+                if (quickPaymentRoomPrice) quickPaymentRoomPrice.textContent = 'Rs. 0';
+                if (quickPaymentTotalCharges) quickPaymentTotalCharges.textContent = 'Rs. 0';
+                if (quickPaymentTotalPayable) quickPaymentTotalPayable.textContent = 'Rs. 0';
+                if (quickPaymentBalance) quickPaymentBalance.textContent = 'Rs. 0';
+                if (quickPaymentFooterTotal) quickPaymentFooterTotal.textContent = '0.00';
+                if (quickPaymentFooterPaid) quickPaymentFooterPaid.textContent = '0.00';
+                if (quickPaymentFooterBalance) quickPaymentFooterBalance.textContent = '0.00';
+                
                 // Update room type options
                 updateRoomTypeOptions();
                 recalcSummary();
             });
         }
         
+        // Quick Reservation - Charges and Payments functionality (initialize before recalcSummary)
+        const quickCharges = [];
+        const quickPayments = [];
+        
         addRoomRow({}, isDatesFromCalendarSelection);
         updateRoomTypeOptions();
         recalcSummary();
+        
+        const chargeCommentInput = document.getElementById('quickChargeComment');
+        const chargeAmountInput = document.getElementById('quickChargeAmount');
+        const chargeAddBtn = document.getElementById('quickChargeAddBtn');
+        const chargesListDiv = document.getElementById('quickChargesList');
+        
+        const paymentTypeSelect = document.getElementById('quickPaymentType');
+        const paymentMethodSelect = document.getElementById('quickPaymentMethod');
+        const paymentCommentInput = document.getElementById('quickPaymentComment');
+        const paymentAmountInput = document.getElementById('quickPaymentAmount');
+        const paymentAddBtn = document.getElementById('quickPaymentAddBtn');
+        const paymentsListDiv = document.getElementById('quickPaymentsList');
+        
+        const quickPaymentBtn = document.getElementById('quickReservationPaymentBtn');
+        const quickConfirmBtn = document.getElementById('quickPaymentConfirmBtn');
+        const paymentDetailsTab = document.getElementById('nav-profile-tab');
+        
+        // Payment Type/Method logic
+        if (paymentTypeSelect && paymentMethodSelect) {
+            paymentTypeSelect.addEventListener('change', function() {
+                const type = this.value;
+                paymentMethodSelect.innerHTML = '<option value="">Select Method</option>';
+                
+                if (type === 'Cash') {
+                    paymentMethodSelect.innerHTML = '<option value="Cash">Cash</option>';
+                    paymentMethodSelect.value = 'Cash';
+                    paymentMethodSelect.disabled = true;
+                    paymentMethodSelect.style.backgroundColor = '#e9ecef';
+                } else if (type === 'Online') {
+                    paymentMethodSelect.innerHTML = `
+                        <option value="">Select Method</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Card">Card</option>
+                        <option value="Net Banking">Net Banking</option>
+                    `;
+                    paymentMethodSelect.disabled = false;
+                    paymentMethodSelect.style.backgroundColor = '';
+                } else {
+                    paymentMethodSelect.disabled = true;
+                    paymentMethodSelect.style.backgroundColor = '#e9ecef';
+                }
+            });
+        }
+        
+        // Payment button - auto-open Payment Details tab with validation
+        if (quickPaymentBtn && paymentDetailsTab) {
+            quickPaymentBtn.addEventListener('click', function() {
+                // Validate Guest Information
+                const guestName = document.getElementById('quickGuestName')?.value.trim();
+                const guestMobile = document.getElementById('quickGuestMobile')?.value.trim();
+                
+                if (!guestName) {
+                    
+                    swal("Error!", 'Please enter guest name before proceeding to payment.');
+                    document.getElementById('quickGuestName')?.focus();
+                    return;
+                }
+                
+                if (!guestMobile) {
+                    swal("Error!", 'Please enter guest mobile number before proceeding to payment.');
+                    document.getElementById('quickGuestMobile')?.focus();
+                    return;
+                }
+                
+                // Trigger Payment Details tab
+                const tabTrigger = new bootstrap.Tab(paymentDetailsTab);
+                tabTrigger.show();
+            });
+        }
+        
+        // Add Charge functionality
+        if (chargeAddBtn) {
+            chargeAddBtn.addEventListener('click', function() {
+                const comment = chargeCommentInput?.value.trim();
+                const amount = parseFloat(chargeAmountInput?.value || 0);
+                
+                if (!comment) {
+                    swal("Error!", 'Please enter a comment for the charge.');
+                    return;
+                }
+                if (amount <= 0) {
+                    swal("Error!", 'Please enter a valid amount greater than 0.');
+                    return;
+                }
+                
+                // Add charge to array
+                const charge = {
+                    id: Date.now(),
+                    comment: comment,
+                    amount: amount,
+                    date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format for database
+                    display_date: new Date().toLocaleDateString('en-GB') // DD/MM/YYYY for display
+                };
+                quickCharges.push(charge);
+                
+                // Clear inputs
+                if (chargeCommentInput) chargeCommentInput.value = '';
+                if (chargeAmountInput) chargeAmountInput.value = '';
+                
+                // Render charges and update calculations
+                renderCharges();
+                updatePaymentCalculations();
+            });
+        }
+        
+        // Add Payment functionality
+        if (paymentAddBtn) {
+            paymentAddBtn.addEventListener('click', function() {
+                const type = paymentTypeSelect?.value;
+                const method = paymentMethodSelect?.value;
+                const comment = paymentCommentInput?.value.trim();
+                const amount = parseFloat(paymentAmountInput?.value || 0);
+                
+                if (!type) {
+                    swal("Error!", 'Please select a payment type.');
+                    return;
+                }
+                if (!method) {
+                    swal("Error!", 'Please select a payment method.');
+
+                    return;
+                }
+                if (amount <= 0) {
+                    swal("Error!", 'Please enter a valid amount greater than 0.');
+                    return;
+                }
+                
+                // Add payment to array
+                const payment = {
+                    id: Date.now(),
+                    type: type,
+                    method: method,
+                    comment: comment || '-',
+                    amount: amount,
+                    date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format for database
+                    display_date: new Date().toLocaleDateString('en-GB') // DD/MM/YYYY for display
+                };
+                quickPayments.push(payment);
+                
+                // Clear inputs
+                if (paymentTypeSelect) paymentTypeSelect.value = '';
+                if (paymentMethodSelect) {
+                    paymentMethodSelect.value = '';
+                    paymentMethodSelect.disabled = true;
+                    paymentMethodSelect.style.backgroundColor = '#e9ecef';
+                }
+                if (paymentCommentInput) paymentCommentInput.value = '';
+                if (paymentAmountInput) paymentAmountInput.value = '';
+                
+                // Render payments and update calculations
+                renderPayments();
+                updatePaymentCalculations();
+                updateConfirmButtonState();
+            });
+        }
+        
+        // Render charges list
+        function renderCharges() {
+            if (!chargesListDiv) return;
+            
+            if (quickCharges.length === 0) {
+                chargesListDiv.innerHTML = '';
+            } else {
+                let html = '<div class="list-group small">';
+                quickCharges.forEach((charge, index) => {
+                    html += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${charge.comment}</strong><br>
+                            <small class="text-muted" style="font-size: 12px;">${charge.display_date}</small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <strong>Rs. ${formatAmount(charge.amount)}</strong>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeCharge(${charge.id})">X</button>
+                        </div>
+                    </div>
+                    `;
+                });
+                html += '</div>';
+                chargesListDiv.innerHTML = html;
+            }
+        }
+        
+        // Render payments list
+        function renderPayments() {
+            if (!paymentsListDiv) return;
+            
+            if (quickPayments.length === 0) {
+                paymentsListDiv.innerHTML = '';
+            } else {
+                let html = '<div class="list-group small">';
+                quickPayments.forEach((payment, index) => {
+                    html += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${payment.type} - ${payment.method}</strong><br>
+                            <small class="text-muted" style="font-size: 12px;">${payment.comment} | ${payment.display_date}</small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <strong>Rs. ${formatAmount(payment.amount)}</strong>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removePayment(${payment.id})">X</button>
+                        </div>
+                    </div>
+                    `;
+                });
+                html += '</div>';
+                paymentsListDiv.innerHTML = html;
+            }
+        }
+        
+        // Render folio history details (charges and payments with summary)
+        function renderFolioHistory(summaryData = null) {
+            const folioHistoryDiv = document.getElementById('quickFolioHistoryDetails');
+            if (!folioHistoryDiv) return;
+            
+            let html = '<ul class="list-unstyled">';
+            
+            // Show charges as rows
+            if (quickCharges.length > 0) {
+                html += '';
+                quickCharges.forEach((charge) => {
+                    html += `
+                    <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                        <div>
+                            <p class="mb-0">${charge.comment}</p>
+                            <small class="text-muted" style="font-size: 12px;">${charge.display_date}</small>
+                        </div>
+                        <p class="mb-0 text-danger"><strong>+ Rs. ${formatAmount(charge.amount)}</strong></p>
+                    </li>
+                    `;
+                });
+            }
+            
+            // Show payments as rows
+            if (quickPayments.length > 0) {
+                html += '';
+                quickPayments.forEach((payment) => {
+                    html += `
+                    <li class="d-flex align-items-center justify-content-between my-2 px-2">
+                        <div>
+                            <p class="mb-0">${payment.type} - ${payment.method}</p>
+                            <small class="text-muted" style="font-size: 12px;">${payment.comment} | ${payment.display_date}</small>
+                        </div>
+                        <p class="mb-0 text-success">- Rs. ${formatAmount(payment.amount)}</p>
+                    </li>
+                    `;
+                });
+            }
+            
+            // Add summary section if data provided
+            // if (summaryData) {
+            //     html += '<hr class="my-3">';
+            //     html += `
+            //     `;
+            // }
+            
+            html += '</ul>';
+            folioHistoryDiv.innerHTML = html;
+        }
+        
+        // Remove charge
+        window.removeCharge = function(chargeId) {
+            const index = quickCharges.findIndex(c => c.id === chargeId);
+            if (index > -1) {
+                quickCharges.splice(index, 1);
+                renderCharges();
+                updatePaymentCalculations();
+            }
+        };
+        
+        // Remove payment
+        window.removePayment = function(paymentId) {
+            const index = quickPayments.findIndex(p => p.id === paymentId);
+            if (index > -1) {
+                quickPayments.splice(index, 1);
+                renderPayments();
+                updatePaymentCalculations();
+                updateConfirmButtonState();
+            }
+        };
+        
+        // Update payment calculations
+        function updatePaymentCalculations() {
+            // Calculate totals
+            const nights = calculateNights();
+            let roomTotal = 0;
+            detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
+                const qty = parseInt(row.querySelector('.room-qty-input')?.value, 10) || 0;
+                const price = parseFloat(row.querySelector('.room-price-input')?.value) || 0;
+                roomTotal += qty * price * nights;
+            });
+            
+            const totalCharges = quickCharges.reduce((sum, charge) => sum + charge.amount, 0);
+            const totalPayments = quickPayments.reduce((sum, payment) => sum + payment.amount, 0);
+            
+            const extraCharges = totalCharges;
+            const grandTotal = roomTotal + extraCharges;
+            const balance = grandTotal - totalPayments;
+            
+            // Update Details section
+            const quickPaymentExtraCharges = document.getElementById('quickPaymentExtraCharges');
+            const quickPaymentSGST = document.getElementById('quickPaymentSGST');
+            const quickPaymentCGST = document.getElementById('quickPaymentCGST');
+            const quickPaymentTotalPayable = document.getElementById('quickPaymentTotalPayable');
+            const quickPaymentBalance = document.getElementById('quickPaymentBalance');
+            
+            if (quickPaymentExtraCharges) quickPaymentExtraCharges.textContent = 'Rs. ' + formatAmount(extraCharges);
+            if (quickPaymentSGST) quickPaymentSGST.textContent = 'Rs. 0';
+            if (quickPaymentCGST) quickPaymentCGST.textContent = 'Rs. 0';
+            if (quickPaymentTotalPayable) quickPaymentTotalPayable.textContent = 'Rs. ' + formatAmount(grandTotal);
+            if (quickPaymentBalance) quickPaymentBalance.textContent = 'Rs. ' + formatAmount(balance);
+            
+            // Update footer
+            const quickPaymentFooterTotal = document.getElementById('quickPaymentFooterTotal');
+            const quickPaymentFooterPaid = document.getElementById('quickPaymentFooterPaid');
+            const quickPaymentFooterBalance = document.getElementById('quickPaymentFooterBalance');
+            
+            if (quickPaymentFooterTotal) quickPaymentFooterTotal.textContent = formatAmount(grandTotal);
+            if (quickPaymentFooterPaid) quickPaymentFooterPaid.textContent = formatAmount(totalPayments);
+            if (quickPaymentFooterBalance) quickPaymentFooterBalance.textContent = formatAmount(balance);
+            
+            // Update Folio History section with charges, payments, and summary
+            renderFolioHistory({
+                roomPrice: roomTotal,
+                totalCharges: roomTotal,
+                extraCharges: extraCharges,
+                totalPayable: grandTotal,
+                balance: balance
+            });
+        }
+        
+        // Update Confirm button state
+        function updateConfirmButtonState() {
+            if (!quickConfirmBtn) return;
+            
+            if (quickPayments.length > 0) {
+                quickConfirmBtn.disabled = false;
+                quickConfirmBtn.style.opacity = '1';
+                quickConfirmBtn.style.cursor = 'pointer';
+            } else {
+                quickConfirmBtn.disabled = true;
+                quickConfirmBtn.style.opacity = '0.5';
+                quickConfirmBtn.style.cursor = 'not-allowed';
+            }
+        }
+        
+        // Confirm button submit
+        if (quickConfirmBtn) {
+            quickConfirmBtn.addEventListener('click', async function() {
+                if (quickPayments.length === 0) {
+                    swal("Error!", 'Please add at least one payment before confirming.');
+                    return;
+                }
+                
+                // Collect form data
+                const formData = collectFormData();
+                if (!formData) {
+                    return; // Validation failed
+                }
+                
+                // Calculate totals
+                const nights = calculateNights();
+                let roomTotal = 0;
+                detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
+                    const qty = parseInt(row.querySelector('.room-qty-input')?.value, 10) || 0;
+                    const price = parseFloat(row.querySelector('.room-price-input')?.value) || 0;
+                    roomTotal += qty * price * nights;
+                });
+                
+                const totalCharges = quickCharges.reduce((sum, charge) => sum + charge.amount, 0);
+                const totalPayments = quickPayments.reduce((sum, payment) => sum + payment.amount, 0);
+                
+                const grandTotal = roomTotal + totalCharges;
+                const balance = grandTotal - totalPayments;
+                
+                // Add charges and payments to form data
+                formData.charges = quickCharges;
+                formData.payments = quickPayments;
+                
+                // Add calculated totals for orders table
+                formData.room_total = roomTotal;
+                formData.total_charges = totalCharges;
+                formData.total_payments = totalPayments;
+                formData.grand_total = grandTotal;
+                
+                // Debug: Log the data being sent
+                console.log('Submitting reservation data:', JSON.stringify(formData, null, 2));
+                
+                // Submit the form
+                const submitLabelDefault = quickConfirmBtn.querySelector('.label-default');
+                const submitLabelLoading = quickConfirmBtn.querySelector('.label-loading');
+                
+                try {
+                    if (submitLabelDefault) submitLabelDefault.classList.add('d-none');
+                    if (submitLabelLoading) submitLabelLoading.classList.remove('d-none');
+                    quickConfirmBtn.disabled = true;
+                    
+                    const response = await fetch(form.dataset.endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // Close modal
+                        const modal = bootstrap.Modal.getInstance(reservationModal);
+                        if (modal) modal.hide();
+                        
+                        // Refresh calendar
+                        fetchCalendarDataForCurrentView();
+                        
+                        // Show success message
+                        swal("Success!", 'Reservation created successfully!', "success");
+                    } else {
+                        // Handle error response with detailed information
+                        let errorMessages = [];
+                        if (data.error) {
+                            errorMessages.push(`Error: ${data.error}`);
+                            if (data.line) errorMessages.push(`Line: ${data.line}`);
+                            if (data.file) errorMessages.push(`File: ${data.file}`);
+                        } else if (data.errors) {
+                            if (typeof data.errors === 'object') {
+                                Object.values(data.errors).forEach(err => {
+                                    if (Array.isArray(err)) errorMessages.push(...err);
+                                    else errorMessages.push(err);
+                                });
+                            } else {
+                                errorMessages.push(data.errors);
+                            }
+                        } else if (data.message) {
+                            errorMessages.push(data.message);
+                        } else {
+                            errorMessages.push('An error occurred while creating the reservation.');
+                        }
+                        showErrors(errorMessages);
+                    }
+                } catch (error) {
+                    console.error('Error creating reservation:', error);
+                    showErrors(['An error occurred while creating the reservation. Please try again.', error.message]);
+                } finally {
+                    if (submitLabelDefault) submitLabelDefault.classList.remove('d-none');
+                    if (submitLabelLoading) submitLabelLoading.classList.add('d-none');
+                    quickConfirmBtn.disabled = false;
+                }
+            });
+        }
+        
+        // Reset charges and payments on modal close
+        if (reservationModal) {
+            reservationModal.addEventListener('hidden.bs.modal', () => {
+                // Clear charges and payments
+                quickCharges.length = 0;
+                quickPayments.length = 0;
+                renderCharges();
+                renderPayments();
+                updateConfirmButtonState();
+                
+                // Clear input fields
+                if (chargeCommentInput) chargeCommentInput.value = '';
+                if (chargeAmountInput) chargeAmountInput.value = '';
+                if (paymentTypeSelect) paymentTypeSelect.value = '';
+                if (paymentMethodSelect) {
+                    paymentMethodSelect.value = '';
+                    paymentMethodSelect.disabled = true;
+                    paymentMethodSelect.style.backgroundColor = '#e9ecef';
+                }
+                if (paymentCommentInput) paymentCommentInput.value = '';
+                if (paymentAmountInput) paymentAmountInput.value = '';
+                
+                // Switch back to first tab
+                const firstTab = document.getElementById('nav-home-tab');
+                if (firstTab) {
+                    const tabTrigger = new bootstrap.Tab(firstTab);
+                    tabTrigger.show();
+                }
+            });
+        }
     }
 
     function renderCalendar() {
