@@ -3396,7 +3396,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             id: item.id,
                             comment: item.comment || 'Charge',
                             amount: parseFloat(item.amount) || 0,
-                            display_date: new Date(item.created_at).toLocaleDateString('en-GB'),
+                            display_date: new Date(item.created_at).toLocaleString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                            }),
                             existing: true
                         };
                         console.log('Adding charge:', charge);
@@ -3408,7 +3415,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             method: item.payment_method || 'Cash',
                             comment: item.comment || 'Payment',
                             amount: parseFloat(item.amount) || 0,
-                            display_date: new Date(item.created_at).toLocaleDateString('en-GB'),
+                            display_date: new Date(item.created_at).toLocaleString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                            }),
                             existing: true
                         };
                         console.log('Adding payment:', payment);
@@ -3474,7 +3488,14 @@ document.addEventListener('DOMContentLoaded', function () {
         bookingCharges.push({
             comment,
             amount,
-            display_date: new Date().toLocaleDateString('en-GB'),
+            display_date: new Date().toLocaleString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            }),
             existing: false
         });
         
@@ -3518,7 +3539,14 @@ document.addEventListener('DOMContentLoaded', function () {
             method,
             comment: comment || 'Payment',
             amount,
-            display_date: new Date().toLocaleDateString('en-GB'),
+            display_date: new Date().toLocaleString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            }),
             existing: false
         });
         
@@ -5278,7 +5306,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     comment: comment,
                     amount: amount,
                     date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format for database
-                    display_date: new Date().toLocaleDateString('en-GB') // DD/MM/YYYY for display
+                    display_date: new Date().toLocaleString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    }) // DD/MM/YYYY HH:MM AM/PM for display
                 };
                 quickCharges.push(charge);
                 
@@ -5322,7 +5357,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     comment: comment || '-',
                     amount: amount,
                     date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format for database
-                    display_date: new Date().toLocaleDateString('en-GB') // DD/MM/YYYY for display
+                    display_date: new Date().toLocaleString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    }) // DD/MM/YYYY HH:MM AM/PM for display
                 };
                 quickPayments.push(payment);
                 
