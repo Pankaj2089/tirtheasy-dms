@@ -797,6 +797,24 @@ class UsersController extends Controller{
             $priceBookingLookup[$priceRow->id] = $existingBooked + (int)$detail['rooms'];
         }
 
+        // Validate room number booking conflicts
+        foreach($roomDetails as $detail){
+            if(!empty($detail['room_number_ids'])){
+                // Parse room number IDs
+                $roomNumberIds = array_filter(array_map(function($id){
+                    return (int)trim($id);
+                }, explode(',', $detail['room_number_ids'])));
+                
+                if(!empty($roomNumberIds)){
+                    // Use the reusable validation method
+                    $validationError = $this->validateRoomNumberAvailability($roomNumberIds, $checkInDate, $checkOutDate);
+                    if($validationError){
+                        return response()->json($validationError, 422);
+                    }
+                }
+            }
+        }
+
         $reservationType = strtoupper($input['reservation_type']);
         $createdOrders = [];
         $totalAmount = 0;
@@ -1070,6 +1088,128 @@ class UsersController extends Controller{
         $request->session()->flush();
         return redirect('/');
    }
+
+    /**
+     * Validate that room numbers are available for the given date range
+     * 
+     * @param array $roomNumberIds Array of room number IDs to check
+     * @param string $checkInDate Check-in date (Y-m-d format)
+     * @param string $checkOutDate Check-out date (Y-m-d format)
+     * @param int|null $excludeOrderId Order ID to exclude from conflict check (for updates)
+     * @return array|null Returns error array if conflict found, null if available
+     */
+    private function validateRoomNumberAvailability(array $roomNumberIds, string $checkInDate, string $checkOutDate, ?int $excludeOrderId = null){
+        if(empty($roomNumberIds)){
+            return null;
+        }
+        
+        // Check for overlapping bookings for these specific room numbers
+        $query = self::$OrdersModel
+            ->where(function($query) use ($checkInDate, $checkOutDate){
+                // Check for any date overlaps:
+                // 1. New booking starts during existing booking
+                // 2. New booking ends during existing booking  
+                // 3. New booking completely encompasses existing booking
+                // 4. Existing booking completely encompasses new booking
+                $query->where(function($q) use ($checkInDate, $checkOutDate){
+                    // New start date falls within existing booking
+                    $q->where('check_in_date', '<=', $checkInDate)
+                      ->where('check_out_date', '>', $checkInDate);
+                })
+                ->orWhere(function($q) use ($checkInDate, $checkOutDate){
+                    // New end date falls within existing booking
+                    $q->where('check_in_date', '<', $checkOutDate)
+                      ->where('check_out_date', '>=', $checkOutDate);
+                })
+                ->orWhere(function($q) use ($checkInDate, $checkOutDate){
+                    // New booking encompasses existing booking
+                    $q->where('check_in_date', '>=', $checkInDate)
+                      ->where('check_out_date', '<=', $checkOutDate);
+                })
+                ->orWhere(function($q) use ($checkInDate, $checkOutDate){
+                    // Existing booking encompasses new booking
+                    $q->where('check_in_date', '<=', $checkInDate)
+                      ->where('check_out_date', '>=', $checkOutDate);
+                });
+            })
+            ->whereNotNull('room_number_ids');
+        
+        // Exclude specific order if provided (useful for updates)
+        if($excludeOrderId){
+            $query->where('id', '!=', $excludeOrderId);
+        }
+        
+        $conflictingBookings = $query->get();
+        
+        // Check each conflicting booking's room numbers
+        foreach($conflictingBookings as $booking){
+            $bookedRoomNumbers = array_filter(array_map(function($id){
+                return (int)trim($id);
+            }, explode(',', $booking->room_number_ids)));
+            
+            // Check if any of the selected room numbers are already booked
+            $conflicts = array_intersect($roomNumberIds, $bookedRoomNumbers);
+            
+            if(!empty($conflicts)){
+                // Get room number details for error message
+                $conflictedRoomNumbers = self::$RoomNumbersModel
+                    ->whereIn('id', $conflicts)
+                    ->pluck('full_title')
+                    ->toArray();
+                
+                $roomNumbersList = implode(', ', $conflictedRoomNumbers);
+                
+                return [
+                    'success' => false,
+                    'message' => 'This room is already booked for selected dates. Room number(s): ' . $roomNumbersList
+                ];
+            }
+        }
+        
+        // Also check maintenance blocks for these room numbers
+        $maintenanceConflicts = self::$MaintenanceBlocksModel
+            ->whereIn('room_id', $roomNumberIds)
+            ->where(function($query) use ($checkInDate, $checkOutDate){
+                $query->where(function($q) use ($checkInDate, $checkOutDate){
+                    // Maintenance start date falls within booking period
+                    $q->where('start_date', '<=', $checkInDate)
+                      ->where('end_date', '>', $checkInDate);
+                })
+                ->orWhere(function($q) use ($checkInDate, $checkOutDate){
+                    // Maintenance end date falls within booking period
+                    $q->where('start_date', '<', $checkOutDate)
+                      ->where('end_date', '>=', $checkOutDate);
+                })
+                ->orWhere(function($q) use ($checkInDate, $checkOutDate){
+                    // Booking encompasses maintenance block
+                    $q->where('start_date', '>=', $checkInDate)
+                      ->where('end_date', '<=', $checkOutDate);
+                })
+                ->orWhere(function($q) use ($checkInDate, $checkOutDate){
+                    // Maintenance encompasses booking
+                    $q->where('start_date', '<=', $checkInDate)
+                      ->where('end_date', '>=', $checkOutDate);
+                });
+            })
+            ->get();
+        
+        if($maintenanceConflicts->count() > 0){
+            $blockedRoomIds = $maintenanceConflicts->pluck('room_id')->unique()->toArray();
+            $blockedRoomNumbers = self::$RoomNumbersModel
+                ->whereIn('id', $blockedRoomIds)
+                ->pluck('full_title')
+                ->toArray();
+            
+            $roomNumbersList = implode(', ', $blockedRoomNumbers);
+            
+            return [
+                'success' => false,
+                'message' => 'This room is already booked for selected dates. Room number(s) under maintenance: ' . $roomNumbersList
+            ];
+        }
+        
+        return null; // No conflicts found
+    }
 
     private function determineBookingStatus($paymentStatus, $reservationType = null){
         $type = strtolower($reservationType ?? '');
