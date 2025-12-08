@@ -1168,7 +1168,7 @@ class UsersController extends Controller{
         
         // Also check maintenance blocks for these room numbers
         $maintenanceConflicts = self::$MaintenanceBlocksModel
-            ->whereIn('room_id', $roomNumberIds)
+            ->whereIn('room_number_id', $roomNumberIds)
             ->where(function($query) use ($checkInDate, $checkOutDate){
                 $query->where(function($q) use ($checkInDate, $checkOutDate){
                     // Maintenance start date falls within booking period
@@ -1194,7 +1194,7 @@ class UsersController extends Controller{
             ->get();
         
         if($maintenanceConflicts->count() > 0){
-            $blockedRoomIds = $maintenanceConflicts->pluck('room_id')->unique()->toArray();
+            $blockedRoomIds = $maintenanceConflicts->pluck('room_number_id')->unique()->toArray();
             $blockedRoomNumbers = self::$RoomNumbersModel
                 ->whereIn('id', $blockedRoomIds)
                 ->pluck('full_title')
