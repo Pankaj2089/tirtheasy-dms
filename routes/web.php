@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\MaintenanceBlockController;
+use App\Http\Controllers\AssignRoomController;
 
 Route::get('/',[UsersController::class, 'LoginPage'])->name('LoginPage');
 Route::Post('/vendor-login',[UsersController::class, 'VendorLogin'])->name('VendorLogin');
@@ -14,3 +15,8 @@ Route::post('/quick-reservations',[UsersController::class, 'saveQuickReservation
 Route::get('/order-payments/{orderId}',[UsersController::class, 'getOrderPayments'])->name('order.payments');
 Route::post('/booking/save-charges-payments',[UsersController::class, 'saveBookingChargesPayments'])->name('booking.saveChargesPayments');
 Route::get('/logout',[UsersController::class, 'logout'])->name('logout');
+
+// Assign Room routes
+Route::get('/assign-rooms/unassigned',[AssignRoomController::class, 'fetchUnassignedBookings'])->name('assign.rooms.unassigned');
+Route::get('/assign-rooms/available',[AssignRoomController::class, 'availableRoomNumbers'])->name('assign.rooms.available');
+Route::post('/assign-rooms/assign',[AssignRoomController::class, 'assignRoomToBooking'])->name('assign.rooms.assign');

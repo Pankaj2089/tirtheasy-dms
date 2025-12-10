@@ -59,6 +59,18 @@ $siteUrl = env('APP_URL');
     .selected-room-numbers .btn-close:hover {
         opacity: 1;
     }
+    
+    /* Assign Room Dropdown Menu Styles */
+    #assignModalAccordion .dropdown-item {
+        font-size: 13px !important;
+    }
+    
+    #assignModalAccordion .dropdown-item:hover,
+    #assignModalAccordion .dropdown-item:focus,
+    #assignModalAccordion .dropdown-item:active {
+        background-color: transparent !important;
+        color: inherit !important;
+    }
 </style>
 
    
@@ -1066,383 +1078,52 @@ aria-labelledby="assignLabel" aria-hidden="true">
         <div class="modal-body py-0">
             <div class="top d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center position-relative w-80">
-                    <button class="bg-transpaent border-0 arrow-slide left"><img src="{{$siteUrl}}public/assets/img/circle-arrow.svg"
+                    <button class="bg-transpaent border-0 arrow-slide left" id="assignModalPrevBtn"><img src="{{$siteUrl}}public/assets/img/circle-arrow.svg"
                             alt=""></button>
-                    <div class="date-columns">
-                        <div class="date-column">
-                            <div class="date-cell selected">
-                                <div class="day">MON</div>
-                                <div class="date">05</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">TUE</div>
-                                <div class="date">07</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">WED</div>
-                                <div class="date">08</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">THU</div>
-                                <div class="date">09</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">FRI</div>
-                                <div class="date">10</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">SAT</div>
-                                <div class="date">11</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">SUN</div>
-                                <div class="date">12</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">MON</div>
-                                <div class="date">13</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">TUE</div>
-                                <div class="date">14</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">WED</div>
-                                <div class="date">15</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">THU</div>
-                                <div class="date">16</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">FRI</div>
-                                <div class="date">17</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">MON</div>
-                                <div class="date">18</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">TUE</div>
-                                <div class="date">19</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">WED</div>
-                                <div class="date">20</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
-                        <div class="date-column">
-                            <div class="date-cell">
-                                <div class="day">THU</div>
-                                <div class="date">21</div>
-                                <div class="month">OCT</div>
-                            </div>
-                        </div>
+                    <div class="date-columns" id="assignModalDateColumns">
                     </div>
-                    <button class="bg-transpaent border-0 arrow-slide right"><img src="{{$siteUrl}}public/assets/img/circle-arrow.svg"
+                    <button class="bg-transpaent border-0 arrow-slide right" id="assignModalNextBtn"><img src="{{$siteUrl}}public/assets/img/circle-arrow.svg"
                             alt=""></button>
                 </div>
-                <div class="date-cal">
-                    <a href=""><img src="{{$siteUrl}}public/assets/img/cir-calendar.svg" alt=""></a>
+                <div class="date-cal d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" id="assignModalTodayBtn">Today</button>
+                    <div class="position-relative">
+                        <input type="date" class="position-absolute w-100 h-100 opacity-0" id="assignModalDatePicker" aria-label="Select date" style="cursor: pointer; z-index: 2;">
+                        <button type="button" class="bg-transpaent border-0" id="assignModalDatePickerBtn" style="position: relative; z-index: 1;">
+                            <img src="{{$siteUrl}}public/assets/img/cir-calendar.svg" alt="" style="pointer-events: none;">
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="accordion" id="accordionExample">
-                <div class="accordion-item border-0">
-                    <h2 class="accordion-header" id="headingOne">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                            1 - Family Room
-                        </button>
-                    </h2>
-                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne"
-                        data-bs-parent="#accordionExample">
-                        <div class="accordion-body border-0 p-0">
-                            <div class="p-3 py-2 rounded my-2 bg-pink">
-                                <div class="d-flex align-items-start justify-content-between">
-                                    <div class="username d-flex flex-column">
-                                        <h4>Mr Rohan Patel</h4>
-                                        <p>RSN649</p>
-                                    </div>
-                                    <a href=""><img src="{{$siteUrl}}public/assets/img/box-option.svg" alt=""></a>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between mt-1">
-                                    <div class="username d-flex flex-column w-50">
-                                        <h3>Room Booked: <strong>25</strong></h3>
-                                        <p>Total Guest: <strong>50 </strong></p>
-                                        <p>Extra Metrress: <strong>5</strong></p>
-                                    </div>
-                                    <!-- <div class="d-flex flex-column w-50">
-                                    <h3 class="mb-1">Room No.</h3>
-                                    <div
-                                        class="box d-flex px-2 py-1 justify-content-start flex-wrap align-items-center rounded border bg-white">
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                    </div>
-                                    </div> -->
-                                </div>
-
-                                <div class="d-flex flex-column mt-2 align-items-start justify-content-start">
-                                    <h3 class="mb-1">Room No.</h3>
-                                    <div
-                                        class="box d-flex px-2 py-1 justify-content-start flex-wrap align-items-center rounded border bg-white">
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex mt-2 align-items-center justify-content-between">
-                                    <p class="mb-0"><img src="{{$siteUrl}}public/assets/img/cal-ic.svg" width="13px" alt=""> &nbsp;
-                                        <strong>03 mar To 04 Mar,
-                                            2025</strong>
-                                    </p>
-                                    <a href="" class="theme-btn text-decoration-none outline">Assign Room</a>
-                                </div>
-                            </div>
-
-                            <div class="p-3 py-2 rounded my-2 bg-pink">
-                                <div class="d-flex align-items-start justify-content-between">
-                                    <div class="username d-flex flex-column">
-                                        <h4>Mr Rohan Patel</h4>
-                                        <p>RSN649</p>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between mt-1">
-                                    <div class="username d-flex flex-column">
-                                        <h3>Room Booked: <strong>25</strong></h3>
-                                        <p>Extra Metrress: <strong>5</strong></p>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex mt-2 align-items-center justify-content-between">
-                                    <p class="mb-0"><img src="{{$siteUrl}}public/assets/img/cal-ic.svg" width="13px" alt=""> &nbsp;
-                                        <strong>03 mar To 04 Mar,
-                                            2025</strong>
-                                    </p>
-                                    <a href="" class="theme-btn text-decoration-none outline">Assign Room</a>
-                                </div>
-                            </div>
-
-                            <div class="p-3 py-2 rounded my-2 bg-pink">
-                                <div class="d-flex align-items-start justify-content-between">
-                                    <div class="username d-flex flex-column">
-                                        <h4>Mr Rohan Patel</h4>
-                                        <p>RSN649</p>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between mt-1">
-                                    <div class="username d-flex flex-column">
-                                        <h3>Room Booked <strong>25</strong></h3>
-                                        <p>Extra Metrress: <strong>5</strong></p>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex mt-2 align-items-center justify-content-between">
-                                    <p class="mb-0"><img src="{{$siteUrl}}public/assets/img/cal-ic.svg" width="13px" alt=""> &nbsp;
-                                        <strong>03 mar To 04 Mar,
-                                            2025</strong>
-                                    </p>
-                                    <a href="" class="theme-btn text-decoration-none outline">Assign Room</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="accordion-item border-0">
-                    <h2 class="accordion-header mb-2" id="headingTwo">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                            1 - Mountain View
-                        </button>
-                    </h2>
-                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
-                        data-bs-parent="#accordionExample">
-                        <div class="accordion-body border-0 p-0">
-                            <div class="p-3 py-2 rounded my-2 bg-pink">
-                                <div class="d-flex align-items-start justify-content-between">
-                                    <div class="username d-flex flex-column">
-                                        <h4>Mr Rohan Patel</h4>
-                                        <p>RSN649</p>
-                                    </div>
-                                    <a href=""><img src="{{$siteUrl}}public/assets/img/box-option.svg" alt=""></a>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between mt-1">
-                                    <div class="username d-flex flex-column">
-                                        <h3>Room Booked <strong>25</strong></h3>
-                                        <p>Total Guest: <strong>50</strong> </p>
-                                        <p>Extra Metrress: <strong>5</strong></p>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex flex-column mt-2 align-items-start justify-content-start">
-                                    <h3 class="mb-1">Room No.</h3>
-                                    <div
-                                        class="box d-flex px-2 py-1 justify-content-start flex-wrap align-items-center rounded border bg-white">
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex mt-2 align-items-center justify-content-between">
-                                    <p class="mb-0"><img src="{{$siteUrl}}public/assets/img/cal-ic.svg" width="13px" alt=""> &nbsp; 03 mar
-                                        To 04 Mar, 2025
-                                    </p>
-                                    <a href="" class="theme-btn text-decoration-none outline">Assign Room</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="accordion-item border-0">
-                    <h2 class="accordion-header" id="headingThree">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                            1 - Deluxe
-                        </button>
-                    </h2>
-                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree"
-                        data-bs-parent="#accordionExample">
-                        <div class="accordion-body border-0 p-0">
-                            <div class="p-3 py-2 rounded my-2 bg-pink">
-                                <div class="d-flex align-items-start justify-content-between">
-                                    <div class="username d-flex flex-column">
-                                        <h4>Mr Rohan Patel</h4>
-                                        <p>RSN649</p>
-                                    </div>
-                                    <a href=""><img src="{{$siteUrl}}public/assets/img/box-option.svg" alt=""></a>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between mt-1">
-                                    <div class="username d-flex flex-column">
-                                        <h3>Room Booked <strong>25</strong></h3>
-                                        <p>Total Guest: <strong>50</strong> </p>
-                                        <p>Extra Metrress: <strong>5</strong></p>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex flex-column mt-2 align-items-start justify-content-start">
-                                    <h3 class="mb-1">Room No.</h3>
-                                    <div
-                                        class="box d-flex px-2 py-1 justify-content-start flex-wrap align-items-center rounded border bg-white">
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                        <p class="mb-0 px-1">105A</p>
-                                        <p class="mb-0 px-1">106A</p>
-                                        <p class="mb-0 px-1">107A</p>
-                                        <p class="mb-0 px-1">108A</p>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex mt-2 align-items-center justify-content-between">
-                                    <p class="mb-0"><img src="{{$siteUrl}}public/assets/img/cal-ic.svg" width="13px" alt=""> &nbsp; 03 mar
-                                        To 04 Mar, 2025
-                                    </p>
-                                    <a href="" class="theme-btn text-decoration-none outline">Assign Room</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="pt-3">
+                <div id="assignModalStatus" class="alert alert-info small mb-3">Loading bookings...</div>
+                <div class="accordion" id="accordionExample">
+                    <!-- Dynamic booking list will be inserted here -->
                 </div>
             </div>
         </div>
     </div>
 </div>
 </div>
-<!-- aassign room popup -->
+
+<!-- Room Selection Modal -->
+<div class="modal fade" id="assignRoomSelectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="min-width: 440px; max-width: 440px;">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Select Room</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <img src="{{$siteUrl}}public/assets/img/close.svg" alt="">
+                </button>
+            </div>
+            <div class="modal-body" id="assignRoomSelectBody">
+                <p class="text-muted small mb-0">Loading available rooms...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- assign room popup -->
 
 <!-- Reservation New -->
 <div class="modal fade  bl-reserve-tbl" id="reservation-new" tabindex="-1" aria-labelledby="quickReservationLabel"
@@ -5746,6 +5427,720 @@ document.addEventListener('DOMContentLoaded', function () {
 
     syncDatePicker();
     renderCalendar();
+
+    // Assign Room Modal Functionality
+    (function initAssignRoomModal() {
+        const assignModalEl = document.getElementById('assign');
+        if (!assignModalEl) return;
+        
+        const modalBody = assignModalEl.querySelector('.modal-body');
+        const assignEndpoints = {
+            unassigned: @json(route('assign.rooms.unassigned')),
+            available: @json(route('assign.rooms.available')),
+            assign: @json(route('assign.rooms.assign'))
+        };
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const hotelSelector = document.getElementById('hotelSelector');
+        const assetBaseUrl = @json($siteUrl.'public/assets/img/');
+        
+        let assignRoomSelectModalInstance = null;
+        
+        // Helper functions
+        function startOfWeek(date) {
+            const base = new Date(date);
+            base.setHours(0, 0, 0, 0);
+            const day = base.getDay();
+            const diff = day === 0 ? -6 : 1 - day;
+            base.setDate(base.getDate() + diff);
+            return base;
+        }
+        
+        function parseISO(value) {
+            // Parse date string in YYYY-MM-DD format as local date (not UTC)
+            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [year, month, day] = value.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                date.setHours(0, 0, 0, 0);
+                return date;
+            }
+            const date = new Date(value);
+            if (isNaN(date.getTime())) return null;
+            date.setHours(0, 0, 0, 0);
+            return date;
+        }
+        
+        function toISO(date) {
+            // Convert date to YYYY-MM-DD format using local timezone (not UTC)
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const refDate = startOfWeek(today);
+        refDate.setHours(0, 0, 0, 0);
+        
+        const state = {
+            referenceDate: refDate,
+            selectedDate: new Date(today),
+            bookings: [],
+            pendingSelection: new Map(),
+            hydrated: false
+        };
+        
+        function syncFromCalendar(resetToToday = false) {
+            const base = resetToToday ? new Date() : (window.calendarState?.referenceDate ? new Date(window.calendarState.referenceDate) : new Date());
+            base.setHours(0, 0, 0, 0);
+            state.selectedDate = base;
+            state.referenceDate = startOfWeek(base);
+        }
+        
+        function renderDates() {
+            const container = modalBody?.querySelector('#assignModalDateColumns');
+            const picker = modalBody?.querySelector('#assignModalDatePicker');
+            if (!container) return;
+            
+            const dates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(state.referenceDate);
+                d.setDate(state.referenceDate.getDate() + i);
+                d.setHours(0, 0, 0, 0); // Normalize to midnight local time
+                dates.push(d);
+            }
+            
+            // Normalize selected date for comparison
+            const selectedDateNormalized = new Date(state.selectedDate);
+            selectedDateNormalized.setHours(0, 0, 0, 0);
+            const selectedIso = toISO(selectedDateNormalized);
+            container.innerHTML = dates.map((d) => {
+                const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+                const dateLabel = String(d.getDate()).padStart(2, '0');
+                const monthLabel = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                const active = toISO(d) === selectedIso ? 'selected' : '';
+                return `
+                    <div class="date-column">
+                        <div class="date-cell ${active}" data-date="${toISO(d)}">
+                            <div class="day">${dayLabel}</div>
+                            <div class="date">${dateLabel}</div>
+                            <div class="month">${monthLabel}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.querySelectorAll('.date-cell').forEach((cell) => {
+                cell.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const dateStr = cell.dataset.date;
+                    if (!dateStr) return;
+                    
+                    const dt = parseISO(dateStr);
+                    if (!dt) return;
+                    
+                    // Update selected date (ensure it's a new Date object with local timezone)
+                    state.selectedDate = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+                    state.selectedDate.setHours(0, 0, 0, 0);
+                    
+                    // Update date picker value
+                    if (picker) {
+                        picker.value = toISO(state.selectedDate);
+                    }
+                    
+                    // Re-render dates to update selected state
+                    renderDates();
+                    
+                    // Fetch bookings for the selected date
+                    fetchBookings();
+                });
+            });
+            
+            if (picker) {
+                picker.value = selectedIso;
+            }
+        }
+        
+        function setStatus(msg, variant = 'info', busy = false) {
+            const statusEl = modalBody?.querySelector('#assignModalStatus');
+            if (!statusEl) return;
+            statusEl.className = `alert alert-${variant} small mb-3`;
+            statusEl.textContent = msg;
+            modalBody?.querySelector('#accordionExample')?.setAttribute('aria-busy', busy ? 'true' : 'false');
+        }
+        
+        async function fetchBookings() {
+            if (!assignEndpoints.unassigned) return;
+            const params = new URLSearchParams({ date: toISO(state.selectedDate) });
+            if (hotelSelector?.value) params.append('hotel_id', hotelSelector.value);
+            
+            setStatus('Loading bookings...', 'info', true);
+            state.pendingSelection.clear();
+            
+            try {
+                const response = await fetch(`${assignEndpoints.unassigned}?${params.toString()}`);
+                const payload = await response.json();
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.message || 'Unable to load bookings.');
+                }
+                state.bookings = Array.isArray(payload.bookings) ? payload.bookings : [];
+                renderBookings();
+            } catch (err) {
+                console.error(err);
+                setStatus(err.message || 'Unable to load bookings.', 'danger', false);
+                const list = modalBody?.querySelector('#accordionExample');
+                if (list) list.innerHTML = '';
+            }
+        }
+        
+        function renderBookings() {
+            const list = modalBody?.querySelector('#accordionExample');
+            if (!list) return;
+            
+            list.innerHTML = '';
+            if (!state.bookings.length) {
+                setStatus('No unassigned bookings for the selected date.', 'warning', false);
+                return;
+            }
+            
+            setStatus(`${state.bookings.length} booking(s) need room assignment.`, 'success', false);
+            
+            // Group bookings by room type
+            const bookingsByRoomType = {};
+            state.bookings.forEach((booking) => {
+                const roomType = booking.room_type || 'Unknown';
+                if (!bookingsByRoomType[roomType]) {
+                    bookingsByRoomType[roomType] = [];
+                }
+                bookingsByRoomType[roomType].push(booking);
+            });
+            
+            // Create accordion items for each room type
+            let accordionIndex = 0;
+            Object.keys(bookingsByRoomType).forEach((roomType) => {
+                const bookings = bookingsByRoomType[roomType];
+                accordionIndex++;
+                const headingId = `heading${accordionIndex}`;
+                const collapseId = `collapse${accordionIndex}`;
+                const isFirst = accordionIndex === 1;
+                
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'accordion-item border-0';
+                accordionItem.dataset.roomType = roomType;
+                
+                accordionItem.innerHTML = `
+                    <h2 class="accordion-header ${accordionIndex === 2 ? 'mb-2' : ''}" id="${headingId}">
+                        <button class="accordion-button ${isFirst ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="${isFirst ? 'true' : 'false'}" aria-controls="${collapseId}">
+                            ${bookings.length} - ${roomType}
+                        </button>
+                    </h2>
+                    <div id="${collapseId}" class="accordion-collapse collapse ${isFirst ? 'show' : ''}" aria-labelledby="${headingId}" data-bs-parent="#accordionExample">
+                        <div class="accordion-body border-0 p-0">
+                            ${bookings.map((booking) => {
+                                const selection = state.pendingSelection.get(booking.id);
+                                const roomLabel = selection?.label || 'Not selected';
+                                
+                                return `
+                                    <div class="p-3 py-2 rounded my-2 bg-pink" data-booking-id="${booking.id}">
+                                        <div class="d-flex align-items-start justify-content-between">
+                                            <div class="username d-flex flex-column">
+                                                <h4>${booking.guest_name || 'Guest'}</h4>
+                                                <p>${booking.code || ''}</p>
+                                            </div>
+                                            <div class="dropdown">
+                                                <button class="btn p-0 border-0 bg-transparent" type="button" ${selection ? 'data-bs-toggle="dropdown"' : 'disabled'} aria-expanded="false" data-booking-menu="${booking.id}" style="${selection ? '' : 'opacity: 0.5; cursor: not-allowed;'}">
+                                                    <img src="${assetBaseUrl}box-option.svg" alt="" style="pointer-events: none;">
+                                                </button>
+                                                ${selection ? 
+                                                    `<ul class="dropdown-menu dropdown-menu-end" data-booking-dropdown="${booking.id}">
+                                                        <li><a class="dropdown-item" href="#" data-edit-rooms="${booking.id}" style="font-size: 13px;">Edit Rooms</a></li>
+                                                    </ul>` :
+                                                    ''
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between mt-1">
+                                            <div class="username d-flex flex-column w-50">
+                                                <h3>Room Booked: <strong>${booking.rooms || 0}</strong></h3>
+                                                <p>Total Guest: <strong>${booking.adults || 0}</strong></p>
+                                                <p>Extra Metrress: <strong>${booking.children || 0}</strong></p>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex flex-column mt-2 align-items-start justify-content-start">
+                                            <h3 class="mb-1">Room No.</h3>
+                                            <div class="box d-flex px-2 py-1 justify-content-start flex-wrap align-items-center rounded border bg-white" data-room-box>
+                                                ${selection && selection.labels ? 
+                                                    selection.labels.map(label => `<p class="mb-0 px-1" data-room-display>${label}</p>`).join('') :
+                                                    `<p class="mb-0 px-1" data-room-display>${roomLabel}</p>`
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="d-flex mt-2 align-items-center justify-content-between">
+                                            <p class="mb-0"><img src="${assetBaseUrl}cal-ic.svg" width="13px" alt=""> &nbsp;
+                                                <strong>${booking.stay_label || ''}</strong>
+                                            </p>
+                                            ${selection ? 
+                                                `<button class="theme-btn text-decoration-none" type="button" data-assign-room style="min-width: 120px;">Assign Room</button>` :
+                                                `<button class="theme-btn text-decoration-none outline" type="button" data-select-room style="min-width: 120px;">Select Room</button>`
+                                            }
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                list.appendChild(accordionItem);
+                
+                // Attach event listeners to buttons
+                bookings.forEach((booking) => {
+                    const bookingCard = accordionItem.querySelector(`[data-booking-id="${booking.id}"]`);
+                    if (bookingCard) {
+                        bookingCard.querySelector('[data-select-room]')?.addEventListener('click', () => openRoomSelector(booking));
+                        bookingCard.querySelector('[data-assign-room]')?.addEventListener('click', () => triggerAssign(booking));
+                        
+                        // Handle Edit Rooms link in dropdown menu
+                        const editRoomsLink = bookingCard.querySelector(`[data-edit-rooms="${booking.id}"]`);
+                        if (editRoomsLink) {
+                            editRoomsLink.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                // Close dropdown
+                                const dropdown = bookingCard.querySelector(`[data-booking-dropdown="${booking.id}"]`);
+                                const dropdownInstance = dropdown ? window.bootstrap?.Dropdown?.getInstance(dropdown.closest('.dropdown')) : null;
+                                if (dropdownInstance) {
+                                    dropdownInstance.hide();
+                                }
+                                // Open room selector
+                                openRoomSelector(booking);
+                            });
+                        }
+                    }
+                });
+            });
+        }
+        
+        async function openRoomSelector(booking) {
+            const modal = document.getElementById('assignRoomSelectModal');
+            if (!modal) {
+                swal('Error', 'Room selection modal not found.', 'error');
+                return;
+            }
+            
+            const modalBodyEl = modal.querySelector('#assignRoomSelectBody');
+            if (!modalBodyEl) {
+                swal('Error', 'Modal body not found.', 'error');
+                return;
+            }
+            
+            modalBodyEl.innerHTML = '<p class="text-muted small mb-0">Loading available rooms...</p>';
+            
+            if (!assignRoomSelectModalInstance && window.bootstrap && window.bootstrap.Modal) {
+                assignRoomSelectModalInstance = new window.bootstrap.Modal(modal);
+            }
+            if (assignRoomSelectModalInstance) {
+                assignRoomSelectModalInstance.show();
+            }
+            
+            const params = new URLSearchParams({
+                booking_id: booking.id,
+                date: toISO(state.selectedDate)
+            });
+            
+            try {
+                const response = await fetch(`${assignEndpoints.available}?${params.toString()}`);
+                const payload = await response.json();
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.message || 'No rooms available.');
+                }
+                
+                const rooms = Array.isArray(payload.rooms) ? payload.rooms : [];
+                if (!rooms.length) {
+                    modalBodyEl.innerHTML = '<p class="text-muted small mb-0">No available rooms for the selected date.</p>';
+                    return;
+                }
+                
+                // Get current selection for this booking
+                const currentSelection = state.pendingSelection.get(booking.id);
+                const selectedRoomIds = currentSelection ? (Array.isArray(currentSelection.roomIds) ? currentSelection.roomIds : [currentSelection.roomId]) : [];
+                
+                // Get the number of rooms required for this booking
+                const requiredRooms = parseInt(booking.rooms) || 1;
+                
+                const container = document.createElement('div');
+                container.innerHTML = `
+                    <div class="mb-3">
+                        <p class="small text-muted mb-2">Select exactly <strong>${requiredRooms}</strong> room(s) (Booking requires ${requiredRooms} room${requiredRooms > 1 ? 's' : ''}):</p>
+                        <div class="list-group" style="max-height: 300px; overflow-y: auto;">
+                            ${rooms.map((room) => {
+                                const isChecked = selectedRoomIds.includes(room.id);
+                                return `
+                                    <label class="list-group-item d-flex align-items-center" style="cursor: pointer;">
+                                        <input type="checkbox" class="form-check-input me-2 room-checkbox" value="${room.id}" data-room-label="${room.label}" ${isChecked ? 'checked' : ''}>
+                                        ${room.label}
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                        <p class="small text-info mt-2 mb-0" id="room-selection-status">
+                            Selected: <strong>${selectedRoomIds.length}</strong> / ${requiredRooms}
+                        </p>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-secondary btn-sm" data-cancel-selection>Cancel</button>
+                        <button type="button" class="btn btn-primary btn-sm" data-save-selection>Save Selection</button>
+                    </div>
+                `;
+                
+                modalBodyEl.innerHTML = '';
+                modalBodyEl.appendChild(container);
+                
+                // Function to update checkbox states based on selection count
+                const updateCheckboxStates = () => {
+                    const checkedBoxes = container.querySelectorAll('input.room-checkbox:checked');
+                    const checkedCount = checkedBoxes.length;
+                    const statusEl = container.querySelector('#room-selection-status');
+                    
+                    if (statusEl) {
+                        statusEl.innerHTML = `Selected: <strong>${checkedCount}</strong> / ${requiredRooms}`;
+                        if (checkedCount === requiredRooms) {
+                            statusEl.className = 'small text-success mt-2 mb-0';
+                        } else {
+                            statusEl.className = 'small text-info mt-2 mb-0';
+                        }
+                    }
+                    
+                    // Enable/disable checkboxes based on limit
+                    container.querySelectorAll('input.room-checkbox').forEach(checkbox => {
+                        if (!checkbox.checked && checkedCount >= requiredRooms) {
+                            checkbox.disabled = true;
+                            checkbox.closest('label').style.opacity = '0.5';
+                            checkbox.closest('label').style.cursor = 'not-allowed';
+                        } else {
+                            checkbox.disabled = false;
+                            checkbox.closest('label').style.opacity = '1';
+                            checkbox.closest('label').style.cursor = 'pointer';
+                        }
+                    });
+                };
+                
+                // Add change event listeners to checkboxes
+                container.querySelectorAll('input.room-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', () => {
+                        updateCheckboxStates();
+                    });
+                });
+                
+                // Initialize checkbox states
+                updateCheckboxStates();
+                
+                // Handle cancel
+                container.querySelector('[data-cancel-selection]')?.addEventListener('click', () => {
+                    if (assignRoomSelectModalInstance) {
+                        assignRoomSelectModalInstance.hide();
+                    }
+                });
+                
+                // Handle save
+                container.querySelector('[data-save-selection]')?.addEventListener('click', () => {
+                    const checkedBoxes = container.querySelectorAll('input.room-checkbox:checked');
+                    const selectedRooms = Array.from(checkedBoxes).map(cb => ({
+                        id: parseInt(cb.value),
+                        label: cb.dataset.roomLabel
+                    }));
+                    
+                    if (selectedRooms.length === 0) {
+                        swal('Please select at least one room.', '', 'warning');
+                        return;
+                    }
+                    
+                    if (selectedRooms.length !== requiredRooms) {
+                        swal(`Please select exactly ${requiredRooms} room(s). You have selected ${selectedRooms.length} room(s).`, '', 'warning');
+                        return;
+                    }
+                    
+                    // Store as array of room objects
+                    state.pendingSelection.set(booking.id, {
+                        roomIds: selectedRooms.map(r => r.id),
+                        labels: selectedRooms.map(r => r.label),
+                        roomId: selectedRooms[0].id, // Keep for backward compatibility
+                        label: selectedRooms.map(r => r.label).join(', ') // Display label
+                    });
+                    
+                    updateBookingSelection(booking.id);
+                    
+                    if (assignRoomSelectModalInstance) {
+                        assignRoomSelectModalInstance.hide();
+                    }
+                });
+            } catch (err) {
+                console.error(err);
+                modalBodyEl.innerHTML = `<p class="text-danger small mb-0">${err.message || 'Unable to load rooms.'}</p>`;
+            }
+        }
+        
+        function updateBookingSelection(bookingId) {
+            const card = modalBody?.querySelector(`[data-booking-id="${bookingId}"]`);
+            if (!card) return;
+            
+            const selection = state.pendingSelection.get(bookingId);
+            const roomBox = card.querySelector('[data-room-box]');
+            const buttonContainer = card.querySelector('.d-flex.mt-2.align-items-center.justify-content-between');
+            
+            if (!buttonContainer) return;
+            
+            // Update room display - show multiple rooms as separate tags
+            if (roomBox) {
+                if (selection && selection.labels && selection.labels.length > 0) {
+                    roomBox.innerHTML = selection.labels.map(label => 
+                        `<p class="mb-0 px-1" data-room-display>${label}</p>`
+                    ).join('');
+                } else {
+                    roomBox.innerHTML = '<p class="mb-0 px-1" data-room-display>Not selected</p>';
+                }
+            }
+            
+            // Find the booking object to re-attach event listeners
+            const booking = state.bookings.find(b => b.id === bookingId);
+            if (!booking) return;
+            
+            // Replace button based on selection
+            const existingBtn = buttonContainer.querySelector('[data-select-room], [data-assign-room]');
+            if (existingBtn) {
+                if (selection) {
+                    // Room selected - show Assign Room button
+                    const assignBtn = document.createElement('button');
+                    assignBtn.className = 'theme-btn text-decoration-none';
+                    assignBtn.type = 'button';
+                    assignBtn.setAttribute('data-assign-room', '');
+                    assignBtn.style.minWidth = '120px';
+                    assignBtn.textContent = 'Assign Room';
+                    assignBtn.addEventListener('click', () => triggerAssign(booking));
+                    existingBtn.replaceWith(assignBtn);
+                } else {
+                    // No room selected - show Select Room button
+                    const selectBtn = document.createElement('button');
+                    selectBtn.className = 'theme-btn text-decoration-none outline';
+                    selectBtn.type = 'button';
+                    selectBtn.setAttribute('data-select-room', '');
+                    selectBtn.style.minWidth = '120px';
+                    selectBtn.textContent = 'Select Room';
+                    selectBtn.addEventListener('click', () => openRoomSelector(booking));
+                    existingBtn.replaceWith(selectBtn);
+                }
+            }
+            
+            // Update dropdown button and menu
+            const dropdownBtn = card.querySelector(`[data-booking-menu="${bookingId}"]`);
+            const dropdownContainer = card.querySelector('.dropdown');
+            let dropdownMenu = card.querySelector(`[data-booking-dropdown="${bookingId}"]`);
+            
+            if (selection) {
+                // Rooms selected - enable dropdown button
+                if (dropdownBtn) {
+                    dropdownBtn.setAttribute('data-bs-toggle', 'dropdown');
+                    dropdownBtn.removeAttribute('disabled');
+                    dropdownBtn.style.opacity = '1';
+                    dropdownBtn.style.cursor = 'pointer';
+                }
+                
+                // Create dropdown menu if it doesn't exist
+                if (!dropdownMenu && dropdownContainer) {
+                    dropdownMenu = document.createElement('ul');
+                    dropdownMenu.className = 'dropdown-menu dropdown-menu-end';
+                    dropdownMenu.setAttribute('data-booking-dropdown', bookingId);
+                    dropdownContainer.appendChild(dropdownMenu);
+                }
+                
+                // Add Edit Rooms link if not exists
+                if (dropdownMenu) {
+                    const existingEditLink = dropdownMenu.querySelector(`[data-edit-rooms="${bookingId}"]`);
+                    if (!existingEditLink) {
+                        const editItem = document.createElement('li');
+                        const editLink = document.createElement('a');
+                        editLink.className = 'dropdown-item';
+                        editLink.href = '#';
+                        editLink.setAttribute('data-edit-rooms', bookingId);
+                        editLink.style.fontSize = '13px';
+                        editLink.textContent = 'Edit Rooms';
+                        editItem.appendChild(editLink);
+                        dropdownMenu.appendChild(editItem);
+                        
+                        // Attach event listener
+                        editLink.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Close dropdown
+                            const dropdown = card.querySelector('.dropdown');
+                            const dropdownInstance = dropdown ? window.bootstrap?.Dropdown?.getInstance(dropdown) : null;
+                            if (dropdownInstance) {
+                                dropdownInstance.hide();
+                            }
+                            // Open room selector
+                            openRoomSelector(booking);
+                        });
+                    }
+                }
+            } else {
+                // No rooms selected - disable dropdown button and remove menu
+                if (dropdownBtn) {
+                    dropdownBtn.removeAttribute('data-bs-toggle');
+                    dropdownBtn.setAttribute('disabled', 'disabled');
+                    dropdownBtn.style.opacity = '0.5';
+                    dropdownBtn.style.cursor = 'not-allowed';
+                }
+                
+                // Remove dropdown menu
+                if (dropdownMenu) {
+                    dropdownMenu.remove();
+                }
+            }
+        }
+        
+        function triggerAssign(booking) {
+            const selection = state.pendingSelection.get(booking.id);
+            if (!selection) {
+                swal('Select a room first.', '', 'warning');
+                return;
+            }
+            
+            const roomLabels = selection.labels ? selection.labels.join(', ') : selection.label;
+            const roomCount = selection.roomIds ? selection.roomIds.length : 1;
+            const roomText = roomCount > 1 ? `Room Numbers ${roomLabels}` : `Room Number ${roomLabels}`;
+            
+            swal({
+                title: 'Confirm assignment',
+                text: `Are you sure you want to assign ${roomText}?`,
+                icon: 'warning',
+                buttons: ['Cancel', 'Assign']
+            }).then((willAssign) => {
+                if (willAssign) {
+                    assignRoom(booking, selection);
+                }
+            });
+        }
+        
+        async function assignRoom(booking, selection) {
+            const formData = new FormData();
+            formData.append('booking_id', booking.id);
+            
+            // Send comma-separated room IDs
+            const roomIds = selection.roomIds ? selection.roomIds : [selection.roomId];
+            formData.append('room_number_ids', roomIds.join(','));
+            
+            if (csrfToken) {
+                formData.append('_token', csrfToken);
+            }
+            
+            try {
+                const response = await fetch(assignEndpoints.assign, {
+                    method: 'POST',
+                    headers: csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {},
+                    body: formData
+                });
+                
+                const payload = await response.json();
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.message || 'Unable to assign room.');
+                }
+                
+                state.pendingSelection.delete(booking.id);
+                state.bookings = state.bookings.filter((b) => b.id !== booking.id);
+                renderBookings();
+                swal('Success!', 'Room assigned successfully.', 'success');
+                
+                if (typeof window.fetchCalendarDataForCurrentView === 'function') {
+                    window.fetchCalendarDataForCurrentView();
+                }
+            } catch (err) {
+                console.error(err);
+                swal('Error', err.message || 'Unable to assign room. Please try again.', 'error');
+            }
+        }
+        
+        function shiftRange(dir) {
+            state.referenceDate.setDate(state.referenceDate.getDate() + (dir * 5));
+            state.selectedDate = new Date(state.referenceDate);
+            renderDates();
+            fetchBookings();
+        }
+        
+        // Initialize modal on show
+        assignModalEl.addEventListener('shown.bs.modal', () => {
+            if (!state.hydrated) {
+                // Set up event listeners
+                modalBody.querySelector('#assignModalPrevBtn')?.addEventListener('click', () => shiftRange(-1));
+                modalBody.querySelector('#assignModalNextBtn')?.addEventListener('click', () => shiftRange(1));
+                modalBody.querySelector('#assignModalTodayBtn')?.addEventListener('click', () => {
+                    syncFromCalendar(true);
+                    renderDates();
+                    fetchBookings();
+                });
+                
+                const picker = modalBody.querySelector('#assignModalDatePicker');
+                const pickerBtn = modalBody.querySelector('#assignModalDatePickerBtn');
+                picker?.addEventListener('change', (e) => {
+                    const dateStr = e.target.value;
+                    if (!dateStr) return;
+                    
+                    const dt = parseISO(dateStr);
+                    if (!dt) return;
+                    
+                    // Update selected date (ensure it's a new Date object with local timezone)
+                    state.selectedDate = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+                    state.selectedDate.setHours(0, 0, 0, 0);
+                    
+                    // Update reference date to start of week for the selected date
+                    state.referenceDate = startOfWeek(state.selectedDate);
+                    
+                    renderDates();
+                    fetchBookings();
+                });
+                // Handle button click - trigger date picker
+                pickerBtn?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (picker && typeof picker.showPicker === 'function') {
+                        picker.showPicker();
+                    } else {
+                        // Fallback: trigger click on the input
+                        picker?.click();
+                    }
+                });
+                
+                // Also handle clicks on the image directly
+                const calendarImg = pickerBtn?.querySelector('img');
+                if (calendarImg) {
+                    calendarImg.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (picker && typeof picker.showPicker === 'function') {
+                            picker.showPicker();
+                        } else {
+                            picker?.click();
+                        }
+                    });
+                }
+                
+                state.hydrated = true;
+            }
+            
+            syncFromCalendar(false);
+            renderDates();
+            fetchBookings();
+        });
+        
+        // Handle hotel selector change
+        if (hotelSelector) {
+            hotelSelector.addEventListener('change', () => {
+                if (state.hydrated) {
+                    fetchBookings();
+                }
+            });
+        }
+    })();
 });
 </script>
 @endsection
