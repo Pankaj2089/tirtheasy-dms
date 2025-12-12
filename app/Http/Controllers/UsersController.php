@@ -418,7 +418,8 @@ class UsersController extends Controller{
             'orders.payment_status',
             'orders.invoice_id',
             'orders.created_at',
-            'orders.room_number_ids'
+            'orders.room_number_ids',
+            'orders.grand_total'
         ]);
 
         if($orders->count() > 0){
@@ -445,6 +446,9 @@ class UsersController extends Controller{
                     'is_blocked' => false,
                     'inclusive_end' => true,
                     'room_number_ids' => $order->room_number_ids ?? null,
+                    'payment_status' => $order->payment_status ?? null,
+                    'grand_total' => $order->grand_total ?? null,
+                    'order_id' => $order->id
                 ];
             }
         }

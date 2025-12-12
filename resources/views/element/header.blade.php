@@ -32,9 +32,9 @@
         </div>
         <div class="head-menu ms-md-auto ">
             <ul class="d-flex align-items-center list-style-none">
-                <li class="d-none d-lg-block"><a href="/">Home</a></li>
+                <li class="d-none d-lg-block"><a href="{{$siteUrl}}">Home</a></li>
                 <li class="d-none d-lg-block"><a href="">Share Link</a></li>
-                <li class="d-none d-lg-block"><a href="/">Reservation</a></li>
+                <li class="d-none d-lg-block"><a href="{{$siteUrl}}reservation">Reservation</a></li>
                 <li class="d-none d-lg-block"><a class="theme-btn text-white" data-bs-toggle="modal"
                         data-bs-target="#reservation-pop">Quick Reservation</a></li>
                 <li data-bs-toggle="modal" data-bs-target="#reservation-new"><img src="{{$siteUrl}}public/assets/img/notification-ic.svg"

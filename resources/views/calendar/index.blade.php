@@ -1088,8 +1088,8 @@ aria-labelledby="assignLabel" aria-hidden="true">
                 <div class="date-cal d-flex align-items-center gap-2">
                     <button class="btn btn-outline-secondary btn-sm" id="assignModalTodayBtn">Today</button>
                     <div class="position-relative">
-                        <input type="date" class="position-absolute w-100 h-100 opacity-0" id="assignModalDatePicker" aria-label="Select date" style="cursor: pointer; z-index: 2;">
-                        <button type="button" class="bg-transpaent border-0" id="assignModalDatePickerBtn" style="position: relative; z-index: 1;">
+                        <input type="date" class="position-absolute w-100 h-100 opacity-0" id="assignModalDatePicker" aria-label="Select date" style="cursor: pointer; z-index: 1;">
+                        <button type="button" class="bg-transpaent border-0" id="assignModalDatePickerBtn" style="position: relative; z-index: 2; cursor: pointer;">
                             <img src="{{$siteUrl}}public/assets/img/cir-calendar.svg" alt="" style="pointer-events: none;">
                         </button>
                     </div>
@@ -2266,7 +2266,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     room_number_ids: entry.room_number_ids || null,
                     // Preserve original entry data for maintenance blocks
                     guest_name: entry.guest_name,
-                    source: entry.source
+                    source: entry.source,
+                    // Preserve payment data for payment-pending indicator
+                    payment_status: entry.payment_status || null,
+                    grand_total: entry.grand_total || null,
+                    balance: entry.balance || null,
+                    order_id: entry.order_id || null
                 });
             });
         });
@@ -2646,6 +2651,44 @@ document.addEventListener('DOMContentLoaded', function () {
         return row;
     }
 
+    // Check if payment is pending for a booking
+    function checkIfPaymentPending(booking) {
+        // Skip maintenance blocks
+        if (booking.isBlocked || booking.status === 'maintenance') {
+            return false;
+        }
+        
+        // Check payment_status first
+        const paymentStatus = (booking.payment_status || '').toUpperCase();
+        const isPaid = paymentStatus === 'PAID' || paymentStatus === 'COMPLETED' || paymentStatus === 'SUCCESS';
+        
+        // If explicitly paid, not pending
+        if (isPaid) {
+            return false;
+        }
+        
+        // If payment_status is PENDING, it's pending
+        if (paymentStatus === 'PENDING') {
+            return true;
+        }
+        
+        // Check grand_total - if there's an amount due and payment_status is not paid, it's pending
+        const grandTotal = parseFloat(booking.grand_total) || 0;
+        
+        // If grand_total > 0 and payment_status is not paid (or null/empty), payment is pending
+        if (grandTotal > 0 && !isPaid) {
+            return true;
+        }
+        
+        // Check balance if available - if balance > 0, payment is pending
+        const balance = parseFloat(booking.balance) || 0;
+        if (balance > 0) {
+            return true;
+        }
+        
+        return false;
+    }
+
     function renderBookingBlocks(gridEl, roomId) {
         const bookings = bookingsByRoom.get(roomId);
         if (!bookings || !bookings.length) {
@@ -2658,7 +2701,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
             const block = document.createElement('div');
-            block.className = ['booking-block', booking.cssClass].filter(Boolean).join(' ');
+            // Check if payment is pending
+            const isPaymentPending = checkIfPaymentPending(booking);
+            const blockClasses = ['booking-block', booking.cssClass];
+            if (isPaymentPending) {
+                blockClasses.push('payment-pending');
+            }
+            block.className = blockClasses.filter(Boolean).join(' ');
             block.dataset.bookingId = booking.id;
             block.style.gridColumn = `${indices.start + 1} / ${indices.end + 2}`;
             block.style.gridRow = '1';
