@@ -49,14 +49,37 @@ class ReservationController extends Controller
         
         $today = Carbon::today();
         $now = Carbon::now();
-        
         foreach ($bookings as $booking) {
-            $checkInDate = Carbon::parse($booking['check_in_date']);
-            $checkOutDate = $booking['check_out_date'] ? Carbon::parse($booking['check_out_date']) : null;
+            // Skip if check_in_date is missing or invalid
+            if (empty($booking['check_in_date'])) {
+                continue;
+            }
+            
+            try {
+                $checkInDate = Carbon::parse($booking['check_in_date'])->startOfDay();
+            } catch (\Exception $e) {
+                // Skip booking if date can't be parsed
+                continue;
+            }
+            
+            $checkOutDate = null;
+            if (!empty($booking['check_out_date'])) {
+                try {
+                    $checkOutDate = Carbon::parse($booking['check_out_date'])->startOfDay();
+                } catch (\Exception $e) {
+                    // Continue without check-out date if it can't be parsed
+                    $checkOutDate = null;
+                }
+            }
             
             // Parse check-in time
             $checkInTime = $booking['check_in_time'] ?? '14:00';
-            $checkInDateTime = Carbon::parse($booking['check_in_date'] . ' ' . $checkInTime);
+            try {
+                $checkInDateTime = Carbon::parse($booking['check_in_date'] . ' ' . $checkInTime);
+            } catch (\Exception $e) {
+                // Fallback to just the date if time parsing fails
+                $checkInDateTime = $checkInDate->copy()->setTime(14, 0);
+            }
             
             // Calculate payment totals
             $paymentData = $this->getBookingPaymentData($booking['id']);
@@ -83,42 +106,50 @@ class ReservationController extends Controller
                 'payment_status' => $booking['payment_status'] ?? 'PENDING'
             ];
             
-            // Check if guest has checked in (has room assigned)
-            $hasCheckedIn = $booking['has_room_assigned'] ?? false;
+            // Check if guest has checked in (has room assigned AND check-in date is today or past)
+            // For future dates, even if room is assigned, guest hasn't checked in yet
+            $hasRoomAssigned = $booking['has_room_assigned'] ?? false;
+            $hasCheckedIn = $hasRoomAssigned && ($checkInDate->isToday() || $checkInDate->isPast());
             
             // Filter by selected date if provided
             $useFilterDate = $filterDateInput !== null;
             
             // Arrivals: Show all bookings that haven't checked in yet
-            // - Today's bookings where check-in time has passed
-            // - Future bookings (upcoming) - all future check-in dates
-            if ($useFilterDate) {
-                // Filter by selected date - check-in date must match filter date
-                if ($checkInDate->format('Y-m-d') === $filterDate->format('Y-m-d') && !$hasCheckedIn) {
-                    // If filter date is today or past, check if check-in time has passed
-                    if ($filterDate->isToday() || $filterDate->isPast()) {
-                        if ($checkInDateTime->isPast()) {
+            // - Today's bookings (all of them if not checked in)
+            // - Future bookings (upcoming) - all future check-in dates (even if room pre-assigned)
+            $checkInDateStr = $checkInDate->format('Y-m-d');
+            $todayStr = $today->format('Y-m-d');
+            
+            // Show bookings that haven't checked in yet
+            // For future dates, show even if room is assigned (pre-assignment, not checked in)
+            if (!$hasCheckedIn) {
+                if ($useFilterDate) {
+                    // Filter by selected date - check-in date must match filter date
+                    $filterDateStr = $filterDate->format('Y-m-d');
+                    
+                    if ($checkInDateStr === $filterDateStr) {
+                        // If filter date is today or past, check if check-in time has passed
+                        if ($filterDateStr <= $todayStr) {
+                            if ($checkInDateTime->isPast()) {
+                                $arrivals[] = $bookingData;
+                            }
+                        } else {
+                            // Filter date is in the future, show all upcoming bookings for that date
+                            // (even if room is pre-assigned, they haven't checked in yet)
                             $arrivals[] = $bookingData;
                         }
-                    } else {
-                        // Filter date is in the future, show all upcoming bookings for that date
-                        $arrivals[] = $bookingData;
                     }
-                }
-            } else {
-                // Default: Show all bookings that haven't checked in yet
-                // - Today's bookings where check-in time has passed
-                // - All future bookings (upcoming)
-                if (!$hasCheckedIn) {
-                    if ($checkInDate->isToday() && $checkInDateTime->isPast()) {
-                        // Today's booking where time has passed
-                        $arrivals[] = $bookingData;
-                    } elseif ($checkInDate->isFuture()) {
-                        // All upcoming bookings (future check-in dates)
+                } else {
+                    // Default: Show all bookings that haven't checked in yet
+                    // - Today's bookings (all of them, regardless of time)
+                    // - All future bookings (upcoming) - including bookings beyond today
+                    if ($checkInDateStr >= $todayStr) {
+                        // All today's bookings and all future bookings
                         $arrivals[] = $bookingData;
                     }
                 }
             }
+            
             
             // Departures: Check-out date matches filter date (or today if no filter)
             if ($useFilterDate) {
@@ -131,9 +162,8 @@ class ReservationController extends Controller
                 }
             }
             
-            // In-House: Guests who have already checked in (room assigned) AND booking is ongoing
-            // Must have room assigned (hasCheckedIn = true)
-            // Check-in date must be today or in the past (already checked in)
+            // In-House: Guests who have already checked in (room assigned AND check-in date is today or past) AND booking is ongoing
+            // Must have room assigned AND check-in date is today or in the past (actually checked in)
             // Check-out date must be today or in the future (not checked out yet)
             if ($hasCheckedIn) {
                 if ($useFilterDate) {

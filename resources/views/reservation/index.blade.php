@@ -112,8 +112,13 @@ $siteUrl = env('APP_URL');
                 </nav>
             </div>
             <div class="col-md-3 d-flex align-items-center justify-content-end gap-3">
-                <div class="time w-75">
+                <div class="time w-75 d-flex align-items-center gap-2">
                     <input type="date" class="form-control border-top-0 border-bottom-0 rounded-0" id="Check-In" value="{{ $selectedFilterDate ?? date('Y-m-d') }}" data-filter-date>
+                    @if(request()->has('filter_date'))
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clearDateFilter" title="Clear date filter to show all future bookings">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    @endif
                 </div>
                 <div class="d-flex align-items-center">
                     <a class="user-button"><img src="{{$siteUrl}}public/assets/img/user.svg" alt=""></a>
@@ -242,6 +247,13 @@ $siteUrl = env('APP_URL');
                 url.searchParams.delete('filter_date');
             }
             
+            window.location.href = url.toString();
+        });
+        
+        // Handle clear date filter button
+        $('#clearDateFilter').on('click', function() {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('filter_date');
             window.location.href = url.toString();
         });
         
