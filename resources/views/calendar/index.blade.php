@@ -186,7 +186,6 @@ $siteUrl = env('APP_URL');
 
             <!-- Room Rows -->
             <div class="rooms-container">
-                <!-- 4 ICR Villa Section -->
                 <!-- Room Availability Footer -->
                 <div class="availability-footer fixed-bottom border-top">
                     <div class="footer-row position-relative">
@@ -1531,63 +1530,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const quickReservationRooms = Array.isArray(quickReservationServerRooms) ? quickReservationServerRooms : [];
 
     initQuickReservationForm(quickReservationRooms);
-    const fallbackRoomsData = [
-        {
-            hostelName: "Room Category Name Here",
-            title: "4 ICR Villa",
-            summary: {
-                defaultCount: 0,
-                defaultPrice: 18000,
-                tooltip: 'Available rooms / base rate',
-                overrides: {
-                    '2025-03-01': { count: 3, price: 18500 },
-                    '2025-03-02': { count: 2, price: 18250 },
-                    '2025-03-03': { count: 1, price: 19000 }
-                }
-            },
-            rooms: [
-                { id: 1, number: "1109" },
-                { id: 2, number: "1201" },
-                { id: 3, number: "1203" }
-            ]
-        },
-        {
-            hostelName: "Room Category Name Here",
-            title: "Garden Suite",
-            summary: {
-                defaultCount: 1,
-                defaultPrice: 15000,
-                tooltip: 'Suites remaining / rack rate',
-                overrides: {
-                    '2025-03-02': { count: 0, price: 16000 },
-                    '2025-03-05': { count: 2, price: 14800 }
-                }
-            },
-            rooms: [
-                { id: 4, number: "1210" },
-                { id: 5, number: "1302" }
-            ]
-        },
-        {
-            hostelName: "Premium Suites",
-            title: "ICR Deluxe",
-            summary: {
-                defaultCount: 2,
-                defaultPrice: 22000,
-                tooltip: 'Deluxe allocation / nightly rate',
-                overrides: {
-                    '2025-03-03': { count: 4, price: 21500 },
-                    '2025-03-04': { count: 1, price: 23000 }
-                }
-            },
-            rooms: [
-                { id: 6, number: "2101" },
-                { id: 7, number: "2102" }
-            ]
-        }
-    ];
-
-    let roomsData = (Array.isArray(serverRoomsData) && serverRoomsData.length) ? serverRoomsData : fallbackRoomsData;
+    let roomsData = Array.isArray(serverRoomsData) ? serverRoomsData : [];
 
     const serverBookingData = @json($bookings ?? []);
     let bookingData = Array.isArray(serverBookingData) ? serverBookingData : [];
@@ -2774,7 +2717,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function renderRooms() {
         roomsListEl.innerHTML = '';
-        if (!normalizedRoomsData.length) {
+        // Only show empty state if we're not loading and there are no rooms
+        // This prevents showing the message during calendar navigation
+        const isLoading = roomsContainer?.classList.contains('is-loading');
+        if (!normalizedRoomsData.length && !isLoading) {
             emptyStateEl.style.display = 'block';
             return;
         }
@@ -3635,6 +3581,8 @@ document.addEventListener('DOMContentLoaded', function () {
         calendarState.viewMode = mode;
         weekViewBtn?.classList.toggle('active', mode === 'week');
         monthViewBtn?.classList.toggle('active', mode === 'month');
+        // Set loading state before rendering to prevent showing empty state during navigation
+        setCalendarLoading(true);
         renderCalendar();
         fetchCalendarDataForCurrentView();
     }
@@ -3648,6 +3596,8 @@ document.addEventListener('DOMContentLoaded', function () {
             calendarState.referenceDate.setMonth(calendarState.referenceDate.getMonth() + direction);
         }
         syncDatePicker();
+        // Set loading state before rendering to prevent showing empty state during navigation
+        setCalendarLoading(true);
         renderCalendar();
         fetchCalendarDataForCurrentView();
     }
@@ -3666,6 +3616,8 @@ document.addEventListener('DOMContentLoaded', function () {
         calendarState.referenceDate = calendarState.viewMode === 'week'
             ? new Date(selected.setHours(0, 0, 0, 0))
             : selected;
+        // Set loading state before rendering to prevent showing empty state during navigation
+        setCalendarLoading(true);
         renderCalendar();
         fetchCalendarDataForCurrentView();
     }
