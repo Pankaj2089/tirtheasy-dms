@@ -1191,7 +1191,9 @@ div#accordionExample {
 div#reservation-pop .modal-content {
     padding: 15px 20px;
     border-radius: 10px;
-    height: calc(100vh - 0px);
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
 }
 
 div#reservation-pop .modal-content h4{
@@ -1229,8 +1231,57 @@ div#reservation-pop .modal-content h4{
 .reservation-footer {
     bottom: 0;
 }
+
+/* Fixed footer for reservation popup */
+div#reservation-pop .reservation-footer {
+    position: fixed !important;
+    bottom: 19px;
+    right: 25px;
+    left: auto;
+    width: 869px !important;
+    background-color: #FFF !important;
+    z-index: 1055;
+    padding: 15px 20px;
+    margin: 0 !important;
+    border-radius: 0 0 10px 10px;
+}
+
+/* Responsive footer width for different devices */
+@media (max-width: 991px) {
+    div#reservation-pop .reservation-footer {
+        width: calc(100% - 50px) !important;
+        right: 25px;
+        max-width: 869px;
+    }
+}
+
+@media (max-width: 900px) {
+    div#reservation-pop .reservation-footer {
+        width: calc(100% - 50px) !important;
+        right: 25px;
+        max-width: none;
+    }
+}
+
+@media (max-width: 767px) {
+    div#reservation-pop .reservation-footer {
+        width: calc(100% - 40px) !important;
+        right: 20px;
+        bottom: 10px;
+        padding: 10px 15px;
+    }
+}
+
+@media (max-width: 575px) {
+    div#reservation-pop .reservation-footer {
+        width: calc(100% - 20px) !important;
+        right: 10px;
+        left: 10px;
+    }
+}
 form.bl-reserve-form {
-    height: 83vh;
+    min-height: auto;
+    max-height: none;
 }
 
 .bl-reserve-form label, .p-details label {
@@ -1342,7 +1393,7 @@ form.bl-reserve-form select, .p-details select, .p-details input{
     position: absolute;
     background: #000;
     right: 10px;
-    border: 1px solid ##696969;
+    border: 1px solid #696969;
     top: 6px;
     color: #fff;
     font-weight: 400;
@@ -1621,9 +1672,6 @@ tr {
 }
 
 
-
-
-<!-- Reservation New -->
 
   .bl-reserve-tbl .modal-content {
     border-radius: 12px;
@@ -2202,4 +2250,23 @@ button.btn-close.left-close-button img{
 
 .pop-up-footer p {
     font-size: 12px;
+}
+
+/* Quick Reservation Modal - Scrollable Fix */
+div#reservation-pop .modal-dialog.modal-dialog-scrollable {
+    max-height: 100vh !important;
+    height: 100% !important;
+    min-height: 100vh !important;
+}
+
+div#reservation-pop .modal-dialog.modal-dialog-scrollable .modal-content {
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+div#reservation-pop .modal-dialog.modal-dialog-scrollable .modal-body {
+    overflow-y: auto;
+    flex: 1 1 auto;
+    max-height: none;
 }

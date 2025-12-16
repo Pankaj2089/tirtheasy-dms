@@ -271,11 +271,11 @@ $siteUrl = env('APP_URL');
 <!-- quick reservation popup start -->
 <!-- Modal -->
 <div class="modal fade" id="reservation-pop" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-<div class="modal-dialog">
+<div class="modal-dialog modal-dialog-scrollable modal-lg">
     <div class="modal-content">
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><img
                 src="{{$siteUrl}}public/assets/img/close.svg" alt=""></button>
-        <div class="modal-body p-0">
+        <div class="modal-body p-0" style="max-height: calc(100vh - 120px); overflow-y: auto;">
             <h4>Quick Reservation</h4>
 
 
@@ -293,7 +293,7 @@ $siteUrl = env('APP_URL');
                 <div class="tab-pane fade active show" id="nav-home" role="tabpanel"
                     aria-labelledby="nav-home-tab">
                     <h5>Booking Details</h5>
-                    <form id="quickReservationForm" class="bl-reserve-form position-relative" data-endpoint="{{ route('quickReservations.store') }}">
+                    <form id="quickReservationForm" class="bl-reserve-form position-relative" data-endpoint="{{ route('quickReservations.store') }}" style="padding-bottom: 120px;">
                         @csrf
                         <div id="quickReservationErrors" class="alert alert-danger small d-none"></div>
                         <div class="row align-items-end mb-3">
@@ -394,7 +394,7 @@ $siteUrl = env('APP_URL');
                         </div>
                     </form>
                 </div>
-                <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">
+                <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab" style="padding-bottom: 120px;">
                             <div class="row">
                                 <div class="col-md-6 px-0 border-box">
                                     <div class="sub-heading px-3 d-flex justify-content-between">

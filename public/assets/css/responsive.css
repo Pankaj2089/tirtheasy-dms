@@ -104,6 +104,65 @@ select.form-select.form-select-sm {
     bottom: 20px;
 }
 
+/* Quick Reservation Modal - Responsive fixes */
+@media (max-width: 991px) {
+    div#reservation-pop .modal-dialog {
+        margin: 10px;
+        max-width: calc(100% - 20px);
+    }
+    
+    div#reservation-pop .modal-content {
+        max-height: calc(100vh - 20px);
+    }
+    
+    div#reservation-pop .modal-body {
+        max-height: calc(100vh - 140px);
+    }
+    
+    form.bl-reserve-form {
+        padding-bottom: 140px !important;
+    }
+    
+    #nav-profile {
+        padding-bottom: 140px !important;
+    }
+}
+
+@media (max-width: 767px) {
+    div#reservation-pop .modal-dialog {
+        margin: 5px;
+        max-width: calc(100% - 10px);
+    }
+    
+    div#reservation-pop .modal-content {
+        max-height: calc(100vh - 10px);
+        padding: 10px 15px;
+    }
+    
+    div#reservation-pop .modal-body {
+        max-height: calc(100vh - 120px);
+        padding: 10px;
+    }
+    
+    form.bl-reserve-form {
+        padding-bottom: 150px !important;
+    }
+    
+    #nav-profile {
+        padding-bottom: 150px !important;
+    }
+    
+    .reservation-footer {
+        bottom: 10px;
+        padding: 10px 15px;
+    }
+    
+    .bl-tabs .nav-link {
+        padding: 10px 15px;
+        font-size: 11px;
+    }
+}
+
 .reservation-inner .tab-content {
     margin-top: 10px;
 }
