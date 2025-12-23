@@ -46,6 +46,15 @@ $siteUrl = env('APP_URL');
         border-bottom: none;
     }
     
+    .room-number-dropdown .room-number-checkbox {
+        cursor: pointer;
+        margin-top: 0.125rem;
+    }
+    
+    .room-number-dropdown .list-group-item input[type="checkbox"]:disabled {
+        cursor: not-allowed;
+    }
+    
     .selected-room-numbers .badge {
         font-size: 0.875rem;
         padding: 4px 8px;
@@ -334,7 +343,10 @@ $siteUrl = env('APP_URL');
                             <div class="col-md-12">
                                 <label class="form-label">Select Room Numbers</label>
                                 <div class="room-number-select-wrapper position-relative">
-                                    <input type="text" id="quickRoomNumberSearch" class="form-control" placeholder="Search and select room numbers..." autocomplete="off">
+                                    <div class="d-flex gap-2 mb-2">
+                                        <input type="text" id="quickRoomNumberSearch" class="form-control" placeholder="Search and select room numbers..." autocomplete="off">
+                                        <button type="button" id="quickSelectAllRooms" class="btn btn-outline-primary btn-sm" style="white-space: nowrap;">Select Room</button>
+                                    </div>
                                     <div id="quickRoomNumberDropdown" class="room-number-dropdown" style="display: none;"></div>
                                     <input type="hidden" id="quickRoomNumberIds" name="room_number_ids" value="">
                                     <small class="form-text text-muted">Type to search. Only available rooms for selected dates will be shown.</small>
@@ -350,6 +362,7 @@ $siteUrl = env('APP_URL');
                             <div class="col-md-3 d-flex flex-column">
                                 <label class="form-label">Name</label>
                                 <input type="text" class="form-control" id="quickGuestName" name="guest[name]" placeholder="Enter guest name">
+                                <div class="invalid-feedback">Name should contain only alphabetic characters.</div>
                             </div>
                             <div class="col-md-3 d-flex flex-column">
                                 <label class="form-label">Gender</label>
@@ -367,6 +380,7 @@ $siteUrl = env('APP_URL');
                             <div class="col-md-3 d-flex flex-column">
                                 <label class="form-label">Mobile</label>
                                 <input type="tel" class="form-control" maxlength="10" id="quickGuestMobile" name="guest[mobile]" placeholder="0123456789">
+                                <div class="invalid-feedback">Mobile number must be exactly 10 digits.</div>
                             </div>
                         </div>
 
@@ -396,7 +410,8 @@ $siteUrl = env('APP_URL');
                 </div>
                 <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab" style="padding-bottom: 120px;">
                             <div class="row">
-                                <div class="col-md-6 px-0 border-box">
+                                <!-- Add left padding so Details & Folio History align like other popups -->
+                                <div class="col-md-6 px-3 border-box">
                                     <div class="sub-heading px-3 d-flex justify-content-between">
                                         <p class="mb-0">Date : <strong id="quickPaymentDate">-</strong></p>
                                     </div>
@@ -1540,12 +1555,16 @@ document.addEventListener('DOMContentLoaded', function () {
     let normalizedBookings = [];
     let bookingsByRoom = new Map();
     let bookingDateLookup = new Map();
+    let unassignedBookings = []; // Track bookings without room assignments
 
     function refreshDerivedDatasets() {
         normalizedRoomsData = dedupeRoomCategories(roomsData);
         roomDictionary = buildRoomDictionary(normalizedRoomsData);
         normalizedBookings = normalizeBookings(bookingData);
-        bookingsByRoom = groupBookingsByRoom(normalizedBookings, roomDictionary);
+        // Separate assigned and unassigned bookings
+        const assignedBookings = normalizedBookings.filter(b => !b.isUnassigned);
+        unassignedBookings = normalizedBookings.filter(b => b.isUnassigned);
+        bookingsByRoom = groupBookingsByRoom(assignedBookings, roomDictionary);
         bookingDateLookup = buildBookingDateLookup(bookingsByRoom);
     }
 
@@ -1661,10 +1680,15 @@ document.addEventListener('DOMContentLoaded', function () {
         return base;
     }
 
+    // Initialize referenceDate to today (set to start of day)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const calendarState = {
         viewMode: 'week',
-        referenceDate: getWeekStart(new Date()),
-        visibleDates: []
+        referenceDate: today, // Start with today as first date
+        visibleDates: [],
+        isNavigating: false // Track if we're navigating to add active state
     };
 
     const selectionState = {
@@ -1735,8 +1759,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         const end = endDate || startDate;
         const durationMs = Math.abs(end.getTime() - startDate.getTime());
-        const nights = Math.max(1, Math.round(durationMs / DAY_IN_MS) + 1);
-        const label = nights === 1 ? '1 day' : `${nights} days`;
+        // Calculate nights: Jan 1 to Jan 2 = 1 night (12:00 to 12:00 booking)
+        const nights = Math.max(1, Math.round(durationMs / DAY_IN_MS));
+        const label = nights === 1 ? '1 night' : `${nights} nights`;
         return label;
     }
 
@@ -2003,6 +2028,18 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!selectionTooltip || !roomsListEl || !roomId || !range?.end) {
             return;
         }
+        // Only show tooltip when at least 2 days are selected
+        const startDate = parseISO(range.start);
+        const endDate = parseISO(range.end);
+        if (!startDate || !endDate) {
+            return;
+        }
+        const durationMs = Math.abs(endDate.getTime() - startDate.getTime());
+        const daysSelected = Math.round(durationMs / DAY_IN_MS) + 1;
+        if (daysSelected < 2) {
+            hideSelectionTooltip();
+            return;
+        }
         const targetCell = roomsListEl.querySelector(`.calendar-cell[data-room-id="${roomId}"][data-date="${range.end}"]`);
         if (!targetCell) {
             hideSelectionTooltip();
@@ -2183,9 +2220,31 @@ document.addEventListener('DOMContentLoaded', function () {
                     roomIds = [Number(roomNumberId)];
                 }
             } else {
-                // Regular bookings: Only show if room_number_ids exists
+                // Regular bookings: Check if room_number_ids exists
                 if (!entry.room_number_ids || typeof entry.room_number_ids !== 'string' || !entry.room_number_ids.trim()) {
-                    return;
+                    // This is an unassigned booking - store it separately
+                    normalized.push({
+                        id: entry.id ?? `unassigned-${index}`,
+                        roomId: null, // No room assigned
+                        startDate: normalizedRange.start,
+                        endDate: normalizedRange.end,
+                        label: entry.label || entry.guest_name || entry.guestName || 'Reserved',
+                        tooltip: entry.tooltip || entry.notes || entry.source || '',
+                        status: statusValue,
+                        isBlocked: false,
+                        inclusiveEnd: inclusiveEnd || false,
+                        room_number_ids: null,
+                        guest_name: entry.guest_name,
+                        source: entry.source,
+                        payment_status: entry.payment_status || null,
+                        grand_total: entry.grand_total || null,
+                        balance: entry.balance || null,
+                        order_id: entry.order_id || entry.id || null,
+                        room_id: entry.room_id || entry.room_category_id || null, // Room type/category ID
+                        room_category_id: entry.room_category_id || entry.room_id || null,
+                        isUnassigned: true
+                    });
+                    return; // Don't add to room-specific bookings
                 }
                 // Parse comma-separated room number IDs
                 roomIds = entry.room_number_ids.split(',').map(id => id.trim()).filter(Boolean).map(Number);
@@ -2433,7 +2492,10 @@ document.addEventListener('DOMContentLoaded', function () {
         updateColumnCountStyles();
         dateColumnsEl.innerHTML = '';
 
-        calendarState.visibleDates.forEach((date) => {
+        const today = toISO(new Date());
+        const referenceIso = toISO(calendarState.referenceDate);
+
+        calendarState.visibleDates.forEach((date, index) => {
             const iso = toISO(date);
             const column = document.createElement('div');
             column.className = 'date-column';
@@ -2441,8 +2503,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const cell = document.createElement('div');
             cell.className = 'date-cell-button';
 
-            if (iso === toISO(new Date())) {
+            if (iso === today) {
                 cell.classList.add('is-today');
+            }
+
+            // Add active class to first date when navigating (if it matches referenceDate and is not today)
+            if (calendarState.isNavigating && index === 0 && iso === referenceIso && iso !== today) {
+                cell.classList.add('is-active');
             }
 
             if (isWeekend(date)) {
@@ -2458,6 +2525,9 @@ document.addEventListener('DOMContentLoaded', function () {
             column.appendChild(cell);
             dateColumnsEl.appendChild(column);
         });
+
+        // Reset navigation flag after rendering
+        calendarState.isNavigating = false;
     }
 
     function buildCategoryHeader(label) {
@@ -2511,24 +2581,149 @@ document.addEventListener('DOMContentLoaded', function () {
         calendarState.visibleDates.forEach((date) => {
             const iso = toISO(date);
             const { count, price, tooltip } = getCategoryDailyMetrics(category, iso);
+            
+            // Check for unassigned bookings for this date
+            // Match bookings to category by checking if any room in category matches booking's room_id
+            const unassignedForDate = unassignedBookings.filter(booking => {
+                if (!booking.startDate || !booking.endDate) return false;
+                const start = new Date(booking.startDate);
+                const end = new Date(booking.endDate);
+                const current = new Date(iso);
+                // Check if date falls within booking range
+                if (current < start || current > end) return false;
+                
+                // Match by room_id - check if booking's room_id matches any room in this category
+                if (booking.room_id && category.rooms) {
+                    return category.rooms.some(room => room.id == booking.room_id);
+                }
+                return false;
+            });
+            
             const cell = document.createElement('div');
             cell.className = 'grid-cell bg-transparent border-0';
+            
             const priceLabel = document.createElement('div');
             priceLabel.className = 'price-label';
+            priceLabel.style.textAlign = 'center';
             const hasCount = typeof count === 'number' && !Number.isNaN(count);
-            const countMarkup = hasCount ? `<span${count <= 0 ? ' class="no-availability"' : ''}>${count}</span>` : '';
+            
+            // Build count markup with blue box on same line if unassigned bookings exist
+            let countMarkup = '';
+            if (hasCount) {
+                countMarkup = `<span${count <= 0 ? ' class="no-availability"' : ''} style="display: inline-block; text-align: center;">${count}</span>`;
+            }
+            
+            // If there are unassigned bookings, add blue box on same line
+            if (unassignedForDate.length > 0) {
+                const unassignedBox = document.createElement('span');
+                unassignedBox.className = 'text-white';
+                unassignedBox.style.cssText = 'cursor: pointer; padding: 1px 5px; border-radius: 3px; font-size: 9px; background: #7ba4d2 !important; margin-left: 4px; display: inline-block; text-align: center; line-height: 15px;';
+                unassignedBox.title = `${unassignedForDate.length} unassigned booking(s) - Click to assign room`;
+                
+                // Show only the count number
+                unassignedBox.textContent = unassignedForDate.length;
+                
+                // Add click handler to open assign room modal
+                unassignedBox.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Open assign room modal (id="assign") with unassigned bookings for this date
+                    const assignModal = document.getElementById('assign');
+                    if (!assignModal) {
+                        if (typeof swal === 'function') {
+                            swal('Error', 'Assign room modal not found.', 'error');
+                        }
+                        return;
+                    }
+                    
+                    // Get assign room modal instance
+                    let modalInstance = null;
+                    if (window.bootstrap && window.bootstrap.Modal) {
+                        modalInstance = window.bootstrap.Modal.getOrCreateInstance(assignModal);
+                    }
+                    
+                    // Set the selected date in the modal's state BEFORE showing modal
+                    const modalBody = assignModal.querySelector('.modal-body');
+                    if (modalBody && window.assignRoomModalState) {
+                        // Parse the ISO date
+                        const dateObj = parseISO(iso);
+                        if (dateObj) {
+                            // Update state.selectedDate
+                            window.assignRoomModalState.selectedDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+                            window.assignRoomModalState.selectedDate.setHours(0, 0, 0, 0);
+                            
+                            // Update referenceDate to start of week containing this date
+                            const startOfWeek = (date) => {
+                                const base = new Date(date);
+                                base.setHours(0, 0, 0, 0);
+                                const day = base.getDay();
+                                const diff = day === 0 ? -6 : 1 - day;
+                                base.setDate(base.getDate() + diff);
+                                return base;
+                            };
+                            window.assignRoomModalState.referenceDate = startOfWeek(window.assignRoomModalState.selectedDate);
+                            
+                            // Update date picker value
+                            const datePicker = modalBody.querySelector('#assignModalDatePicker');
+                            if (datePicker) {
+                                datePicker.value = iso;
+                            }
+                            
+                            // Re-render dates to update selected state
+                            if (typeof window.renderAssignRoomDates === 'function') {
+                                window.renderAssignRoomDates();
+                            }
+                        }
+                    }
+                    
+                    // Show the modal
+                    if (modalInstance) {
+                        modalInstance.show();
+                        
+                        // Wait for modal to be fully shown, then fetch bookings
+                        const fetchOnShow = function() {
+                            // Remove listener after first use
+                            assignModal.removeEventListener('shown.bs.modal', fetchOnShow);
+                            
+                            // Fetch bookings for the selected date
+                            if (typeof window.fetchAssignRoomBookings === 'function') {
+                                window.fetchAssignRoomBookings();
+                            }
+                        };
+                        assignModal.addEventListener('shown.bs.modal', fetchOnShow, { once: true });
+                    }
+                });
+                
+                // Add count and blue box to priceLabel on same line
+                if (hasCount) {
+                    priceLabel.innerHTML = countMarkup;
+                    priceLabel.appendChild(unassignedBox);
+                } else {
+                    priceLabel.appendChild(unassignedBox);
+                }
+            } else {
+                // No unassigned bookings, just show count markup
+                if (hasCount) {
+                    priceLabel.innerHTML = countMarkup;
+                }
+            }
+            
             const numPrice = price !== null && price !== undefined ? (typeof price === 'string' ? parseFloat(price) : price) : null;
             const hasPrice = numPrice !== null && !Number.isNaN(numPrice);
             let priceMarkup = '';
             if (hasPrice) {
                 const formattedPrice = formatPrice(numPrice);
-                priceMarkup = hasCount ? `<br>${formattedPrice}` : formattedPrice;
-            } else if (hasCount) {
+                priceMarkup = (hasCount || unassignedForDate.length > 0) ? `<br>${formattedPrice}` : formattedPrice;
+            } else if (hasCount || unassignedForDate.length > 0) {
                 priceMarkup = '<br>&nbsp;';
             } else {
                 priceMarkup = '&nbsp;';
             }
-            priceLabel.innerHTML = `${countMarkup}${priceMarkup}`;
+            // Append price markup without overwriting existing content
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = priceMarkup;
+            while (tempDiv.firstChild) {
+                priceLabel.appendChild(tempDiv.firstChild);
+            }
             if (tooltip) {
                 priceLabel.setAttribute('title', tooltip);
                 priceLabel.dataset.bsToggle = 'tooltip';
@@ -2672,34 +2867,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 labelWrapper.appendChild(icon);
             }
             const labelText = document.createElement('span');
+            // Show only user name (booking.label), remove room number
             let displayLabel = booking.label;
-            
-            // Get room numbers from room_number_ids if available
-            if (booking.room_number_ids) {
-                const roomNumberIds = booking.room_number_ids.split(',').map(id => id.trim()).filter(Boolean);
-                const roomNumberNames = [];
-                roomNumberIds.forEach((roomNumberId) => {
-                    // Find room number name from roomsData
-                    let found = false;
-                    roomsData.forEach((category) => {
-                        if (category.rooms && Array.isArray(category.rooms)) {
-                            const room = category.rooms.find((r) => String(r.id) === String(roomNumberId));
-                            if (room) {
-                                roomNumberNames.push(room.number);
-                                found = true;
-                            }
-                        }
-                    });
-                    if (!found) {
-                        roomNumberNames.push(`#${roomNumberId}`);
-                    }
-                });
-                if (roomNumberNames.length > 0) {
-                    displayLabel = `${roomNumberNames.join(', ')} - ${booking.label}`;
-                }
-            } else if ((booking.isBlocked || booking.status === 'maintenance') && booking.roomNumber) {
-                displayLabel = `${booking.roomNumber} ${booking.label}`;
-            }
             
             labelText.textContent = displayLabel;
             labelWrapper.appendChild(labelText);
@@ -3278,8 +3447,7 @@ document.addEventListener('DOMContentLoaded', function () {
         container.innerHTML = newPayments.map((payment, index) => `
             <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
                 <div>
-                    <strong>${payment.comment}</strong>
-                    <br><small>${payment.type} - ${payment.method}</small>
+                    <strong>${payment.type} - ${payment.method}</strong>
                     <br><small style="font-size: 12px;">${payment.display_date}</small>
                 </div>
                 <div class="d-flex align-items-center">
@@ -3320,7 +3488,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <li class="d-flex align-items-center justify-content-between my-2 px-2">
                 <div>
                     <p class="mb-0">${payment.type} - ${payment.method}</p>
-                    <small class="text-muted" style="font-size: 12px;">${payment.comment} | ${payment.display_date}</small>
+                    <small class="text-muted" style="font-size: 12px;">${payment.display_date}</small>
                 </div>
                 <p class="mb-0 text-success">- Rs. ${formatAmount(payment.amount)}</p>
             </li>
@@ -3352,6 +3520,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const totalNewCharges = newCharges.reduce((sum, c) => sum + c.amount, 0);
         const totalNewPayments = newPayments.reduce((sum, p) => sum + p.amount, 0);
         
+        // Calculate total ALL charges (existing + new) for display
+        const totalAllCharges = bookingCharges.reduce((sum, c) => sum + c.amount, 0);
+        
         // Calculate total existing payments from database
         const totalExistingPayments = bookingPayments.filter(p => p.existing).reduce((sum, p) => sum + p.amount, 0);
         
@@ -3363,10 +3534,10 @@ document.addEventListener('DOMContentLoaded', function () {
         // Balance = Grand Total - All Payments (existing + new)
         const newBalance = newGrandTotal - (totalExistingPayments + totalNewPayments);
         
-        // Update Extra Charges display (show total new charges)
+        // Update Extra Charges display (show ALL charges - existing + new)
         const paymentExtraCharges = document.getElementById('paymentExtraCharges');
         if (paymentExtraCharges) {
-            paymentExtraCharges.textContent = formatCurrency(totalNewCharges);
+            paymentExtraCharges.textContent = formatCurrency(totalAllCharges);
         }
         
         // Update Total Payable
@@ -3381,13 +3552,22 @@ document.addEventListener('DOMContentLoaded', function () {
             paymentBalance.textContent = formatCurrency(newBalance);
         }
         
+        // Auto-fill payment amount with balance
+        const bookingPaymentAmountInput = document.getElementById('bookingPaymentAmount');
+        if (bookingPaymentAmountInput && newBalance > 0) {
+            bookingPaymentAmountInput.value = newBalance.toFixed(2);
+        }
+        
+        // Calculate total ALL payments (existing + new) for footer display
+        const totalAllPayments = bookingPayments.reduce((sum, p) => sum + p.amount, 0);
+        
         // Update footer
         const footerTotal = document.getElementById('footerTotal');
         const footerPaid = document.getElementById('footerPaid');
         const footerBalance = document.getElementById('footerBalance');
         
         if (footerTotal) footerTotal.textContent = formatCurrency(newGrandTotal);
-        if (footerPaid) footerPaid.textContent = formatCurrency(totalNewPayments);
+        if (footerPaid) footerPaid.textContent = formatCurrency(totalAllPayments);
         if (footerBalance) footerBalance.textContent = formatCurrency(newBalance);
     }
     
@@ -3589,11 +3769,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function shiftRange(direction) {
         if (calendarState.viewMode === 'week') {
-            calendarState.referenceDate.setDate(
-                calendarState.referenceDate.getDate() + (direction * WEEK_DAY_COUNT)
-            );
+            if (direction > 0) {
+                // Going forward: set referenceDate to the last date from previous view
+                const lastDate = new Date(calendarState.referenceDate);
+                lastDate.setDate(lastDate.getDate() + (WEEK_DAY_COUNT - 1));
+                calendarState.referenceDate = lastDate;
+                calendarState.isNavigating = true; // Mark as navigating to add active state
+            } else {
+                // Going backward: set referenceDate to the first date from previous view
+                calendarState.referenceDate.setDate(
+                    calendarState.referenceDate.getDate() - WEEK_DAY_COUNT
+                );
+                calendarState.isNavigating = true;
+            }
         } else {
             calendarState.referenceDate.setMonth(calendarState.referenceDate.getMonth() + direction);
+            calendarState.isNavigating = true;
         }
         syncDatePicker();
         // Set loading state before rendering to prevent showing empty state during navigation
@@ -4300,10 +4491,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 roomNumberSearchInput.setAttribute('readonly', 'readonly');
                 roomNumberSearchInput.style.backgroundColor = '#e9ecef';
                 roomNumberSearchInput.style.cursor = 'not-allowed';
+                if (selectAllBtn) {
+                    selectAllBtn.disabled = true;
+                    selectAllBtn.style.cursor = 'not-allowed';
+                }
             } else {
                 roomNumberSearchInput.removeAttribute('readonly');
                 roomNumberSearchInput.style.backgroundColor = '';
                 roomNumberSearchInput.style.cursor = '';
+                if (selectAllBtn) {
+                    selectAllBtn.disabled = false;
+                    selectAllBtn.style.cursor = '';
+                }
+            }
+            
+            // If dropdown is currently visible, refresh it with checkboxes
+            if (roomNumberDropdown.style.display === 'block') {
+                const searchTerm = roomNumberSearchInput.value.toLowerCase().trim();
+                showRoomNumberDropdown(searchTerm);
+            } else {
+                // Ensure dropdown is closed initially
+                roomNumberDropdown.style.display = 'none';
             }
         }
         
@@ -4342,10 +4550,142 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
         
+        // Function to toggle room number dropdown
+        function toggleRoomNumberDropdown() {
+            if (isDatesFromCalendarSelection) {
+                return; // Don't allow if readonly
+            }
+            
+            // Toggle dropdown visibility
+            const isVisible = roomNumberDropdown.style.display === 'block';
+            if (isVisible) {
+                roomNumberDropdown.style.display = 'none';
+                return;
+            }
+            
+            // Show dropdown with checkboxes
+            showRoomNumberDropdown();
+        }
+        
+        // Function to show room number dropdown with checkboxes
+        function showRoomNumberDropdown(searchTerm = '') {
+            if (isDatesFromCalendarSelection) {
+                return; // Don't allow if readonly
+            }
+            
+            const availableRoomsJson = roomNumberDropdown.dataset.availableRooms;
+            if (!availableRoomsJson) {
+                updateRoomNumberOptions();
+                // Try again after a short delay
+                setTimeout(() => showRoomNumberDropdown(searchTerm), 100);
+                return;
+            }
+            
+            const availableRooms = JSON.parse(availableRoomsJson);
+            const filtered = availableRooms.filter(room => {
+                // Filter by search term if provided
+                if (searchTerm) {
+                    return room.number.toLowerCase().includes(searchTerm.toLowerCase());
+                }
+                return true; // Show all if no search term
+            });
+            
+            if (filtered.length === 0) {
+                roomNumberDropdown.style.display = 'none';
+                return;
+            }
+            
+            // Get rooms quantity limit
+            const roomsInput = detailsContainer.querySelector('.room-qty-input');
+            const roomsQty = roomsInput ? parseInt(roomsInput.value, 10) || 0 : 0;
+            const selectedCount = selectedRoomNumbers.size;
+            const maxSelectable = roomsQty > 0 ? roomsQty : filtered.length;
+            
+            // Get room type for selected rooms
+            const roomTypeSelect = detailsContainer.querySelector('.room-type-select');
+            const selectedRoomType = roomTypeSelect ? roomsList.find(r => r.id == roomTypeSelect.value) : null;
+            const roomTypeTitle = selectedRoomType ? selectedRoomType.title : '';
+            
+            // Sort rooms by number (serially)
+            const sortedRooms = filtered.sort((a, b) => {
+                const numA = parseInt(a.number.match(/\d+/)?.[0] || '0', 10);
+                const numB = parseInt(b.number.match(/\d+/)?.[0] || '0', 10);
+                if (numA !== numB) {
+                    return numA - numB;
+                }
+                return a.number.localeCompare(b.number);
+            });
+            
+            // Render dropdown with checkboxes
+            let dropdownHtml = '<div class="list-group" style="max-height: 200px; overflow-y: auto;">';
+            sortedRooms.forEach((room) => {
+                const isChecked = selectedRoomNumbers.has(room.id);
+                const isDisabled = !isChecked && selectedCount >= maxSelectable && maxSelectable > 0;
+                dropdownHtml += `
+                    <label class="list-group-item d-flex align-items-center" style="cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; ${isDisabled ? 'opacity: 0.6;' : ''}">
+                        <input type="checkbox" class="form-check-input me-2 room-number-checkbox" 
+                               value="${room.id}" 
+                               data-room-id="${room.id}" 
+                               data-room-number="${room.number}"
+                               ${isChecked ? 'checked' : ''}
+                               ${isDisabled ? 'disabled' : ''}>
+                        <span>${room.number}</span>
+                    </label>
+                `;
+            });
+            dropdownHtml += '</div>';
+            roomNumberDropdown.innerHTML = dropdownHtml;
+            roomNumberDropdown.style.display = 'block';
+            
+            // Add checkbox change handlers
+            roomNumberDropdown.querySelectorAll('.room-number-checkbox').forEach((checkbox) => {
+                checkbox.addEventListener('change', (e) => {
+                    const roomId = parseInt(e.target.value);
+                    const roomNumber = e.target.dataset.roomNumber;
+                    const isChecked = e.target.checked;
+                    
+                    if (isChecked) {
+                        // Check if we've reached the limit
+                        if (maxSelectable > 0 && selectedRoomNumbers.size >= maxSelectable) {
+                            e.target.checked = false;
+                            swal("Error!", `You can only select up to ${maxSelectable} room(s) according to the rooms field value.`, "error");
+                            return;
+                        }
+                        
+                        // Add room to selection
+                        selectedRoomNumbers.set(roomId, {
+                            id: roomId,
+                            number: roomNumber,
+                            roomType: roomTypeTitle
+                        });
+                    } else {
+                        // Remove room from selection
+                        selectedRoomNumbers.delete(roomId);
+                    }
+                    
+                    renderSelectedRoomNumbers();
+                    
+                    // Refresh dropdown to update disabled states
+                    const currentSearchTerm = roomNumberSearchInput.value.toLowerCase().trim();
+                    showRoomNumberDropdown(currentSearchTerm);
+                });
+            });
+        }
+        
         // Room number search functionality
         if (roomNumberSearchInput && roomNumberDropdown) {
             let searchTimeout = null;
             
+            // Toggle dropdown on click (closed by default, opens on click)
+            roomNumberSearchInput.addEventListener('click', (e) => {
+                if (isDatesFromCalendarSelection) {
+                    return; // Don't allow if readonly
+                }
+                e.stopPropagation(); // Prevent document click from closing it immediately
+                toggleRoomNumberDropdown();
+            });
+            
+            // Update dropdown when typing (filter rooms)
             roomNumberSearchInput.addEventListener('input', (e) => {
                 if (isDatesFromCalendarSelection) {
                     return; // Don't allow search if readonly
@@ -4355,63 +4695,162 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
-                    const availableRoomsJson = roomNumberDropdown.dataset.availableRooms;
-                    if (!availableRoomsJson) {
-                        updateRoomNumberOptions();
-                return;
-            }
-                    
-                    const availableRooms = JSON.parse(availableRoomsJson);
-                    const filtered = availableRooms.filter(room => {
-                        // Filter out already selected rooms
-                        if (selectedRoomNumbers.has(room.id)) {
-                            return false;
-                        }
-                        // Filter by search term
-                        return room.number.toLowerCase().includes(searchTerm);
-                    });
-                    
-                    if (filtered.length === 0 || !searchTerm) {
-                        roomNumberDropdown.style.display = 'none';
-                        return;
+                    // Only update if dropdown is visible
+                    if (roomNumberDropdown.style.display === 'block') {
+                        showRoomNumberDropdown(searchTerm);
                     }
-                    
-                    // Render dropdown
-                    let dropdownHtml = '<div class="list-group" style="max-height: 200px; overflow-y: auto;">';
-                    filtered.forEach((room) => {
-                        dropdownHtml += `<a href="#" class="list-group-item list-group-item-action" data-room-id="${room.id}" data-room-number="${room.number}">${room.number}</a>`;
-                    });
-                    dropdownHtml += '</div>';
-                    roomNumberDropdown.innerHTML = dropdownHtml;
-                    roomNumberDropdown.style.display = 'block';
-                    
-                    // Add click handlers
-                    roomNumberDropdown.querySelectorAll('[data-room-id]').forEach((item) => {
-                        item.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            const roomId = parseInt(e.target.dataset.roomId);
-                            const roomNumber = e.target.dataset.roomNumber;
-                            const roomType = e.target.closest('.room-detail-item')?.querySelector('.room-type-select')?.options[detailsContainer.querySelector('.room-type-select')?.selectedIndex]?.text || '';
-                            
-                            selectedRoomNumbers.set(roomId, {
-                                id: roomId,
-                                number: roomNumber,
-                                roomType: roomType
-                            });
-                            
-                            renderSelectedRoomNumbers();
-                            roomNumberSearchInput.value = '';
-                            roomNumberDropdown.style.display = 'none';
-                        });
-                    });
                 }, 300);
             });
             
             // Hide dropdown when clicking outside
             document.addEventListener('click', (e) => {
-                if (!roomNumberSearchInput.contains(e.target) && !roomNumberDropdown.contains(e.target)) {
+                if (!roomNumberSearchInput.contains(e.target) && 
+                    !roomNumberDropdown.contains(e.target) &&
+                    !selectAllBtn?.contains(e.target)) {
                     roomNumberDropdown.style.display = 'none';
                 }
+            });
+        }
+        
+        // Guest Information Validation
+        const guestNameInput = document.getElementById('quickGuestName');
+        const guestMobileInput = document.getElementById('quickGuestMobile');
+        
+        // Name field - only allow alphabetic characters and spaces
+        if (guestNameInput) {
+            guestNameInput.addEventListener('input', (e) => {
+                // Remove any non-alphabetic characters (except spaces)
+                let value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                // Remove multiple consecutive spaces
+                value = value.replace(/\s+/g, ' ');
+                // Don't trim here to allow user to type spaces
+                e.target.value = value;
+                
+                // Validate and add/remove invalid class
+                const trimmedValue = value.trim();
+                if (trimmedValue.length > 0 && !/^[a-zA-Z\s]+$/.test(trimmedValue)) {
+                    e.target.classList.add('is-invalid');
+                } else if (trimmedValue.length > 0) {
+                    e.target.classList.remove('is-invalid');
+                } else {
+                    e.target.classList.remove('is-invalid');
+                }
+            });
+            
+            guestNameInput.addEventListener('blur', (e) => {
+                const value = e.target.value.trim();
+                if (value.length > 0 && !/^[a-zA-Z\s]+$/.test(value)) {
+                    e.target.classList.add('is-invalid');
+                } else if (value.length === 0) {
+                    e.target.classList.remove('is-invalid');
+                } else {
+                    e.target.classList.remove('is-invalid');
+                    // Trim the value on blur
+                    e.target.value = value;
+                }
+            });
+        }
+        
+        // Mobile field - only allow numeric digits, exactly 10 digits
+        if (guestMobileInput) {
+            guestMobileInput.addEventListener('input', (e) => {
+                // Remove any non-numeric characters
+                let value = e.target.value.replace(/[^0-9]/g, '');
+                // Limit to 10 digits
+                value = value.substring(0, 10);
+                e.target.value = value;
+                
+                // Validate and add/remove invalid class
+                if (value.length === 10) {
+                    e.target.classList.remove('is-invalid');
+                } else if (value.length > 0 && value.length < 10) {
+                    e.target.classList.add('is-invalid');
+                } else {
+                    e.target.classList.remove('is-invalid');
+                }
+            });
+            
+            guestMobileInput.addEventListener('blur', (e) => {
+                const value = e.target.value.trim();
+                if (value.length > 0 && value.length !== 10) {
+                    e.target.classList.add('is-invalid');
+                    swal("Error!", "Mobile number must be exactly 10 digits.", "error");
+                } else if (value.length === 10) {
+                    e.target.classList.remove('is-invalid');
+                } else {
+                    e.target.classList.remove('is-invalid');
+                }
+            });
+        }
+        
+        // Select All functionality
+        const selectAllBtn = document.getElementById('quickSelectAllRooms');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                if (isDatesFromCalendarSelection) {
+                    return; // Don't allow if readonly
+                }
+                
+                // Get the selected room type from the room details
+                const roomTypeSelect = detailsContainer.querySelector('.room-type-select');
+                if (!roomTypeSelect || !roomTypeSelect.value) {
+                    swal("Error!", "Please select a room type first.", "error");
+                    return;
+                }
+                
+                // Get the rooms quantity value
+                const roomsInput = detailsContainer.querySelector('.room-qty-input');
+                if (!roomsInput) {
+                    swal("Error!", "Please add a room detail first.", "error");
+                    return;
+                }
+                
+                const roomsQty = parseInt(roomsInput.value, 10) || 0;
+                if (roomsQty <= 0) {
+                    swal("Error!", "Please enter a valid number of rooms.", "error");
+                    return;
+                }
+                
+                // Get available room numbers for the selected room type
+                const availableRooms = getAvailableRoomNumbers(roomTypeSelect.value);
+                
+                // Filter out already selected rooms
+                const unselectedRooms = availableRooms.filter(room => !selectedRoomNumbers.has(room.id));
+                
+                if (unselectedRooms.length === 0) {
+                    swal("Error!", "No available rooms to select.", "error");
+                    return;
+                }
+                
+                // Sort rooms by number (serially) and select up to roomsQty
+                const sortedRooms = unselectedRooms.sort((a, b) => {
+                    // Extract numeric part for proper sorting
+                    const numA = parseInt(a.number.match(/\d+/)?.[0] || '0', 10);
+                    const numB = parseInt(b.number.match(/\d+/)?.[0] || '0', 10);
+                    if (numA !== numB) {
+                        return numA - numB;
+                    }
+                    // If numbers are same, sort alphabetically
+                    return a.number.localeCompare(b.number);
+                });
+                
+                // Select rooms serially up to roomsQty
+                const roomsToSelect = Math.min(roomsQty, sortedRooms.length);
+                const selectedRoomType = roomsList.find(r => r.id == roomTypeSelect.value);
+                const roomTypeTitle = selectedRoomType ? selectedRoomType.title : '';
+                
+                for (let i = 0; i < roomsToSelect; i++) {
+                    const room = sortedRooms[i];
+                    selectedRoomNumbers.set(room.id, {
+                        id: room.id,
+                        number: room.number,
+                        roomType: roomTypeTitle
+                    });
+                }
+                
+                renderSelectedRoomNumbers();
+                roomNumberSearchInput.value = '';
+                roomNumberDropdown.style.display = 'none';
             });
         }
 
@@ -4639,6 +5078,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     reservationModal.dataset.datesFromCalendar = 'true';
                 }
                 
+                // Update Select All button state
+                if (selectAllBtn) {
+                    if (isDatesFromCalendarSelection) {
+                        selectAllBtn.disabled = true;
+                        selectAllBtn.style.cursor = 'not-allowed';
+                    } else {
+                        selectAllBtn.disabled = false;
+                        selectAllBtn.style.cursor = '';
+                    }
+                }
+                
                 // Check if dates are already set (from calendar selection)
                 if (!checkInDateInput?.value || !checkOutDateInput?.value) {
                     // No dates set - set default dates (today and tomorrow) and make editable
@@ -4788,6 +5238,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 form.reset();
                 clearErrors();
                 
+                // Update Select All button state
+                if (selectAllBtn) {
+                    selectAllBtn.disabled = false;
+                    selectAllBtn.style.cursor = '';
+                }
+                
                 // Clear room details container
                 detailsContainer.innerHTML = '';
                 rowIndex = 0;
@@ -4848,6 +5304,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (guestEmailInput) guestEmailInput.value = '';
                 if (guestMobileInput) guestMobileInput.value = '';
                 if (guestGenderInput) guestGenderInput.value = '';
+                
+                // Remove validation classes on reset
+                if (guestNameInput) {
+                    guestNameInput.classList.remove('is-invalid');
+                }
+                if (guestMobileInput) {
+                    guestMobileInput.classList.remove('is-invalid');
+                }
                 
                 // Reset time fields
                 const checkInTimeInput = document.getElementById('quickCheckInTime');
@@ -5058,6 +5522,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     paymentMethodSelect.style.backgroundColor = '#e9ecef';
                 }
                 if (paymentCommentInput) paymentCommentInput.value = '';
+                // Clear payment amount - it will be auto-filled with new balance by updatePaymentCalculations
                 if (paymentAmountInput) paymentAmountInput.value = '';
                 
                 // Render payments and update calculations
@@ -5107,7 +5572,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
                             <strong>${payment.type} - ${payment.method}</strong><br>
-                            <small class="text-muted" style="font-size: 12px;">${payment.comment} | ${payment.display_date}</small>
+                            <small class="text-muted" style="font-size: 12px;">${payment.display_date}</small>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <strong>Rs. ${formatAmount(payment.amount)}</strong>
@@ -5152,7 +5617,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <li class="d-flex align-items-center justify-content-between my-2 px-2">
                         <div>
                             <p class="mb-0">${payment.type} - ${payment.method}</p>
-                            <small class="text-muted" style="font-size: 12px;">${payment.comment} | ${payment.display_date}</small>
+                            <small class="text-muted" style="font-size: 12px;">${payment.display_date}</small>
                         </div>
                         <p class="mb-0 text-success">- Rs. ${formatAmount(payment.amount)}</p>
                     </li>
@@ -5222,6 +5687,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if (quickPaymentCGST) quickPaymentCGST.textContent = 'Rs. 0';
             if (quickPaymentTotalPayable) quickPaymentTotalPayable.textContent = 'Rs. ' + formatAmount(grandTotal);
             if (quickPaymentBalance) quickPaymentBalance.textContent = 'Rs. ' + formatAmount(balance);
+            
+            // Auto-fill payment amount with balance
+            const quickPaymentAmountInput = document.getElementById('quickPaymentAmount');
+            if (quickPaymentAmountInput && balance > 0) {
+                quickPaymentAmountInput.value = balance.toFixed(2);
+            }
             
             // Update footer
             const quickPaymentFooterTotal = document.getElementById('quickPaymentFooterTotal');
@@ -5503,6 +5974,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const picker = modalBody?.querySelector('#assignModalDatePicker');
             if (!container) return;
             
+            // Expose renderDates globally
+            window.renderAssignRoomDates = renderDates;
+            
             const dates = [];
             for (let i = 0; i < 7; i++) {
                 const d = new Date(state.referenceDate);
@@ -5594,6 +6068,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (list) list.innerHTML = '';
             }
         }
+        
+        // Expose fetchBookings globally for external calls
+        window.fetchAssignRoomBookings = fetchBookings;
+        // Expose state for external access
+        window.assignRoomModalState = state;
         
         function renderBookings() {
             const list = modalBody?.querySelector('#accordionExample');

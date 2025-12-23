@@ -768,40 +768,86 @@ class UsersController extends Controller{
 
         $priceBookingLookup = [];
         if($roomPrices->count() > 0){
+            // Updated overlap logic: rooms are available on checkout day (check_out_date is exclusive)
+            // Two ranges [a, b) and [c, d) overlap if: a < d && c < b
+            // Exclude bookings where checkout_date == selected check-in date (room available on checkout day)
+            // Count bookings that actually overlap with selected dates
             $overlappingOrders = self::$OrdersModel
                 ->whereIn('room_price_id', $priceIds)
                 ->where(function($query) use ($checkInDate, $checkOutDate){
-                    $query->whereBetween('check_in_date', [$checkInDate, $checkOutDate])
-                        ->orWhereBetween('check_out_date', [$checkInDate, $checkOutDate])
-                        ->orWhere(function($inner) use ($checkInDate, $checkOutDate){
-                            $inner->where('check_in_date', '<=', $checkInDate)
-                                ->where('check_out_date', '>=', $checkOutDate);
-                        });
+                    // Overlap exists if: check_in_date < $checkOutDate && $checkInDate < check_out_date
+                    // But exclude if check_out_date == $checkInDate (use > instead of >=)
+                    // Use DATE() to ensure we're comparing dates, not datetime values
+                    $query->whereRaw('DATE(check_in_date) < ?', [$checkOutDate])
+                          ->whereRaw('DATE(check_out_date) > ?', [$checkInDate]); // Exclude if checkout == checkIn
                 })
-                ->get(['room_price_id','rooms']);
+                // Exclude cancelled orders
+                ->whereNull('is_cancelled')
+                ->get(['room_price_id','rooms','check_in_date','check_out_date','room_number_ids']);
 
             foreach($overlappingOrders as $order){
-                $priceBookingLookup[$order->room_price_id] = ($priceBookingLookup[$order->room_price_id] ?? 0) + (int)$order->rooms;
+                // Count rooms only if booking has room numbers assigned, or count all rooms if no room numbers
+                // This matches the frontend logic which checks individual room numbers
+                $roomsToCount = (int)$order->rooms;
+                
+                // If booking has specific room numbers, we'll validate those separately
+                // For inventory check, count all rooms if no specific room numbers assigned
+                // Otherwise, the room number validation will catch conflicts
+                $priceBookingLookup[$order->room_price_id] = ($priceBookingLookup[$order->room_price_id] ?? 0) + $roomsToCount;
+                
+                // Debug: Log overlapping bookings
+                \Log::info('Overlapping booking found', [
+                    'room_price_id' => $order->room_price_id,
+                    'check_in_date' => $order->check_in_date ?? 'N/A',
+                    'check_out_date' => $order->check_out_date ?? 'N/A',
+                    'rooms' => $order->rooms,
+                    'room_number_ids' => $order->room_number_ids ?? 'none',
+                    'selected_check_in' => $checkInDate,
+                    'selected_check_out' => $checkOutDate
+                ]);
             }
         }
 
         foreach($roomDetails as $detail){
             $priceRow = $roomPrices->get($detail['room_price_id']);
-            $existingBooked = $priceBookingLookup[$priceRow->id] ?? 0;
-            $inventory = (int)($priceRow->no_of_rooms ?? 0);
-            if($inventory <= 0){
-                $inventory = (int)($rooms[$detail['room_id']]->no_of_rooms ?? 0);
+            
+            // If room numbers are provided, skip inventory check and rely on room number validation
+            // This matches the frontend logic which checks individual room numbers
+            $hasRoomNumbers = !empty($detail['room_number_ids']);
+            
+            if(!$hasRoomNumbers){
+                // Only do inventory check if no specific room numbers are selected
+                $existingBooked = $priceBookingLookup[$priceRow->id] ?? 0;
+                $inventory = (int)($priceRow->no_of_rooms ?? 0);
+                if($inventory <= 0){
+                    $inventory = (int)($rooms[$detail['room_id']]->no_of_rooms ?? 0);
+                }
+                $availableRooms = $inventory - $existingBooked;
+                
+                // Debug: Log inventory check
+                \Log::info('Room inventory check (no room numbers)', [
+                    'room_id' => $detail['room_id'],
+                    'room_price_id' => $detail['room_price_id'],
+                    'inventory' => $inventory,
+                    'existingBooked' => $existingBooked,
+                    'availableRooms' => $availableRooms,
+                    'requestedRooms' => (int)$detail['rooms'],
+                    'check_in_date' => $checkInDate,
+                    'check_out_date' => $checkOutDate
+                ]);
+                
+                if($inventory > 0 && ((int)$detail['rooms'] + $existingBooked) > $inventory){
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Only '.$availableRooms.' room(s) are available for '.$rooms[$detail['room_id']]->title.'.'
+                    ], 422);
+                }
+                $priceBookingLookup[$priceRow->id] = $existingBooked + (int)$detail['rooms'];
             }
-            if($inventory > 0 && ((int)$detail['rooms'] + $existingBooked) > $inventory){
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only '.$inventory.' room(s) are available for '.$rooms[$detail['room_id']]->title.'.'
-                ], 422);
-            }
-            $priceBookingLookup[$priceRow->id] = $existingBooked + (int)$detail['rooms'];
         }
 
         // Validate room number booking conflicts
+        // This is the primary validation when room numbers are provided
         foreach($roomDetails as $detail){
             if(!empty($detail['room_number_ids'])){
                 // Parse room number IDs
@@ -1108,34 +1154,18 @@ class UsersController extends Controller{
         }
         
         // Check for overlapping bookings for these specific room numbers
+        // Updated overlap logic: rooms are available on checkout day (check_out_date is exclusive)
+        // Two ranges [a, b) and [c, d) overlap if: a < d && c < b
+        // Exclude bookings where checkout_date == selected check-in date (room available on checkout day)
+        // Use DATE() to ensure we're comparing dates, not datetime values
         $query = self::$OrdersModel
             ->where(function($query) use ($checkInDate, $checkOutDate){
-                // Check for any date overlaps:
-                // 1. New booking starts during existing booking
-                // 2. New booking ends during existing booking  
-                // 3. New booking completely encompasses existing booking
-                // 4. Existing booking completely encompasses new booking
-                $query->where(function($q) use ($checkInDate, $checkOutDate){
-                    // New start date falls within existing booking
-                    $q->where('check_in_date', '<=', $checkInDate)
-                      ->where('check_out_date', '>', $checkInDate);
-                })
-                ->orWhere(function($q) use ($checkInDate, $checkOutDate){
-                    // New end date falls within existing booking
-                    $q->where('check_in_date', '<', $checkOutDate)
-                      ->where('check_out_date', '>=', $checkOutDate);
-                })
-                ->orWhere(function($q) use ($checkInDate, $checkOutDate){
-                    // New booking encompasses existing booking
-                    $q->where('check_in_date', '>=', $checkInDate)
-                      ->where('check_out_date', '<=', $checkOutDate);
-                })
-                ->orWhere(function($q) use ($checkInDate, $checkOutDate){
-                    // Existing booking encompasses new booking
-                    $q->where('check_in_date', '<=', $checkInDate)
-                      ->where('check_out_date', '>=', $checkOutDate);
-                });
+                // Overlap exists if: check_in_date < $checkOutDate && $checkInDate < check_out_date
+                // But exclude if check_out_date == $checkInDate (use > instead of >=)
+                $query->whereRaw('DATE(check_in_date) < ?', [$checkOutDate])
+                      ->whereRaw('DATE(check_out_date) > ?', [$checkInDate]); // Exclude if checkout == checkIn
             })
+            ->whereNull('is_cancelled')
             ->whereNotNull('room_number_ids');
         
         // Exclude specific order if provided (useful for updates)

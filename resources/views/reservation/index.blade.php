@@ -51,6 +51,9 @@ $siteUrl = env('APP_URL');
         color: #333;
         font-size: 12px;
     }
+    .box-detail ul li .reservation-type-text {
+        color: #28a745 !important;
+    }
     .box-conclusion ul {
         list-style: none;
         padding: 0;

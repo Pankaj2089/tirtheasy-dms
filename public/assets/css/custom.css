@@ -29,6 +29,11 @@
     color: white;
 }
 
+.date-cell-button.is-active {
+    background-color: #007bff;
+    color: white;
+}
+
 .date-cell-button .day {
     font-size: 12px;
     text-transform: uppercase;

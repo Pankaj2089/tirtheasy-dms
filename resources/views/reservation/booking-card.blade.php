@@ -68,20 +68,22 @@
                     </a>
                 </li>
                 <li>
-                    <a href="">
+                    <span style="display: flex; align-items: center; gap: 8px;">
                         <img src="{{$siteUrl}}public/assets/img/tick.svg" alt="">
-                        <span>{{ $reservationType }} Reservation</span>
-                    </a>
+                        <span class="reservation-type-text">{{ $reservationType }} Reservation</span>
+                    </span>
                 </li>
+                @if(!$booking['has_room_assigned'])
                 <li>
-                    <a href="#" class="assign-room-link {{ $booking['has_room_assigned'] ? 'room-assigned' : '' }}" 
+                    <a href="#" class="assign-room-link" 
                        data-booking-id="{{ $booking['id'] }}" 
                        data-booking-order-id="{{ $booking['order_id'] }}" 
                        data-booking-rooms="{{ $booking['rooms'] }}">
                         <img src="{{$siteUrl}}public/assets/img/tick.svg" alt="">
-                        <span>{{ $booking['has_room_assigned'] ? 'Room Assigned' : 'Assign Room' }}</span>
+                        <span>Assign Room</span>
                     </a>
                 </li>
+                @endif
             </ul>
         </div>
         <div class="box-conclusion">
