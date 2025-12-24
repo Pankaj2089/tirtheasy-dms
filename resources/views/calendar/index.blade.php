@@ -3996,6 +3996,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const bookingLookup = new Map();
             
             // Build booking lookup from bookingData
+            // Room availability rules:
+            // 1. Checkout date is NON-BLOCKING - room becomes available on checkout day
+            // 2. Check-in date is BLOCKING - room is occupied on check-in day
+            // 3. If new booking's check-in equals existing booking's checkout, room is available
+            // 4. Only true date overlaps (excluding checkout day) should block availability
+            // 5. Overlap: newCheckIn < existingCheckOut AND newCheckOut > existingCheckIn
+            
             if (bookingData && Array.isArray(bookingData)) {
                 bookingData.forEach((booking) => {
                     const bookingStart = booking.start_date || booking.startDate;
@@ -4007,28 +4014,81 @@ document.addEventListener('DOMContentLoaded', function () {
                         const end = new Date(bookingEnd);
                         const inclusiveEnd = booking.inclusive_end || booking.is_blocked;
                         
+                        // Convert to ISO strings for comparison
+                        const bookingStartIso = start.toISOString().split('T')[0];
+                        const bookingEndIso = end.toISOString().split('T')[0];
+                        const checkInIso = checkIn.toISOString().split('T')[0];
+                        const checkOutIso = checkOut.toISOString().split('T')[0];
+                        
+                        // Key rule: Checkout date is non-blocking, check-in date is blocking
+                        // For regular bookings (inclusive_end = true), checkout date IS included in booking
+                        // But for availability purposes, checkout day should be non-blocking for new bookings
+                        
+                        // Check if existing checkout equals new check-in (checkout day exception)
+                        // If checkout == new check-in, room is available (checkout happens, room becomes available)
+                        const existingCheckoutEqualsNewCheckIn = bookingEndIso === checkInIso;
+                        
+                        // Standard overlap check: two date ranges overlap if they share any blocking dates
+                        // Range 1 (existing): [bookingStart, bookingEnd] if inclusive, [bookingStart, bookingEnd) if not
+                        // Range 2 (new): [checkIn, checkOut) - checkout is always exclusive for new bookings
+                        // They overlap if: bookingStart < checkOut && checkIn < bookingEnd
+                        // BUT: If bookingEnd == checkIn, no overlap (checkout day is non-blocking)
+                        
+                        const bookingStartBeforeNewCheckOut = bookingStartIso < checkOutIso;
+                        // For overlap: new check-in must be before existing checkout (or equal if inclusive, but we exclude equal)
+                        // If checkout == check-in, we already handled it above
+                        const newCheckInBeforeBookingEnd = checkInIso < bookingEndIso;
+                        
+                        // Overlap exists if both conditions are true AND it's not a checkout day exception
+                        // Note: Even if inclusive_end is true, checkout day is non-blocking for new bookings
+                        const hasOverlap = bookingStartBeforeNewCheckOut && 
+                                         newCheckInBeforeBookingEnd &&
+                                         !existingCheckoutEqualsNewCheckIn;
+                        
+                        if (!hasOverlap) return; // No overlap, skip this booking
+                        
+                        // Get room number IDs from booking
+                        let roomNumberIds = [];
+                        if (booking.room_number_ids) {
+                            roomNumberIds = booking.room_number_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                        } else if (booking.is_blocked && booking.room_id) {
+                            roomNumberIds = [parseInt(booking.room_id)];
+                        }
+                        
+                        if (roomNumberIds.length === 0) return; // No room numbers, skip
+                        
+                        // Mark dates as booked
+                        // Important: Check-in date is blocking, checkout date is NOT blocking
+                        // Even if inclusive_end is true, checkout day should not block new bookings
                         let currentDate = new Date(start);
                         while (true) {
                             const shouldInclude = inclusiveEnd ? currentDate <= end : currentDate < end;
                             if (!shouldInclude) break;
                             
-                            if (currentDate >= checkIn && currentDate < checkOut) {
-                                const dateIso = currentDate.toISOString().split('T')[0];
-                                
-                                // Get room number IDs from booking
-                                let roomNumberIds = [];
-                                if (booking.room_number_ids) {
-                                    roomNumberIds = booking.room_number_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-                                } else if (booking.is_blocked && booking.room_id) {
-                                    roomNumberIds = [parseInt(booking.room_id)];
+                            const dateIso = currentDate.toISOString().split('T')[0];
+                            
+                            // Skip checkout day - it's non-blocking for new bookings
+                            // If this is the checkout day and it equals new check-in, room is available
+                            if (dateIso === bookingEndIso && dateIso === checkInIso) {
+                                currentDate.setDate(currentDate.getDate() + 1);
+                                if (currentDate > end) break;
+                                continue;
+                            }
+                            
+                            // Only mark dates that fall within the new booking range
+                            // Check-in date is blocking, checkout date is not
+                            if (dateIso >= checkInIso && dateIso < checkOutIso) {
+                                // Don't mark checkout day as blocked (even if it's in the range)
+                                if (dateIso === bookingEndIso && dateIso === checkInIso) {
+                                    // Skip - checkout day is non-blocking
+                                } else {
+                                    roomNumberIds.forEach((roomNumberId) => {
+                                        if (!bookingLookup.has(roomNumberId)) {
+                                            bookingLookup.set(roomNumberId, new Set());
+                                        }
+                                        bookingLookup.get(roomNumberId).add(dateIso);
+                                    });
                                 }
-                                
-                                roomNumberIds.forEach((roomNumberId) => {
-                                    if (!bookingLookup.has(roomNumberId)) {
-                                        bookingLookup.set(roomNumberId, new Set());
-                                    }
-                                    bookingLookup.get(roomNumberId).add(dateIso);
-                                });
                             }
                             
                             currentDate.setDate(currentDate.getDate() + 1);
@@ -4863,6 +4923,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Removed remove room button functionality - single entry only
 
+        // Function to reset Room Type and Room Numbers when dates change
+        function resetRoomSelection() {
+            // Reset Room Type dropdown
+            const roomTypeSelects = detailsContainer.querySelectorAll('.room-type-select');
+            roomTypeSelects.forEach((select) => {
+                select.value = '';
+            });
+            
+            // Reset Room Numbers selection
+            if (selectedRoomNumbers) {
+                selectedRoomNumbers.clear();
+            }
+            if (roomNumberIdsInput) {
+                roomNumberIdsInput.value = '';
+            }
+            if (selectedRoomNumbersDiv) {
+                selectedRoomNumbersDiv.innerHTML = '';
+            }
+            if (roomNumberSearchInput) {
+                roomNumberSearchInput.value = '';
+            }
+            if (roomNumberDropdown) {
+                roomNumberDropdown.style.display = 'none';
+                roomNumberDropdown.innerHTML = '';
+                roomNumberDropdown.removeAttribute('data-available-rooms');
+            }
+            
+            // Reset rate type, rooms, adults, children, and price fields
+            detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
+                const rateSelect = row.querySelector('.room-rate-select');
+                const roomsInput = row.querySelector('.room-qty-input');
+                const adultsInput = row.querySelector('.room-adult-input');
+                const childrenInput = row.querySelector('.room-child-input');
+                const priceInput = row.querySelector('.room-price-input');
+                
+                if (rateSelect) rateSelect.innerHTML = '<option value="">Select</option>';
+                if (roomsInput) roomsInput.value = '1';
+                if (adultsInput) adultsInput.value = '1';
+                if (childrenInput) childrenInput.value = '0';
+                if (priceInput) priceInput.value = '';
+            });
+        }
+
         checkInDateInput?.addEventListener('change', () => {
             const minDate = checkInDateInput.value || todayIso;
             if (checkOutDateInput) {
@@ -4871,6 +4974,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     checkOutDateInput.value = minDate;
                 }
             }
+            // Reset room selection when dates change
+            resetRoomSelection();
             // Update room type options based on new dates
             updateRoomTypeOptions();
             // Update rooms max value for all rows (if not readonly)
@@ -4879,6 +4984,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         checkOutDateInput?.addEventListener('change', () => {
+            // Reset room selection when dates change
+            resetRoomSelection();
             // Update room type options based on new dates
             updateRoomTypeOptions();
             // Update rooms max value for all rows (if not readonly)
