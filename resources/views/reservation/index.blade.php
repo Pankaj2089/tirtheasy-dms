@@ -234,6 +234,15 @@ $siteUrl = env('APP_URL');
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
     $(document).ready(function(){
+        // Toggle sidebar menu on hamburger button click (same as calendar page)
+        $(".humberger-ic").on("click", function () {
+            $(".profile-sidebar").toggleClass("active");
+        });
+
+        // Close sidebar when close button is clicked
+        $(".close-profile").on("click", function () {
+            $(".profile-sidebar").removeClass("active");
+        });
         $(".user-button").click(function(){
             $(".user-button.fill").removeClass("fill");
             $(this).addClass("fill");
@@ -529,6 +538,31 @@ $siteUrl = env('APP_URL');
             }
         }
     }
+    
+    // Initialize quick reservation form with rooms data (same as calendar page)
+    $(document).ready(function() {
+        const quickReservationServerRooms = @json($quickReservationRooms ?? []);
+        const quickReservationRooms = Array.isArray(quickReservationServerRooms) ? quickReservationServerRooms : [];
+        
+        // Store rooms data globally so it's available for quick reservation
+        window.quickReservationRooms = quickReservationRooms;
+        
+        // Initialize quick reservation form if the function exists
+        // Note: The initQuickReservationForm function and related JavaScript 
+        // are defined in the calendar page. For full functionality on other pages,
+        // those functions need to be available (they will be if calendar JS is loaded)
+        if (typeof initQuickReservationForm === 'function' && quickReservationRooms.length > 0) {
+            initQuickReservationForm(quickReservationRooms);
+        } else if (quickReservationRooms.length > 0) {
+            // If function doesn't exist yet, try to initialize when modal opens
+            $('#reservation-pop').on('shown.bs.modal', function() {
+                if (typeof initQuickReservationForm === 'function' && !window.quickReservationInitialized) {
+                    initQuickReservationForm(quickReservationRooms);
+                    window.quickReservationInitialized = true;
+                }
+            });
+        }
+    });
 </script>
 @endsection
 

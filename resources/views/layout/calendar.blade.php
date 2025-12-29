@@ -18,6 +18,7 @@ $siteUrl = env('APP_URL');
         </main>
     </div>
 
+    @include('element.quick-reservation-modal')
     @include('element.footer')
 @endsection
 

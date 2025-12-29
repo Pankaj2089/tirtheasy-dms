@@ -7,6 +7,7 @@ use App\Models\Hotels;
 use App\Models\Rooms;
 use App\Models\Orders;
 use App\Models\OrderPayments;
+use App\Models\RoomPrices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Session;
@@ -17,12 +18,14 @@ class ReservationController extends Controller
     private static $HotelsModel;
     private static $OrdersModel;
     private static $OrderPaymentsModel;
+    private static $RoomPricesModel;
 
     public function __construct()
     {
         self::$HotelsModel = new Hotels();
         self::$OrdersModel = new Orders();
         self::$OrderPaymentsModel = new OrderPayments();
+        self::$RoomPricesModel = new RoomPrices();
     }
 
     public function index(Request $request)
@@ -202,7 +205,10 @@ class ReservationController extends Controller
         $siteUrl = env('APP_URL');
         $selectedFilterDate = $filterDateInput ? $filterDate->format('Y-m-d') : date('Y-m-d');
         
-        return view('reservation.index', compact('reservations', 'arrivals', 'departures', 'inHouse', 'hotels', 'siteUrl', 'selectedFilterDate'));
+        // Get quick reservation rooms data (same as calendar page)
+        $quickReservationRooms = $this->buildQuickReservationRooms($vendorId);
+        
+        return view('reservation.index', compact('reservations', 'arrivals', 'departures', 'inHouse', 'hotels', 'siteUrl', 'selectedFilterDate', 'quickReservationRooms'));
     }
 
     private function getVendorHotels($vendorId)
@@ -312,6 +318,72 @@ class ReservationController extends Controller
         $checkOutDate = Carbon::parse($checkOut);
         
         return max(1, $checkInDate->diffInDays($checkOutDate));
+    }
+
+    private function buildQuickReservationRooms($vendorId){
+        $roomsQuery = DB::table('rooms')
+            ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
+            ->where('hotel.vendor_id', $vendorId)
+            ->where('rooms.status', 1)
+            ->select([
+                'rooms.id',
+                'rooms.title',
+                'rooms.hotel_id',
+                'rooms.no_of_rooms',
+                'rooms.extra_mattress_price',
+                'hotel.title as hotel_title'
+            ])
+            ->orderBy('rooms.title', 'ASC');
+
+        $rooms = $roomsQuery->get();
+        if($rooms->isEmpty()){
+            return [];
+        }
+
+        $roomIds = $rooms->pluck('id')->all();
+        $roomPrices = self::$RoomPricesModel
+            ->where('status', 1)
+            ->whereIn('room_id', $roomIds)
+            ->orderBy('price', 'ASC')
+            ->get([
+                'id',
+                'room_id',
+                'hotel_id',
+                'price',
+                'no_of_rooms',
+                'no_of_guest',
+                'no_of_child'
+            ])
+            ->groupBy('room_id');
+
+        $payload = [];
+        foreach($rooms as $room){
+            $rates = [];
+            if(isset($roomPrices[$room->id]) && $roomPrices[$room->id]->count() > 0){
+                foreach($roomPrices[$room->id] as $priceRow){
+                    $rates[] = [
+                        'id' => (int)$priceRow->id,
+                        'price' => (float)$priceRow->price,
+                        'label' => 'Rs. '.number_format((float)$priceRow->price, 2).' / night',
+                        'no_of_rooms' => (int)($priceRow->no_of_rooms ?? 0),
+                        'no_of_guest' => (int)($priceRow->no_of_guest ?? 0),
+                        'no_of_child' => (int)($priceRow->no_of_child ?? 0),
+                    ];
+                }
+            }
+
+            $payload[] = [
+                'id' => (int)$room->id,
+                'title' => $room->title,
+                'hotel_id' => (int)$room->hotel_id,
+                'hotel_title' => $room->hotel_title,
+                'inventory' => (int)($room->no_of_rooms ?? 0),
+                'extra_mattress_price' => (float)($room->extra_mattress_price ?? 0),
+                'rates' => $rates
+            ];
+        }
+
+        return $payload;
     }
 }
 
