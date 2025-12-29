@@ -54,12 +54,9 @@ class AssignRoomController extends Controller
                     ->orWhere('orders.room_number_ids', '0')
                     ->orWhereRaw("TRIM(COALESCE(orders.room_number_ids, '')) = ''");
             })
-            ->whereDate('orders.check_in_date', '<=', $targetDate)
-            ->where(function ($q) use ($targetDate) {
-                // Booking must end on or after target date, or have no end date
-                $q->whereDate('orders.check_out_date', '>=', $targetDate)
-                    ->orWhereNull('orders.check_out_date');
-            })
+            // IMPORTANT: Show bookings ONLY where check-in date exactly matches target date
+            // Do NOT filter by checkout date - only show bookings with check-in date = selected date
+            ->whereDate('orders.check_in_date', '=', $targetDate)
             ->where(function ($q) {
                 $q->whereNull('orders.is_cancelled')
                     ->orWhere('orders.is_cancelled', '!=', 1);

@@ -37,9 +37,23 @@ class ReservationController extends Controller
         $vendorId = $request->session()->get('vendor_id');
         $hotels = $this->getVendorHotels($vendorId);
         
-        // Get filter date from request, default to today
+        // Get filter date from request
         $filterDateInput = $request->query('filter_date');
-        $filterDate = $filterDateInput ? Carbon::parse($filterDateInput)->startOfDay() : Carbon::today();
+        $useFilterDate = !empty($filterDateInput) && trim($filterDateInput) !== '';
+        
+        // Parse filter date if provided, otherwise set to null
+        $filterDate = null;
+        $filterDateStr = null;
+        if ($useFilterDate) {
+            try {
+                $filterDate = Carbon::parse(trim($filterDateInput))->startOfDay();
+                $filterDateStr = $filterDate->format('Y-m-d');
+            } catch (\Exception $e) {
+                // If date parsing fails, treat as no filter
+                $useFilterDate = false;
+                $filterDate = null;
+            }
+        }
         
         // Get bookings data
         $bookings = $this->getBookingsForReservation($vendorId);
@@ -59,11 +73,18 @@ class ReservationController extends Controller
             }
             
             try {
+                // Parse and normalize check-in date to ensure consistent format
                 $checkInDate = Carbon::parse($booking['check_in_date'])->startOfDay();
+                $checkInDateStr = $checkInDate->format('Y-m-d'); // Normalize to Y-m-d format
             } catch (\Exception $e) {
                 // Skip booking if date can't be parsed
                 continue;
             }
+            
+            // Note: We don't do early exit here because different tabs need different date filters:
+            // - Arrivals: filter by check-in date (STRICT - exact match required)
+            // - Departures: filter by check-out date  
+            // - In-House: filter by stay period (check-in <= filter <= check-out)
             
             $checkOutDate = null;
             if (!empty($booking['check_out_date'])) {
@@ -114,49 +135,61 @@ class ReservationController extends Controller
             $hasRoomAssigned = $booking['has_room_assigned'] ?? false;
             $hasCheckedIn = $hasRoomAssigned && ($checkInDate->isToday() || $checkInDate->isPast());
             
-            // Filter by selected date if provided
-            $useFilterDate = $filterDateInput !== null;
-            
-            // Arrivals: Show all bookings that haven't checked in yet
-            // - Today's bookings (all of them if not checked in)
-            // - Future bookings (upcoming) - all future check-in dates (even if room pre-assigned)
-            $checkInDateStr = $checkInDate->format('Y-m-d');
+            // Arrivals: Show bookings based on check-in date - STRICT FILTERING WITH TIME CHECK
             $todayStr = $today->format('Y-m-d');
             
-            // Show bookings that haven't checked in yet
-            // For future dates, show even if room is assigned (pre-assignment, not checked in)
-            if (!$hasCheckedIn) {
-                if ($useFilterDate) {
-                    // Filter by selected date - check-in date must match filter date
-                    $filterDateStr = $filterDate->format('Y-m-d');
+            if ($useFilterDate && $filterDate !== null) {
+                // STRICT FILTERING: Only show bookings with check-in date exactly matching selected date
+                // CRITICAL: Reject any booking with check-in date different from selected date
+                // This prevents future dates (30, 31) from showing when 29 is selected
+                
+                // First check: Exact string match - MUST match exactly
+                if ($checkInDateStr !== $filterDateStr) {
+                    // Skip this booking - check-in date doesn't match selected date
+                    // This prevents future dates (30/12, 31/12) from appearing when 29/12 is selected
+                    // Do not add to arrivals - continue to next booking
+                } elseif ($checkInDate->isSameDay($filterDate)) {
+                    // Second check: Carbon date comparison confirms exact match
+                    // TIME-BASED CONDITION: Only show if current time is BEFORE midnight (12:00 AM) of selected date
+                    // Condition: booking.checkInDate === selectedDate AND currentTime < startOfSelectedDate (12:00 AM)
+                    // Get midnight (start of day) of the selected filter date
+                    $filterDateMidnight = $filterDate->copy()->startOfDay(); // This is 00:00:00 of selected date
                     
-                    if ($checkInDateStr === $filterDateStr) {
-                        // If filter date is today or past, check if check-in time has passed
-                        if ($filterDateStr <= $todayStr) {
-                            if ($checkInDateTime->isPast()) {
-                                $arrivals[] = $bookingData;
-                            }
-                        } else {
-                            // Filter date is in the future, show all upcoming bookings for that date
-                            // (even if room is pre-assigned, they haven't checked in yet)
-                            $arrivals[] = $bookingData;
-                        }
-                    }
-                } else {
-                    // Default: Show all bookings that haven't checked in yet
-                    // - Today's bookings (all of them, regardless of time)
-                    // - All future bookings (upcoming) - including bookings beyond today
-                    if ($checkInDateStr >= $todayStr) {
-                        // All today's bookings and all future bookings
+                    // Check if current time is BEFORE midnight of the selected date
+                    $currentTime = Carbon::now();
+                    $isBeforeMidnight = $currentTime->lt($filterDateMidnight);
+                    
+                    if ($isBeforeMidnight) {
+                        // ✅ Show booking - current time is before midnight of check-in date
+                        // Example: Selected 29/12/2025, Current time 11:30 PM (28/12/2025) → Show
                         $arrivals[] = $bookingData;
                     }
+                    // ❌ If current time >= midnight of selected date, don't show (booking has "arrived")
+                    // Example: Selected 29/12/2025, Current time 12:01 AM (29/12/2025) → Don't show
                 }
+                // If dates don't match, booking is skipped (no future dates shown)
+            } else {
+                // Default behavior when no filter date is selected
+                // Show only today's bookings that haven't checked in yet AND current time is before midnight of today
+                $todayMidnight = $today->copy()->startOfDay(); // Midnight of today
+                $currentTime = Carbon::now();
+                $isBeforeTodayMidnight = $currentTime->lt($todayMidnight);
+                
+                // Only show if:
+                // 1. Check-in date is today
+                // 2. Guest hasn't checked in yet
+                // 3. Current time is before midnight of today
+                if ($checkInDateStr === $todayStr && !$hasCheckedIn && $isBeforeTodayMidnight) {
+                    $arrivals[] = $bookingData;
+                }
+                // Don't show future dates when no filter is selected
             }
             
             
             // Departures: Check-out date matches filter date (or today if no filter)
             if ($useFilterDate) {
-                if ($checkOutDate && $checkOutDate->format('Y-m-d') === $filterDate->format('Y-m-d')) {
+                // Since filter is active, only show if check-out date matches filter date
+                if ($checkOutDate && $checkOutDate->isSameDay($filterDate)) {
                     $departures[] = $bookingData;
                 }
             } else {
@@ -171,8 +204,9 @@ class ReservationController extends Controller
             if ($hasCheckedIn) {
                 if ($useFilterDate) {
                     // Filter by selected date - include if check-in <= filter date AND (no check-out OR check-out >= filter date)
-                    if ($checkInDate->format('Y-m-d') <= $filterDate->format('Y-m-d')) {
-                        if (!$checkOutDate || $checkOutDate->format('Y-m-d') >= $filterDate->format('Y-m-d')) {
+                    // Use Carbon comparison methods for reliable date comparison
+                    if ($checkInDate->lte($filterDate)) {
+                        if (!$checkOutDate || $checkOutDate->gte($filterDate)) {
                             $inHouse[] = $bookingData;
                         }
                     }
@@ -194,11 +228,26 @@ class ReservationController extends Controller
             
             // Reservations: Only future bookings (check-in date is in the future)
             // OR bookings that haven't arrived yet (check-in is today but check-in time hasn't come yet)
-            if ($checkInDate->isFuture()) {
-                $reservations[] = $bookingData;
-            } elseif ($checkInDate->isToday() && $checkInDateTime->isFuture()) {
-                // Check-in is today but check-in time hasn't arrived yet
-                $reservations[] = $bookingData;
+            if ($useFilterDate) {
+                // Since we already filtered above, all bookings here have matching check-in date
+                // If filter date is today, check if check-in time hasn't passed
+                if ($filterDate->isToday()) {
+                    if ($checkInDateTime->isFuture()) {
+                        $reservations[] = $bookingData;
+                    }
+                } else {
+                    // Filter date is in the future, show all bookings for that date
+                    $reservations[] = $bookingData;
+                }
+            } else {
+                // Default: Show all future bookings (check-in date is in the future)
+                // OR bookings that haven't arrived yet (check-in is today but check-in time hasn't come yet)
+                if ($checkInDate->isFuture()) {
+                    $reservations[] = $bookingData;
+                } elseif ($checkInDate->isToday() && $checkInDateTime->isFuture()) {
+                    // Check-in is today but check-in time hasn't arrived yet
+                    $reservations[] = $bookingData;
+                }
             }
         }
         

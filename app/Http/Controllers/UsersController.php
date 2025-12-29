@@ -419,7 +419,8 @@ class UsersController extends Controller{
             'orders.invoice_id',
             'orders.created_at',
             'orders.room_number_ids',
-            'orders.grand_total'
+            'orders.grand_total',
+            'orders.rooms' // Number of rooms selected in booking
         ]);
 
         if($orders->count() > 0){
@@ -448,7 +449,8 @@ class UsersController extends Controller{
                     'room_number_ids' => $order->room_number_ids ?? null,
                     'payment_status' => $order->payment_status ?? null,
                     'grand_total' => $order->grand_total ?? null,
-                    'order_id' => $order->id
+                    'order_id' => $order->id,
+                    'rooms' => (int)($order->rooms ?? 1) // Number of rooms selected in booking
                 ];
             }
         }

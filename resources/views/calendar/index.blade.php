@@ -2242,6 +2242,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         order_id: entry.order_id || entry.id || null,
                         room_id: entry.room_id || entry.room_category_id || null, // Room type/category ID
                         room_category_id: entry.room_category_id || entry.room_id || null,
+                        rooms: parseInt(entry.rooms) || 1, // Number of rooms selected in booking
                         isUnassigned: true
                     });
                     return; // Don't add to room-specific bookings
@@ -2583,14 +2584,20 @@ document.addEventListener('DOMContentLoaded', function () {
             const { count, price, tooltip } = getCategoryDailyMetrics(category, iso);
             
             // Check for unassigned bookings for this date
+            // IMPORTANT: Show unassigned rooms ONLY on check-in date (startDate), not on all dates in booking range
             // Match bookings to category by checking if any room in category matches booking's room_id
             const unassignedForDate = unassignedBookings.filter(booking => {
-                if (!booking.startDate || !booking.endDate) return false;
+                if (!booking.startDate) return false;
                 const start = new Date(booking.startDate);
-                const end = new Date(booking.endDate);
                 const current = new Date(iso);
-                // Check if date falls within booking range
-                if (current < start || current > end) return false;
+                
+                // CRITICAL: Only show on check-in date (startDate), not on other dates in the range
+                // Convert both to ISO date strings for exact date comparison (ignore time)
+                const startIso = start.toISOString().split('T')[0];
+                const currentIso = current.toISOString().split('T')[0];
+                
+                // Only match if current date exactly equals check-in date
+                if (currentIso !== startIso) return false;
                 
                 // Match by room_id - check if booking's room_id matches any room in this category
                 if (booking.room_id && category.rooms) {
@@ -2598,6 +2605,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 return false;
             });
+            
+            // Calculate total unassigned rooms count (sum of rooms from all unassigned bookings)
+            const totalUnassignedRooms = unassignedForDate.reduce((sum, booking) => {
+                const roomsCount = parseInt(booking.rooms) || 1;
+                return sum + roomsCount;
+            }, 0);
             
             const cell = document.createElement('div');
             cell.className = 'grid-cell bg-transparent border-0';
@@ -2607,21 +2620,25 @@ document.addEventListener('DOMContentLoaded', function () {
             priceLabel.style.textAlign = 'center';
             const hasCount = typeof count === 'number' && !Number.isNaN(count);
             
+            // Calculate actual available rooms: Total Available = Total Hotel Rooms - Unassigned Rooms
+            const actualAvailableCount = hasCount ? Math.max(0, count - totalUnassignedRooms) : 0;
+            
             // Build count markup with blue box on same line if unassigned bookings exist
             let countMarkup = '';
             if (hasCount) {
-                countMarkup = `<span${count <= 0 ? ' class="no-availability"' : ''} style="display: inline-block; text-align: center;">${count}</span>`;
+                // Show actual available count (after subtracting unassigned rooms)
+                countMarkup = `<span${actualAvailableCount <= 0 ? ' class="no-availability"' : ''} style="display: inline-block; text-align: center;">${actualAvailableCount}</span>`;
             }
             
-            // If there are unassigned bookings, add blue box on same line
-            if (unassignedForDate.length > 0) {
+            // If there are unassigned bookings, add blue box on same line showing total unassigned rooms
+            if (unassignedForDate.length > 0 && totalUnassignedRooms > 0) {
                 const unassignedBox = document.createElement('span');
                 unassignedBox.className = 'text-white';
                 unassignedBox.style.cssText = 'cursor: pointer; padding: 1px 5px; border-radius: 3px; font-size: 9px; background: #7ba4d2 !important; margin-left: 4px; display: inline-block; text-align: center; line-height: 15px;';
-                unassignedBox.title = `${unassignedForDate.length} unassigned booking(s) - Click to assign room`;
+                unassignedBox.title = `${totalUnassignedRooms} unassigned room(s) from ${unassignedForDate.length} booking(s) - Click to assign room`;
                 
-                // Show only the count number
-                unassignedBox.textContent = unassignedForDate.length;
+                // Show total unassigned rooms count (sum of rooms from all bookings)
+                unassignedBox.textContent = totalUnassignedRooms;
                 
                 // Add click handler to open assign room modal
                 unassignedBox.addEventListener('click', (e) => {
@@ -3943,6 +3960,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 return null;
             }
             
+            // Find room type ID to match with unassigned bookings
+            const roomTypeId = roomsList.find(r => r.title === roomTypeTitle)?.id;
+            
             // Find minimum availability across all dates in the range
             const checkIn = new Date(checkInDate);
             const checkOut = new Date(checkOutDate);
@@ -3956,10 +3976,40 @@ document.addEventListener('DOMContentLoaded', function () {
                 const override = overrides[dateIso];
                 
                 // Get count for this date (override or default)
-                const count = override?.count ?? summary.defaultCount ?? 0;
+                const totalCount = override?.count ?? summary.defaultCount ?? 0;
                 
-                if (count < minAvailability) {
-                    minAvailability = count;
+                // Calculate unassigned rooms for this date and room type
+                // IMPORTANT: Only count unassigned rooms on check-in date (startDate), not on all dates in booking range
+                let unassignedRoomsForDate = 0;
+                if (roomTypeId && Array.isArray(unassignedBookings)) {
+                    const unassignedForDate = unassignedBookings.filter(booking => {
+                        if (!booking.startDate) return false;
+                        const start = new Date(booking.startDate);
+                        const current = new Date(dateIso);
+                        
+                        // CRITICAL: Only count on check-in date (startDate), not on other dates in the range
+                        // Convert both to ISO date strings for exact date comparison (ignore time)
+                        const startIso = start.toISOString().split('T')[0];
+                        const currentIso = current.toISOString().split('T')[0];
+                        
+                        // Only match if current date exactly equals check-in date
+                        if (currentIso !== startIso) return false;
+                        
+                        // Match by room_id
+                        return booking.room_id == roomTypeId;
+                    });
+                    
+                    // Sum up rooms from all unassigned bookings for this date
+                    unassignedRoomsForDate = unassignedForDate.reduce((sum, booking) => {
+                        return sum + (parseInt(booking.rooms) || 1);
+                    }, 0);
+                }
+                
+                // Calculate actual available: Total - Unassigned
+                const availableCount = Math.max(0, totalCount - unassignedRoomsForDate);
+                
+                if (availableCount < minAvailability) {
+                    minAvailability = availableCount;
                 }
                 
                 currentDate.setDate(currentDate.getDate() + 1);
@@ -4266,10 +4316,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 balanceAmountLabel.textContent = formatAmount(totalAmount);
             }
             
-            // Update Payment Details tab
-            updatePaymentDetails(totalAmount);
-            
-            // Update folio history with charges and payments
+            // Update Payment Details tab with charges and payments included
             updatePaymentCalculations();
         }
 
@@ -4628,7 +4675,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         // Function to show room number dropdown with checkboxes
-        function showRoomNumberDropdown(searchTerm = '') {
+        function showRoomNumberDropdown(searchTerm = '', preserveScrollPosition = null) {
             if (isDatesFromCalendarSelection) {
                 return; // Don't allow if readonly
             }
@@ -4637,7 +4684,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!availableRoomsJson) {
                 updateRoomNumberOptions();
                 // Try again after a short delay
-                setTimeout(() => showRoomNumberDropdown(searchTerm), 100);
+                setTimeout(() => showRoomNumberDropdown(searchTerm, preserveScrollPosition), 100);
                 return;
             }
             
@@ -4697,12 +4744,24 @@ document.addEventListener('DOMContentLoaded', function () {
             roomNumberDropdown.innerHTML = dropdownHtml;
             roomNumberDropdown.style.display = 'block';
             
+            // Restore scroll position if provided
+            if (preserveScrollPosition !== null) {
+                const listGroup = roomNumberDropdown.querySelector('.list-group');
+                if (listGroup) {
+                    listGroup.scrollTop = preserveScrollPosition;
+                }
+            }
+            
             // Add checkbox change handlers
             roomNumberDropdown.querySelectorAll('.room-number-checkbox').forEach((checkbox) => {
                 checkbox.addEventListener('change', (e) => {
                     const roomId = parseInt(e.target.value);
                     const roomNumber = e.target.dataset.roomNumber;
                     const isChecked = e.target.checked;
+                    
+                    // Save scroll position before updating
+                    const listGroup = roomNumberDropdown.querySelector('.list-group');
+                    const scrollPosition = listGroup ? listGroup.scrollTop : 0;
                     
                     if (isChecked) {
                         // Check if we've reached the limit
@@ -4725,9 +4784,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     
                     renderSelectedRoomNumbers();
                     
-                    // Refresh dropdown to update disabled states
+                    // Refresh dropdown to update disabled states while preserving scroll position
                     const currentSearchTerm = roomNumberSearchInput.value.toLowerCase().trim();
-                    showRoomNumberDropdown(currentSearchTerm);
+                    showRoomNumberDropdown(currentSearchTerm, scrollPosition);
                 });
             });
         }
@@ -4874,16 +4933,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Get available room numbers for the selected room type
                 const availableRooms = getAvailableRoomNumbers(roomTypeSelect.value);
                 
-                // Filter out already selected rooms
-                const unselectedRooms = availableRooms.filter(room => !selectedRoomNumbers.has(room.id));
-                
-                if (unselectedRooms.length === 0) {
+                if (availableRooms.length === 0) {
                     swal("Error!", "No available rooms to select.", "error");
                     return;
                 }
                 
+                // Clear old selection before selecting new rooms
+                selectedRoomNumbers.clear();
+                
                 // Sort rooms by number (serially) and select up to roomsQty
-                const sortedRooms = unselectedRooms.sort((a, b) => {
+                const sortedRooms = availableRooms.sort((a, b) => {
                     // Extract numeric part for proper sorting
                     const numA = parseInt(a.number.match(/\d+/)?.[0] || '0', 10);
                     const numB = parseInt(b.number.match(/\d+/)?.[0] || '0', 10);
@@ -5782,12 +5841,20 @@ document.addEventListener('DOMContentLoaded', function () {
             const grandTotal = roomTotal + extraCharges;
             const balance = grandTotal - totalPayments;
             
+            // Get current date
+            const currentDate = new Date().toLocaleDateString('en-GB');
+            
             // Update Details section
+            const quickPaymentDate = document.getElementById('quickPaymentDate');
+            const quickPaymentRoomPrice = document.getElementById('quickPaymentRoomPrice');
             const quickPaymentExtraCharges = document.getElementById('quickPaymentExtraCharges');
             const quickPaymentSGST = document.getElementById('quickPaymentSGST');
             const quickPaymentCGST = document.getElementById('quickPaymentCGST');
             const quickPaymentTotalPayable = document.getElementById('quickPaymentTotalPayable');
             const quickPaymentBalance = document.getElementById('quickPaymentBalance');
+            
+            if (quickPaymentDate) quickPaymentDate.textContent = currentDate;
+            if (quickPaymentRoomPrice) quickPaymentRoomPrice.textContent = 'Rs. ' + formatAmount(roomTotal);
             
             if (quickPaymentExtraCharges) quickPaymentExtraCharges.textContent = 'Rs. ' + formatAmount(extraCharges);
             if (quickPaymentSGST) quickPaymentSGST.textContent = 'Rs. 0';
