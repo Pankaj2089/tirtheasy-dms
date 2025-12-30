@@ -630,7 +630,7 @@ class UsersController extends Controller{
 
         $validator = Validator::make($request->all(), [
             'check_in_date' => ['required','date_format:Y-m-d','after_or_equal:'.$today],
-            'check_out_date' => ['required','date_format:Y-m-d','after_or_equal:check_in_date','after_or_equal:'.$today],
+            'check_out_date' => ['required','date_format:Y-m-d','after:check_in_date','after_or_equal:'.$today],
             'check_in_time' => 'nullable|date_format:H:i',
             'check_out_time' => 'nullable|date_format:H:i',
             'reservation_type' => ['required', Rule::in(['confirm','confirmed','hold','inquiry'])],
@@ -664,7 +664,8 @@ class UsersController extends Controller{
         ],[
             'check_in_date.required' => 'Please select check-in date.',
             'check_in_date.after_or_equal' => 'Check-in date cannot be in the past.',
-            'check_out_date.after_or_equal' => 'Check-out date cannot be before the check-in date or in the past.',
+            'check_out_date.after' => 'Check-out date must be at least one day after check-in date. Same day check-in and check-out is not allowed.',
+            'check_out_date.after_or_equal' => 'Check-out date cannot be in the past.',
             'guest.name.required' => 'Guest name is required.',
             'guest.mobile.required' => 'Guest mobile is required.',
             'room_details.required' => 'Please add at least one room.',

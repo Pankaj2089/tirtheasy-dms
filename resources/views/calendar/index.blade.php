@@ -3870,7 +3870,19 @@ document.addEventListener('DOMContentLoaded', function () {
             checkInDateInput.setAttribute('min', todayIso);
         }
         if (checkOutDateInput) {
-            checkOutDateInput.setAttribute('min', checkInDateInput?.value || todayIso);
+            // Set minimum check-out date to check-in date + 1 day (same day not allowed)
+            const checkInValue = checkInDateInput?.value;
+            if (checkInValue) {
+                const checkInDateObj = new Date(checkInValue);
+                checkInDateObj.setDate(checkInDateObj.getDate() + 1);
+                const minCheckOutDate = checkInDateObj.toISOString().split('T')[0];
+                checkOutDateInput.setAttribute('min', minCheckOutDate);
+            } else {
+                // If no check-in date, set to tomorrow as minimum
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                checkOutDateInput.setAttribute('min', tomorrow.toISOString().split('T')[0]);
+            }
         }
         let rowIndex = 0;
 
@@ -3942,6 +3954,54 @@ document.addEventListener('DOMContentLoaded', function () {
             room.rates.forEach((rate) => {
                 options.push(`<option value="${rate.id}" data-price="${rate.price}" data-max-adults="${rate.no_of_guest}" data-max-child="${rate.no_of_child}">${rate.label}</option>`);
             });
+            return options.join('');
+        }
+
+        // Function to build rooms dropdown options based on available count
+        function buildRoomsDropdownOptions(roomTypeId, selectedValue = '0', isFromCalendarSelection = false) {
+            if (isFromCalendarSelection) {
+                // If from calendar selection, only show 1 room and disable
+                return '<option value="1" selected disabled>1</option>';
+            }
+            
+            // If no room type selected, show only 0 and disable
+            if (!roomTypeId) {
+                return '<option value="0" selected>0</option>';
+            }
+            
+            // Default max rooms if dates not set
+            let maxRooms = 10;
+            
+            // Try to get available count if room type is selected
+            const selectedRoomType = roomsList.find(r => Number(r.id) === Number(roomTypeId));
+            if (selectedRoomType) {
+                try {
+                    const availableCount = getAvailableRoomsCount(selectedRoomType.title);
+                    if (availableCount !== null && availableCount > 0) {
+                        maxRooms = availableCount;
+                    } else if (availableCount === 0) {
+                        // If no availability, show only 0
+                        return '<option value="0" selected>0</option>';
+                    }
+                } catch (e) {
+                    // If getAvailableRoomsCount fails, use default
+                    console.warn('Error getting available rooms count:', e);
+                }
+            }
+            
+            // Ensure selectedValue is valid (should be > 0 when room type is selected)
+            const selectedNum = parseInt(selectedValue, 10) || 0;
+            if (selectedNum > maxRooms) {
+                selectedValue = maxRooms.toString();
+            } else if (selectedNum < 1) {
+                selectedValue = '1';
+            }
+            
+            const options = [];
+            for (let i = 1; i <= maxRooms; i++) {
+                const selected = i == selectedValue ? 'selected' : '';
+                options.push(`<option value="${i}" ${selected}>${i}</option>`);
+            }
             return options.join('');
         }
 
@@ -4187,10 +4247,14 @@ document.addEventListener('DOMContentLoaded', function () {
             wrapper.className = 'room-detail-item';
             wrapper.dataset.index = currentIndex;
             
-            // Determine rooms input attributes based on whether dates are from calendar selection
-            const roomsReadonly = isFromCalendarSelection ? 'readonly' : '';
-            const roomsValue = isFromCalendarSelection ? '1' : (initial.rooms || '1');
-            const roomsStyle = isFromCalendarSelection ? 'style="background-color: #e9ecef; cursor: not-allowed;"' : '';
+            // Determine rooms value based on whether dates are from calendar selection
+            const roomsValue = isFromCalendarSelection ? '1' : (initial.rooms || (initial.room_id ? '1' : '0'));
+            // Disable if from calendar selection OR if no room type selected
+            const roomsDisabled = isFromCalendarSelection || !initial.room_id ? 'disabled' : '';
+            const roomsStyle = (isFromCalendarSelection || !initial.room_id) ? 'style="background-color: #e9ecef; cursor: not-allowed;"' : '';
+            
+            // Build rooms dropdown options
+            const roomsOptions = buildRoomsDropdownOptions(initial.room_id || null, roomsValue, isFromCalendarSelection);
             
             wrapper.innerHTML = `
                 <div class="row g-2 align-items-end">
@@ -4208,7 +4272,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Rooms</label>
-                        <input type="number" class="form-control room-qty-input" name="room_details[${currentIndex}][rooms]" min="1" max="" value="${roomsValue}" ${roomsReadonly} ${roomsStyle}>
+                        <select class="form-control room-qty-select" name="room_details[${currentIndex}][rooms]" ${roomsDisabled} ${roomsStyle}>
+                            ${roomsOptions}
+                        </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Adults</label>
@@ -4226,20 +4292,14 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
             detailsContainer.appendChild(wrapper);
             const roomSelect = wrapper.querySelector('.room-type-select');
-            const roomsInput = wrapper.querySelector('.room-qty-input');
+            const roomsSelect = wrapper.querySelector('.room-qty-select');
             
             if (initial.room_id) {
                 roomSelect.value = initial.room_id;
-            }
-            
-            // Update rooms field max value based on selected room type (if not from calendar selection)
-            if (!isFromCalendarSelection && roomSelect.value) {
-                const selectedRoomType = roomsList.find(r => r.id == roomSelect.value);
-                if (selectedRoomType) {
-                    const availableCount = getAvailableRoomsCount(selectedRoomType.title);
-                    if (availableCount !== null) {
-                        roomsInput.setAttribute('max', availableCount);
-                    }
+                // Update rooms dropdown when room type is set
+                if (!isFromCalendarSelection && roomsSelect) {
+                    const roomsOptions = buildRoomsDropdownOptions(initial.room_id, roomsValue, false);
+                    roomsSelect.innerHTML = roomsOptions;
                 }
             }
             
@@ -4293,7 +4353,7 @@ document.addEventListener('DOMContentLoaded', function () {
             let totalRooms = 0;
             let totalAmount = 0;
             detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
-                const qty = parseInt(row.querySelector('.room-qty-input')?.value, 10) || 0;
+                const qty = parseInt(row.querySelector('.room-qty-select')?.value, 10) || 0;
                 const price = parseFloat(row.querySelector('.room-price-input')?.value) || 0;
                 totalRooms += qty;
                 const lineTotal = qty * price * nights;
@@ -4306,17 +4366,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (totalRoomsInput) {
                 totalRoomsInput.value = totalRooms || '';
             }
-            if (totalAmountLabel) {
-                totalAmountLabel.textContent = formatAmount(totalAmount);
-            }
-            if (paidAmountLabel) {
-                paidAmountLabel.textContent = formatAmount(0);
-            }
-            if (balanceAmountLabel) {
-                balanceAmountLabel.textContent = formatAmount(totalAmount);
-            }
             
-            // Update Payment Details tab with charges and payments included
+            // Update all totals including charges and payments via updatePaymentCalculations
+            // This ensures both tabs' footers are updated with the correct totals
             updatePaymentCalculations();
         }
 
@@ -4437,6 +4489,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 return null;
             }
             
+            // Validate that check-in and check-out dates are not the same day
+            if (checkInDate === checkOutDate) {
+                showErrors(['Check-out date must be at least one day after check-in date. Same day check-in and check-out is not allowed.']);
+                return null;
+            }
+            
             // Get selected room number IDs from the room number selection field or selection context
             let selectedRoomNumberIds = [];
             
@@ -4469,7 +4527,7 @@ document.addEventListener('DOMContentLoaded', function () {
             detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
                 const roomId = row.querySelector('.room-type-select')?.value;
                 const rateId = row.querySelector('.room-rate-select')?.value;
-                const qty = row.querySelector('.room-qty-input')?.value;
+                const qty = row.querySelector('.room-qty-select')?.value;
                 if (roomId && rateId && qty) {
                     // Get room number IDs for this specific room type from the selection
                     const roomTypeId = Number(roomId);
@@ -4548,19 +4606,34 @@ document.addEventListener('DOMContentLoaded', function () {
             if (event.target.classList.contains('room-type-select')) {
                 updateRateOptions(row, event.target.value);
                 
-                // Update rooms field max value based on selected room type (if not readonly)
-                const roomsInput = row.querySelector('.room-qty-input');
-                if (roomsInput && !roomsInput.hasAttribute('readonly')) {
-                    const selectedRoomType = roomsList.find(r => r.id == event.target.value);
-                    if (selectedRoomType) {
-                        const availableCount = getAvailableRoomsCount(selectedRoomType.title);
-                        if (availableCount !== null) {
-                            roomsInput.setAttribute('max', availableCount);
+                // Update rooms dropdown based on selected room type
+                const roomsSelect = row.querySelector('.room-qty-select');
+                if (roomsSelect) {
+                    const roomTypeId = event.target.value;
+                    
+                    if (roomTypeId) {
+                        // Room type selected - enable dropdown and update options
+                        roomsSelect.disabled = false;
+                        roomsSelect.style.backgroundColor = '';
+                        roomsSelect.style.cursor = '';
+                        
+                        const selectedRoomType = roomsList.find(r => r.id == roomTypeId);
+                        if (selectedRoomType) {
+                            const currentValue = roomsSelect.value && roomsSelect.value !== '0' ? roomsSelect.value : '1';
+                            const roomsOptions = buildRoomsDropdownOptions(roomTypeId, currentValue, false);
+                            roomsSelect.innerHTML = roomsOptions;
                             // If current value exceeds max, set to max
-                            if (parseInt(roomsInput.value, 10) > availableCount) {
-                                roomsInput.value = availableCount;
+                            const availableCount = getAvailableRoomsCount(selectedRoomType.title);
+                            if (availableCount !== null && parseInt(currentValue, 10) > availableCount) {
+                                roomsSelect.value = availableCount;
                             }
                         }
+                    } else {
+                        // No room type selected - disable dropdown and show 0
+                        roomsSelect.disabled = true;
+                        roomsSelect.style.backgroundColor = '#e9ecef';
+                        roomsSelect.style.cursor = 'not-allowed';
+                        roomsSelect.innerHTML = '<option value="0" selected>0</option>';
                     }
                 }
                 
@@ -4703,7 +4776,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             
             // Get rooms quantity limit
-            const roomsInput = detailsContainer.querySelector('.room-qty-input');
+            const roomsInput = detailsContainer.querySelector('.room-qty-select');
             const roomsQty = roomsInput ? parseInt(roomsInput.value, 10) || 0 : 0;
             const selectedCount = selectedRoomNumbers.size;
             const maxSelectable = roomsQty > 0 ? roomsQty : filtered.length;
@@ -4918,7 +4991,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 
                 // Get the rooms quantity value
-                const roomsInput = detailsContainer.querySelector('.room-qty-input');
+                const roomsInput = detailsContainer.querySelector('.room-qty-select');
                 if (!roomsInput) {
                     swal("Error!", "Please add a room detail first.", "error");
                     return;
@@ -4973,9 +5046,15 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        detailsContainer.addEventListener('input', (event) => {
-            if (event.target.classList.contains('room-qty-input')
+        detailsContainer.addEventListener('change', (event) => {
+            if (event.target.classList.contains('room-qty-select')
                 || event.target.classList.contains('room-price-input')) {
+            recalcSummary();
+            }
+        });
+        
+        detailsContainer.addEventListener('input', (event) => {
+            if (event.target.classList.contains('room-price-input')) {
             recalcSummary();
             }
         });
@@ -5012,7 +5091,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Reset rate type, rooms, adults, children, and price fields
             detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
                 const rateSelect = row.querySelector('.room-rate-select');
-                const roomsInput = row.querySelector('.room-qty-input');
+                const roomsInput = row.querySelector('.room-qty-select');
                 const adultsInput = row.querySelector('.room-adult-input');
                 const childrenInput = row.querySelector('.room-child-input');
                 const priceInput = row.querySelector('.room-price-input');
@@ -5026,11 +5105,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         checkInDateInput?.addEventListener('change', () => {
-            const minDate = checkInDateInput.value || todayIso;
-            if (checkOutDateInput) {
-                checkOutDateInput.setAttribute('min', minDate);
-                if (checkOutDateInput.value && checkOutDateInput.value < minDate) {
-                    checkOutDateInput.value = minDate;
+            const checkInDate = checkInDateInput.value || todayIso;
+            if (checkOutDateInput && checkInDate) {
+                // Set minimum check-out date to check-in date + 1 day (same day not allowed)
+                const checkInDateObj = new Date(checkInDate);
+                checkInDateObj.setDate(checkInDateObj.getDate() + 1);
+                const minCheckOutDate = checkInDateObj.toISOString().split('T')[0];
+                checkOutDateInput.setAttribute('min', minCheckOutDate);
+                
+                // If current check-out date is same as or before check-in, update it
+                if (checkOutDateInput.value && (checkOutDateInput.value <= checkInDate)) {
+                    checkOutDateInput.value = minCheckOutDate;
                 }
             }
             // Reset room selection when dates change
@@ -5043,6 +5128,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         checkOutDateInput?.addEventListener('change', () => {
+            // Validate that check-out date is not the same as check-in date
+            if (checkInDateInput?.value && checkOutDateInput?.value) {
+                if (checkInDateInput.value === checkOutDateInput.value) {
+                    // Set check-out to check-in + 1 day
+                    const checkInDateObj = new Date(checkInDateInput.value);
+                    checkInDateObj.setDate(checkInDateObj.getDate() + 1);
+                    const minCheckOutDate = checkInDateObj.toISOString().split('T')[0];
+                    checkOutDateInput.value = minCheckOutDate;
+                    
+                    // Show error message
+                    if (errorsBox) {
+                        errorsBox.classList.remove('d-none');
+                        errorsBox.innerHTML = '<div>Check-out date must be at least one day after check-in date. Same day check-in and check-out is not allowed.</div>';
+                        setTimeout(() => {
+                            errorsBox.classList.add('d-none');
+                        }, 5000);
+                    }
+                }
+            }
             // Reset room selection when dates change
             resetRoomSelection();
             // Update room type options based on new dates
@@ -5052,25 +5156,40 @@ document.addEventListener('DOMContentLoaded', function () {
             recalcSummary();
         });
         
-        // Function to update max value for rooms input fields
+        // Function to update rooms dropdown options for all rows
         function updateRoomsMaxValues() {
             if (isDatesFromCalendarSelection) {
-                return; // Don't update if from calendar selection (readonly)
+                return; // Don't update if from calendar selection (disabled)
             }
             detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
-                const roomsInput = row.querySelector('.room-qty-input');
+                const roomsSelect = row.querySelector('.room-qty-select');
                 const roomSelect = row.querySelector('.room-type-select');
-                if (roomsInput && !roomsInput.hasAttribute('readonly') && roomSelect?.value) {
-                    const selectedRoomType = roomsList.find(r => r.id == roomSelect.value);
-                    if (selectedRoomType) {
-                        const availableCount = getAvailableRoomsCount(selectedRoomType.title);
-                        if (availableCount !== null) {
-                            roomsInput.setAttribute('max', availableCount);
+                if (roomsSelect && roomSelect) {
+                    const roomTypeId = roomSelect.value;
+                    
+                    if (roomTypeId) {
+                        // Room type selected - enable and update dropdown
+                        roomsSelect.disabled = false;
+                        roomsSelect.style.backgroundColor = '';
+                        roomsSelect.style.cursor = '';
+                        
+                        const selectedRoomType = roomsList.find(r => r.id == roomTypeId);
+                        if (selectedRoomType) {
+                            const currentValue = roomsSelect.value && roomsSelect.value !== '0' ? roomsSelect.value : '1';
+                            const roomsOptions = buildRoomsDropdownOptions(roomTypeId, currentValue, false);
+                            roomsSelect.innerHTML = roomsOptions;
                             // If current value exceeds max, set to max
-                            if (parseInt(roomsInput.value, 10) > availableCount) {
-                                roomsInput.value = availableCount;
+                            const availableCount = getAvailableRoomsCount(selectedRoomType.title);
+                            if (availableCount !== null && parseInt(currentValue, 10) > availableCount) {
+                                roomsSelect.value = availableCount;
                             }
                         }
+                    } else {
+                        // No room type selected - disable and show 0
+                        roomsSelect.disabled = true;
+                        roomsSelect.style.backgroundColor = '#e9ecef';
+                        roomsSelect.style.cursor = 'not-allowed';
+                        roomsSelect.innerHTML = '<option value="0" selected>0</option>';
                     }
                 }
             });
@@ -5388,7 +5507,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const nights = calculateNights();
                     let totalAmount = 0;
                     detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
-                        const qty = parseInt(row.querySelector('.room-qty-input')?.value, 10) || 0;
+                        const qty = parseInt(row.querySelector('.room-qty-select')?.value, 10) || 0;
                         const price = parseFloat(row.querySelector('.room-price-input')?.value) || 0;
                         const lineTotal = qty * price * nights;
                         totalAmount += lineTotal;
@@ -5829,7 +5948,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const nights = calculateNights();
             let roomTotal = 0;
             detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
-                const qty = parseInt(row.querySelector('.room-qty-input')?.value, 10) || 0;
+                const qty = parseInt(row.querySelector('.room-qty-select')?.value, 10) || 0;
                 const price = parseFloat(row.querySelector('.room-price-input')?.value) || 0;
                 roomTotal += qty * price * nights;
             });
@@ -5868,7 +5987,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 quickPaymentAmountInput.value = balance.toFixed(2);
             }
             
-            // Update footer
+            // Update footer in Payment Details tab
             const quickPaymentFooterTotal = document.getElementById('quickPaymentFooterTotal');
             const quickPaymentFooterPaid = document.getElementById('quickPaymentFooterPaid');
             const quickPaymentFooterBalance = document.getElementById('quickPaymentFooterBalance');
@@ -5876,6 +5995,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (quickPaymentFooterTotal) quickPaymentFooterTotal.textContent = formatAmount(grandTotal);
             if (quickPaymentFooterPaid) quickPaymentFooterPaid.textContent = formatAmount(totalPayments);
             if (quickPaymentFooterBalance) quickPaymentFooterBalance.textContent = formatAmount(balance);
+            
+            // Update footer in Normal Booking tab (first tab) - includes charges
+            if (totalAmountLabel) totalAmountLabel.textContent = formatAmount(grandTotal);
+            if (paidAmountLabel) paidAmountLabel.textContent = formatAmount(totalPayments);
+            if (balanceAmountLabel) balanceAmountLabel.textContent = formatAmount(balance);
             
             // Update Folio History section with charges, payments, and summary
             renderFolioHistory({
@@ -5920,7 +6044,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const nights = calculateNights();
                 let roomTotal = 0;
                 detailsContainer.querySelectorAll('.room-detail-item').forEach((row) => {
-                    const qty = parseInt(row.querySelector('.room-qty-input')?.value, 10) || 0;
+                    const qty = parseInt(row.querySelector('.room-qty-select')?.value, 10) || 0;
                     const price = parseFloat(row.querySelector('.room-price-input')?.value) || 0;
                     roomTotal += qty * price * nights;
                 });
