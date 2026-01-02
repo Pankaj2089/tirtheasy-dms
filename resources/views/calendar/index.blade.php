@@ -2867,6 +2867,30 @@ document.addEventListener('DOMContentLoaded', function () {
             block.style.gridColumn = `${indices.start + 1} / ${indices.end + 2}`;
             block.style.gridRow = '1';
             block.title = booking.tooltip || `${booking.label} (${booking.startDate} - ${booking.endDate})`;
+            
+            // Check if only 1 day is visible (single-day checkout view)
+            const isSingleDayVisible = indices.start === indices.end;
+            if (isSingleDayVisible) {
+                // Get the visible day ISO string
+                const visibleDay = visibleIso[indices.start];
+                
+                // Get booking display range to check start and end dates
+                const displayRange = getBookingDisplayRange(booking);
+                
+                // Check if the visible day is both start and checkout day (actual single-day booking)
+                const isStartSameAsCheckout = displayRange && displayRange.start === displayRange.end;
+                const isVisibleDaySameAsStart = displayRange && visibleDay === displayRange.start;
+                
+                // Only apply single-day style if it's NOT a same-day booking (start = checkout)
+                // If start is same as checkout day, use old style
+                if (!isStartSameAsCheckout || !isVisibleDaySameAsStart) {
+                    // Apply single-day booking style (partial visibility - checkout day only)
+                    block.style.height = '19px';
+                    block.style.marginTop = '7px';
+                    block.style.width = '89%';
+                    block.style.marginLeft = '3%';
+                }
+            }
 
             const labelWrapper = document.createElement('div');
             labelWrapper.className = 'booking-label';
@@ -3788,14 +3812,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (calendarState.viewMode === 'week') {
             if (direction > 0) {
                 // Going forward: set referenceDate to the last date from previous view
+                // Keep the original forward logic unchanged
                 const lastDate = new Date(calendarState.referenceDate);
                 lastDate.setDate(lastDate.getDate() + (WEEK_DAY_COUNT - 1));
                 calendarState.referenceDate = lastDate;
                 calendarState.isNavigating = true; // Mark as navigating to add active state
             } else {
-                // Going backward: set referenceDate to the first date from previous view
+                // Going backward: reverse the forward action
+                // Since forward sets referenceDate to last date of range, backward should go back to first date of previous range
+                // To reverse: subtract (WEEK_DAY_COUNT - 1) to get back to the first date that forward started from
                 calendarState.referenceDate.setDate(
-                    calendarState.referenceDate.getDate() - WEEK_DAY_COUNT
+                    calendarState.referenceDate.getDate() - (WEEK_DAY_COUNT - 1)
                 );
                 calendarState.isNavigating = true;
             }
