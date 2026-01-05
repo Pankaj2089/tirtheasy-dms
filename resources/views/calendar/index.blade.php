@@ -82,15 +82,15 @@ $siteUrl = env('APP_URL');
     }
 </style>
 
-   
-<div class="calender-box">
-    <!-- Calendar Grid -->
-    <div class="calendar-container">
+<div class="main-dash top-report mob-device p-0 mx-md-4 overflow-hidden" style="overflow-y: auto; max-height: calc(100vh - 80px); width: 96.5%;">
+    <div class="calender-box">
+        <!-- Calendar Grid -->
+        <div class="calendar-container">
         <div class="">
             <!-- Date Header Navigation -->
             <div class="date-header-wrapper">
                 <div class="bg-white border-bottom py-2 fillter">
-                    <div class="container-fluid px-3">
+                    <div class="container-fluid">
                         <div class="row align-items-center g-2">
                             <!-- Date Selector -->
                             <div class="col-12 col-md-auto d-flex justify-content-between align-items-center">
@@ -146,6 +146,9 @@ $siteUrl = env('APP_URL');
                                     </select>
                                     <button class="btn btn-outline-danger btn-sm text-nowrap assign-desktop"
                                         data-bs-toggle="modal" data-bs-target="#assign">Assign Rooms</button>
+                                    <div class="filter m-1" id="calendarFilter">
+                                        <div class="circle"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -186,7 +189,7 @@ $siteUrl = env('APP_URL');
 
             <!-- Room Type Filter & Info -->
             <div class="border-bottom room-cat">
-                <div class="container-fluid px-3">
+                <div class="container-fluid" style="padding-left: 0; padding-right: 0;">
                     <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
                         <div class="room-label-header"></div>
                     </div>
@@ -254,7 +257,7 @@ $siteUrl = env('APP_URL');
 
 <!-- Legend -->
 <div class="legend-container fixed-bottom pb-2">
-    <div class="container-fluid px-3">
+    <div class="container-fluid" style="padding-left: 0; padding-right: 0;">
         <div class="d-flex flex-wrap gap-2 justify-content-end">
             <div class="legend-item">
                 <span class="legend-dot" style="background: #f8d7a1;"></span>
@@ -274,7 +277,7 @@ $siteUrl = env('APP_URL');
             </div>
         </div>
     </div>
-</div>
+    </div>
 </div>
 
 <!-- quick reservation popup start -->
@@ -2535,7 +2538,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const wrapper = document.createElement('div');
         wrapper.className = 'border-bottom room-cat';
         wrapper.innerHTML = `
-            <div class="container-fluid px-3">
+            <div class="container-fluid" style="padding-left: 0; padding-right: 0;">
                 <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
                     <div class="room-label-header">${label}</div>
                 </div>
@@ -2574,7 +2577,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const row = document.createElement('div');
         row.className = 'room-row align-items-center';
         const label = document.createElement('div');
-        label.className = 'room-name bg-white title fw-semibold';
+        label.className = 'room-name bg-white title';
         label.textContent = category.title;
 
         const grid = document.createElement('div');
@@ -2759,7 +2762,7 @@ document.addEventListener('DOMContentLoaded', function () {
         row.className = 'room-row';
         const roomLabel = document.createElement('div');
         roomLabel.className = 'room-name bg-light';
-        roomLabel.innerHTML = `<div class="fw-semibold">${room.number}</div>`;//<small class="text-muted">${category.title}</small>
+        roomLabel.innerHTML = `<div>${room.number}</div>`;//<small class="text-muted">${category.title}</small>
 
         const grid = document.createElement('div');
         grid.className = 'room-grid';
@@ -6943,6 +6946,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (state.hydrated) {
                     fetchBookings();
                 }
+            });
+        }
+
+        // Filter toggle functionality - same as HTML
+        const calendarFilter = document.querySelector('.filter');
+        if (calendarFilter) {
+            calendarFilter.addEventListener('click', function() {
+                this.classList.toggle('active');
+                
+                // Toggle room-label-header visibility
+                const roomLabelHeaders = document.querySelectorAll('.room-label-header');
+                roomLabelHeaders.forEach(header => {
+                    if (header.style.display === 'none') {
+                        header.style.display = '';
+                    } else {
+                        header.style.display = 'none';
+                    }
+                });
             });
         }
     })();
