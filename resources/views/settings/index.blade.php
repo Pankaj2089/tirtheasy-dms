@@ -136,7 +136,13 @@ $siteUrl = env('APP_URL');
                                 <div class="head-menu ms-md-auto">
                                     <ul class="d-flex align-items-center justify-content-end list-style-none">
                                         <li><a class="rounded" onclick="resetForm()" style="cursor: pointer;">Cancel</a></li>
-                                        <li><a class="theme-btn text-white rounded" onclick="saveSettings()" style="cursor: pointer;">Save</a></li>
+                                        <li><a class="theme-btn text-white rounded" id="saveSettingsBtn" onclick="saveSettings()" style="cursor: pointer;">
+                                            <span class="label-default">Save</span>
+                                            <span class="label-loading d-none">
+                                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Saving...
+                                            </span>
+                                        </a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -224,7 +230,9 @@ $siteUrl = env('APP_URL');
                             roomSelect.prop('disabled', false);
                         },
                         error: function() {
-                            alert('Error loading room types');
+                            if (typeof swal === 'function') {
+                                swal("Error!", 'Error loading room types', "error");
+                            }
                             roomSelect.prop('disabled', false);
                         }
                     });
@@ -237,11 +245,15 @@ $siteUrl = env('APP_URL');
                 resetFormFields();
             });
 
-            // Reset form when room type is selected
+            // Load settings when room type is selected
             $('#room_id').on('change', function() {
+                const hotelId = $('#hotel_id').val();
                 const roomId = $(this).val();
-                if (roomId) {
-                    // Reset form fields when room is selected
+                if (hotelId && roomId) {
+                    // Load existing settings for this hotel and room combination
+                    loadSettings(hotelId, roomId);
+                } else {
+                    // Reset form if no hotel or room selected
                     resetFormFields();
                 }
             });
@@ -285,8 +297,8 @@ $siteUrl = env('APP_URL');
                             $(".bl").removeClass("op");
                         }
                     } else {
-                        // Reset form if no settings found
-                        resetForm();
+                        // Reset form fields if no settings found (keep hotel and room selection)
+                        resetFormFields();
                     }
                 },
                 error: function() {
@@ -300,9 +312,19 @@ $siteUrl = env('APP_URL');
             const roomId = $('#room_id').val();
             
             if (!hotelId || !roomId) {
-                alert('Please select Property and Room Type');
+                if (typeof swal === 'function') {
+                    swal("Error!", 'Please select Property and Room Type', "error");
+                }
                 return;
             }
+
+            // Disable button and show loader
+            const saveBtn = $('#saveSettingsBtn');
+            saveBtn.css('opacity', '0.5');
+            saveBtn.css('cursor', 'not-allowed');
+            saveBtn.css('pointer-events', 'none');
+            saveBtn.find('.label-default').addClass('d-none');
+            saveBtn.find('.label-loading').removeClass('d-none');
 
             const formData = $('#priceSettingsForm').serialize();
             
@@ -311,15 +333,35 @@ $siteUrl = env('APP_URL');
                 type: 'POST',
                 data: formData,
                 success: function(response) {
+                    // Re-enable button and hide loader
+                    saveBtn.css('opacity', '1');
+                    saveBtn.css('cursor', 'pointer');
+                    saveBtn.css('pointer-events', 'auto');
+                    saveBtn.find('.label-default').removeClass('d-none');
+                    saveBtn.find('.label-loading').addClass('d-none');
+
                     if (response.success) {
-                        alert(response.message || 'Settings saved successfully');
+                        if (typeof swal === 'function') {
+                            swal("Success!", response.message || 'Settings saved successfully', "success");
+                        }
                     } else {
-                        alert(response.message || 'Error saving settings');
+                        if (typeof swal === 'function') {
+                            swal("Error!", response.message || 'Error saving settings', "error");
+                        }
                     }
                 },
                 error: function(xhr) {
+                    // Re-enable button and hide loader
+                    saveBtn.css('opacity', '1');
+                    saveBtn.css('cursor', 'pointer');
+                    saveBtn.css('pointer-events', 'auto');
+                    saveBtn.find('.label-default').removeClass('d-none');
+                    saveBtn.find('.label-loading').addClass('d-none');
+
                     const response = xhr.responseJSON;
-                    alert(response?.message || 'Error saving settings');
+                    if (typeof swal === 'function') {
+                        swal("Error!", response?.message || 'Error saving settings', "error");
+                    }
                 }
             });
         }

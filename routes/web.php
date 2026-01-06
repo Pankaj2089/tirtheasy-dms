@@ -7,6 +7,7 @@ use App\Http\Controllers\AssignRoomController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/',[UsersController::class, 'LoginPage'])->name('LoginPage');
 Route::Post('/vendor-login',[UsersController::class, 'VendorLogin'])->name('VendorLogin');
@@ -35,3 +36,7 @@ Route::get('/settings',[SettingsController::class, 'index'])->name('settings.ind
 Route::post('/settings/store',[SettingsController::class, 'store'])->name('settings.store');
 Route::get('/settings/get',[SettingsController::class, 'getSettings'])->name('settings.get');
 Route::get('/settings/room-types',[SettingsController::class, 'getRoomTypes'])->name('settings.roomTypes');
+
+// Dashboard routes
+Route::get('/dashboard',[DashboardController::class, 'index'])->name('dashboard.index');
+Route::get('/dashboard/data',[DashboardController::class, 'getData'])->name('dashboard.data');
