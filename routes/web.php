@@ -5,6 +5,7 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\MaintenanceBlockController;
 use App\Http\Controllers\AssignRoomController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\GuestDatabaseController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DashboardController;
@@ -22,6 +23,10 @@ Route::get('/logout',[UsersController::class, 'logout'])->name('logout');
 
 // Reservation routes
 Route::get('/reservation',[ReservationController::class, 'index'])->name('reservation.index');
+
+// Guest Database routes
+Route::get('/guest-database',[GuestDatabaseController::class, 'index'])->name('guest.database.index');
+Route::get('/guest-database/export',[GuestDatabaseController::class, 'export'])->name('guest.database.export');
 
 // Assign Room routes
 Route::get('/assign-rooms/unassigned',[AssignRoomController::class, 'fetchUnassignedBookings'])->name('assign.rooms.unassigned');

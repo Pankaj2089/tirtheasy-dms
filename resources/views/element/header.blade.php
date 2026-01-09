@@ -6,7 +6,7 @@
                 data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">
                 <img src="{{$siteUrl}}public/assets/img/humberger.svg" />
             </button>
-            <a class="navbar-brand comp-logo" href=".">
+            <a class="navbar-brand comp-logo" href="/">
                 <img src="{{$siteUrl}}public/assets/img/logo.svg" class="img-fluid" alt="">
             </a>
         </div>
