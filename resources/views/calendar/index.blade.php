@@ -624,6 +624,9 @@ $siteUrl = env('APP_URL');
 
         <div class="modal-body p-0">
             <div class="booking-popup">
+                <!-- Hidden input to store booking ID -->
+                <input type="hidden" id="bookingModalBookingId" value="">
+                
                 <div class="main-popup">
                     <div class="row align-items-center">
                         <div class="col-md-8">
@@ -637,9 +640,20 @@ $siteUrl = env('APP_URL');
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="d-flex justify-content-center pe-4">
-                                <a href=""
+                            <div class="d-flex justify-content-center align-items-center pe-4 gap-2">
+                                <a href="#" id="bookingPopupPrintBtn" data-booking-id=""
                                     class="theme-btn-sm rounded text-white text-center text-decoration-none">Print/Send</a>
+                                <!-- Three dots menu button -->
+                                <div class="dropdown">
+                                    <button class="btn p-0 border-0 bg-transparent" type="button" id="bookingPopupMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <img src="{{$siteUrl}}public/assets/img/box-option.svg" alt="" style="width: 20px; height: 20px;">
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" id="bookingPopupMenu" aria-labelledby="bookingPopupMenuBtn">
+                                        <li><a class="dropdown-item" href="#" id="bookingPopupExtendDay" style="font-size: 13px; display: none;">Extend Day</a></li>
+                                        <li><a class="dropdown-item" href="#" id="bookingPopupRoomMove" style="font-size: 13px;">Room move</a></li>
+                                        <li><a class="dropdown-item" href="#" id="bookingPopupCancelReservation" style="font-size: 13px;">Cancel Reservation</a></li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -836,7 +850,34 @@ $siteUrl = env('APP_URL');
                             </div>
                         </div>
                         <div class="tab-pane fade" id="Guest" role="tabpanel" aria-labelledby="Guest-tab">
-                            <p>3</p>
+                            <div class="bottom pb-2 book-cont p-3">
+                                <ul class="d-flex flex-wrap w-100 justify-content-start">
+                                    <li class="mb-4 w-50">
+                                        <p>Name</p>
+                                        <p><small class="fw-medium" id="guestName">-</small></p>
+                                    </li>
+                                    <li class="mb-4 w-50">
+                                        <p>Email</p>
+                                        <p><small class="fw-medium" id="guestEmail">-</small></p>
+                                    </li>
+                                    <li class="mb-4 w-50">
+                                        <p>Mobile Number</p>
+                                        <p><small class="fw-medium" id="guestPhone">-</small></p>
+                                    </li>
+                                    <li class="mb-4 w-50">
+                                        <p>City</p>
+                                        <p><small class="fw-medium" id="guestCity">-</small></p>
+                                    </li>
+                                    <li class="mb-4 w-50">
+                                        <p>State</p>
+                                        <p><small class="fw-medium" id="guestState">-</small></p>
+                                    </li>
+                                    <li class="mb-4 w-50">
+                                        <p>Address</p>
+                                        <p><small class="fw-medium" id="guestAddress">-</small></p>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
 
@@ -1141,6 +1182,106 @@ aria-labelledby="assignLabel" aria-hidden="true">
     </div>
 </div>
 <!-- assign room popup -->
+
+<!-- Extend Day Modal -->
+<div class="modal fade" id="extendDayModal" tabindex="-1" aria-labelledby="extendDayModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="extendDayModalLabel">Extend Stay</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <img src="{{$siteUrl}}public/assets/img/close.svg" alt="">
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="extendDayForm">
+                    <input type="hidden" id="extendDayBookingId" value="">
+                    <input type="hidden" id="extendDayCurrentCheckOut" value="">
+                    <input type="hidden" id="extendDayRoomNumberIds" value="">
+                    <input type="hidden" id="extendDayRoomPriceId" value="">
+                    <input type="hidden" id="extendDayRoomPrice" value="">
+                    
+                    <div class="mb-3">
+                        <label for="extendDayNewCheckOut" class="form-label">New Check-out Date</label>
+                        <input type="date" class="form-control" id="extendDayNewCheckOut" required>
+                        <small class="text-muted">Select a date after the current check-out date</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Current Check-out Date</label>
+                        <p class="form-control-plaintext" id="extendDayCurrentCheckOutDisplay">-</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Additional Days</label>
+                        <p class="form-control-plaintext" id="extendDayAdditionalDays">0</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Additional Amount</label>
+                        <p class="form-control-plaintext fw-bold" id="extendDayAdditionalAmount">Rs. 0.00</p>
+                    </div>
+                    
+                    <div id="extendDayError" class="alert alert-danger" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="extendDayConfirmBtn">Extend Stay</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Extend Day Modal -->
+
+<!-- Room Move Modal -->
+<div class="modal fade" id="roomMoveModal" tabindex="-1" aria-labelledby="roomMoveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="roomMoveModalLabel">Move Room</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <img src="{{$siteUrl}}public/assets/img/close.svg" alt="">
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="roomMoveForm">
+                    <input type="hidden" id="roomMoveBookingId" value="">
+
+                    <div class="mb-2">
+                        <label class="form-label mb-0">Booking</label>
+                        <p class="form-control-plaintext fw-semibold mb-1" id="roomMoveBookingCode">-</p>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label mb-0">Guest</label>
+                        <p class="form-control-plaintext mb-1" id="roomMoveGuestName">-</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label mb-0">Stay Dates</label>
+                        <p class="form-control-plaintext mb-1" id="roomMoveStayLabel">-</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Available Rooms (same hotel & room type)</label>
+                        <div id="roomMoveRoomsContainer" class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
+                            <p class="text-muted mb-0">Loading available rooms...</p>
+                        </div>
+                        <small class="text-muted d-block mt-1">Select the room(s) you want to move this booking to. Only rooms available for the entire stay are shown.</small>
+                    </div>
+
+                    <div id="roomMoveError" class="alert alert-danger" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="roomMoveConfirmBtn" disabled>Move Room</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Room Move Modal -->
 
 <!-- Reservation New -->
 <div class="modal fade  bl-reserve-tbl" id="reservation-new" tabindex="-1" aria-labelledby="quickReservationLabel"
@@ -3116,6 +3257,18 @@ document.addEventListener('DOMContentLoaded', function () {
         
         const isMaintenance = booking.type === 'maintenance' || booking.id?.startsWith('MB-');
         
+        // Store booking ID in hidden input for menu actions
+        const bookingModalBookingId = document.getElementById('bookingModalBookingId');
+        if (bookingModalBookingId && booking.id) {
+            bookingModalBookingId.value = booking.id;
+        }
+        
+        // Update Print/Send button with booking ID
+        const printBtn = document.getElementById('bookingPopupPrintBtn');
+        if (printBtn && booking.id) {
+            printBtn.setAttribute('data-booking-id', booking.id);
+        }
+        
         // Populate header
         const bookingGuestName = document.getElementById('bookingGuestName');
         const bookingFolio = document.getElementById('bookingFolio');
@@ -3235,6 +3388,41 @@ document.addEventListener('DOMContentLoaded', function () {
             if (footerBalance) footerBalance.textContent = formatCurrency(footerBalanceAmount);
         }
         
+        // Show/hide Extend Day option based on room count (only for single room bookings)
+        const extendDayOption = document.getElementById('bookingPopupExtendDay');
+        if (extendDayOption) {
+            if (!isMaintenance && booking.rooms === 1) {
+                extendDayOption.style.display = 'block';
+            } else {
+                extendDayOption.style.display = 'none';
+            }
+        }
+        
+        // Populate Guest Details tab
+        const guestName = document.getElementById('guestName');
+        const guestEmail = document.getElementById('guestEmail');
+        const guestPhone = document.getElementById('guestPhone');
+        const guestCity = document.getElementById('guestCity');
+        const guestState = document.getElementById('guestState');
+        const guestAddress = document.getElementById('guestAddress');
+        
+        if (isMaintenance) {
+            // For maintenance blocks, show maintenance reason as name
+            if (guestName) guestName.textContent = booking.guest_name || booking.reason || '-';
+            if (guestEmail) guestEmail.textContent = '-';
+            if (guestPhone) guestPhone.textContent = '-';
+            if (guestCity) guestCity.textContent = '-';
+            if (guestState) guestState.textContent = '-';
+            if (guestAddress) guestAddress.textContent = '-';
+        } else {
+            if (guestName) guestName.textContent = booking.guest_name || '-';
+            if (guestEmail) guestEmail.textContent = booking.guest_email || '-';
+            if (guestPhone) guestPhone.textContent = booking.guest_phone || '-';
+            if (guestCity) guestCity.textContent = booking.guest_city || '-';
+            if (guestState) guestState.textContent = booking.guest_state || '-';
+            if (guestAddress) guestAddress.textContent = booking.guest_address || '-';
+        }
+        
         // Store current booking data for calculations
         currentBookingData = booking;
         
@@ -3253,6 +3441,706 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
+    
+    // Booking Modal - Print Invoice handler
+    (function initBookingPopupPrint() {
+        const printBtn = document.getElementById('bookingPopupPrintBtn');
+        if (printBtn) {
+            printBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const bookingId = this.getAttribute('data-booking-id') || document.getElementById('bookingModalBookingId')?.value;
+                if (!bookingId) {
+                    swal('Error', 'Booking ID not found.', 'error');
+                    return;
+                }
+                
+                // Open PDF in new window
+                const invoiceUrl = `{{ url('/booking') }}/${encodeURIComponent(bookingId)}/invoice`;
+                window.open(invoiceUrl, '_blank');
+            });
+        }
+    })();
+    
+    // Booking Modal - Menu Actions (Cancel Reservation, Extend Day, Room Move)
+    (function initBookingPopupMenu() {
+        // Extend Day handler
+        const extendDayLink = document.getElementById('bookingPopupExtendDay');
+        if (extendDayLink) {
+            extendDayLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                const bookingId = document.getElementById('bookingModalBookingId')?.value;
+                if (!bookingId) {
+                    swal('Error', 'Booking ID not found.', 'error');
+                    return;
+                }
+                
+                // Get current booking data
+                if (!currentBookingData) {
+                    swal('Error', 'Booking data not available.', 'error');
+                    return;
+                }
+                
+                // Check if single room booking
+                if (currentBookingData.rooms !== 1) {
+                    swal('Error', 'Extend Day is only available for single room bookings.', 'error');
+                    return;
+                }
+                
+                // Populate extend day modal
+                const extendModal = document.getElementById('extendDayModal');
+                if (!extendModal) {
+                    swal('Error', 'Extend Day modal not found.', 'error');
+                    return;
+                }
+                
+                // Set booking data in modal
+                document.getElementById('extendDayBookingId').value = bookingId;
+                document.getElementById('extendDayCurrentCheckOut').value = currentBookingData.check_out_date || '';
+                document.getElementById('extendDayCurrentCheckOutDisplay').textContent = currentBookingData.check_out_date || '-';
+                
+                // Get room number IDs from booking
+                const roomNumberIds = currentBookingData.room_numbers_details?.map(r => r.id).join(',') || 
+                                    currentBookingData.room_number_ids || '';
+                document.getElementById('extendDayRoomNumberIds').value = roomNumberIds;
+                
+                // Get room price ID from booking
+                const roomPriceId = currentBookingData.room_price_id || '';
+                document.getElementById('extendDayRoomPriceId').value = roomPriceId;
+                
+                // Get room price per night (calculate from room_price / number_of_nights)
+                const roomPrice = parseFloat(currentBookingData.room_price) || 0;
+                const numberOfNights = parseInt(currentBookingData.number_of_nights) || 1;
+                const pricePerNight = numberOfNights > 0 ? roomPrice / numberOfNights : roomPrice;
+                document.getElementById('extendDayRoomPrice').value = pricePerNight;
+                
+                // Get room_price_id from booking (we'll need to fetch it from order)
+                // For now, we'll get it from the booking details
+                fetch(`{{ url('/booking') }}/${bookingId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.booking) {
+                        // Set minimum date to day after current check-out
+                        const currentCheckOut = new Date(currentBookingData.check_out_date);
+                        currentCheckOut.setDate(currentCheckOut.getDate() + 1);
+                        const minDate = currentCheckOut.toISOString().split('T')[0];
+                        document.getElementById('extendDayNewCheckOut').min = minDate;
+                        document.getElementById('extendDayNewCheckOut').value = '';
+                        
+                        // Reset additional days and amount
+                        document.getElementById('extendDayAdditionalDays').textContent = '0';
+                        document.getElementById('extendDayAdditionalAmount').textContent = 'Rs. 0.00';
+                        document.getElementById('extendDayError').style.display = 'none';
+                        
+                        // Open modal
+                        const modalInstance = window.bootstrap?.Modal?.getOrCreateInstance(extendModal);
+                        if (modalInstance) {
+                            modalInstance.show();
+                        }
+                    } else {
+                        swal('Error', 'Failed to load booking details.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading booking:', error);
+                    swal('Error', 'Failed to load booking details.', 'error');
+                });
+            });
+        }
+
+        // Room Move handler
+        const roomMoveLink = document.getElementById('bookingPopupRoomMove');
+        if (roomMoveLink) {
+            roomMoveLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                const bookingIdRaw = document.getElementById('bookingModalBookingId')?.value;
+                if (!bookingIdRaw) {
+                    swal('Error', 'Booking ID not found.', 'error');
+                    return;
+                }
+
+                if (!currentBookingData) {
+                    swal('Error', 'Booking data not available.', 'error');
+                    return;
+                }
+
+                // Prevent room move for maintenance blocks
+                const isMaintenance = currentBookingData.type === 'maintenance' || bookingIdRaw?.toString().startsWith('MB-');
+                if (isMaintenance) {
+                    swal('Error', 'Room move is not available for maintenance blocks.', 'error');
+                    return;
+                }
+
+                // Extract numeric booking ID - use order_id if available, otherwise extract from id
+                let bookingId = currentBookingData.order_id || null;
+                
+                // If order_id is not available, extract from bookingIdRaw
+                if (!bookingId || bookingId === 0) {
+                    const rawStr = bookingIdRaw.toString().trim();
+                    // Handle formats like "ORD-123" or "MB-123" or just "123"
+                    if (rawStr.startsWith('ORD-')) {
+                        bookingId = rawStr.replace('ORD-', '');
+                    } else if (rawStr.startsWith('MB-')) {
+                        swal('Error', 'Room move is not available for maintenance blocks.', 'error');
+                        return;
+                    } else {
+                        // Extract first sequence of digits
+                        const numericMatch = rawStr.match(/^\d+/);
+                        if (numericMatch) {
+                            bookingId = numericMatch[0];
+                        } else {
+                            swal('Error', 'Invalid booking ID format. Please ensure this is a valid booking.', 'error');
+                            return;
+                        }
+                    }
+                }
+                
+                // Ensure bookingId is numeric and valid
+                bookingId = parseInt(bookingId, 10);
+                if (isNaN(bookingId) || bookingId <= 0) {
+                    swal('Error', 'Invalid booking ID. Please ensure this is a valid booking.', 'error');
+                    return;
+                }
+
+                const roomMoveModal = document.getElementById('roomMoveModal');
+                if (!roomMoveModal) {
+                    swal('Error', 'Room Move modal not found.', 'error');
+                    return;
+                }
+
+                // Populate basic details
+                const bookingCodeEl = document.getElementById('roomMoveBookingCode');
+                const guestNameEl = document.getElementById('roomMoveGuestName');
+                const stayLabelEl = document.getElementById('roomMoveStayLabel');
+                const bookingIdInput = document.getElementById('roomMoveBookingId');
+                const roomsContainer = document.getElementById('roomMoveRoomsContainer');
+                const errorBox = document.getElementById('roomMoveError');
+
+                if (bookingIdInput) bookingIdInput.value = bookingId;
+                if (bookingCodeEl) {
+                    const code = currentBookingData.code || currentBookingData.invoice_id || ('ORD-' + bookingId);
+                    bookingCodeEl.textContent = code;
+                }
+                if (guestNameEl) {
+                    guestNameEl.textContent = currentBookingData.guest_name || currentBookingData.billing_name || 'Guest';
+                }
+                if (stayLabelEl) {
+                    const stayLabel = currentBookingData.stay_label ||
+                        ((currentBookingData.check_in_date && currentBookingData.check_out_date)
+                            ? (currentBookingData.check_in_date + ' to ' + currentBookingData.check_out_date)
+                            : '-');
+                    stayLabelEl.textContent = stayLabel;
+                }
+                if (errorBox) {
+                    errorBox.style.display = 'none';
+                    errorBox.textContent = '';
+                }
+                if (roomsContainer) {
+                    roomsContainer.innerHTML = '<p class="text-muted mb-0">Loading available rooms...</p>';
+                }
+                
+                // Disable confirm button initially and reset text
+                const confirmBtn = document.getElementById('roomMoveConfirmBtn');
+                if (confirmBtn) {
+                    confirmBtn.disabled = true;
+                    confirmBtn.classList.remove('btn-primary');
+                    confirmBtn.classList.add('btn-secondary');
+                    confirmBtn.textContent = 'Move Room';
+                }
+
+                const assignConfig = window.assignRoomConfig || null;
+                const availableEndpoint = assignConfig?.endpoints?.available || null;
+
+                if (!availableEndpoint) {
+                    if (roomsContainer) {
+                        roomsContainer.innerHTML = '<div class="alert alert-danger mb-0">Room availability service is not ready. Please reload the page and try again.</div>';
+                    }
+                } else {
+                    // Build URL with numeric booking_id parameter
+                    const url = new URL(availableEndpoint, window.location.origin);
+                    url.searchParams.set('booking_id', String(bookingId));
+
+                    fetch(url.toString(), {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!roomsContainer) return;
+                            if (!data || data.success !== true) {
+                                roomsContainer.innerHTML = '<div class="alert alert-danger mb-0">' +
+                                    (data && data.message ? data.message : 'Failed to load available rooms.') +
+                                    '</div>';
+                                return;
+                            }
+
+                            const rooms = Array.isArray(data.rooms) ? data.rooms : [];
+                            
+                            // Get number of rooms needed from booking
+                            const roomsNeeded = parseInt(currentBookingData.rooms) || 1;
+                            
+                            // Extract current room IDs from booking data - handle multiple rooms
+                            let currentRoomIds = [];
+                            
+                            // Priority 1: room_numbers_details array (most reliable for multiple rooms)
+                            if (currentBookingData.room_numbers_details && Array.isArray(currentBookingData.room_numbers_details) && currentBookingData.room_numbers_details.length > 0) {
+                                currentRoomIds = currentBookingData.room_numbers_details.map(r => {
+                                    // Handle both object with id property and direct ID values
+                                    return String(r.id || r);
+                                }).filter(Boolean);
+                            }
+                            
+                            // Priority 2: room_number_ids (comma-separated string) - fallback or additional source
+                            if (currentRoomIds.length === 0 && currentBookingData.room_number_ids) {
+                                const idsFromString = String(currentBookingData.room_number_ids).split(',').map(id => id.trim()).filter(Boolean);
+                                if (idsFromString.length > 0) {
+                                    currentRoomIds = idsFromString;
+                                }
+                            }
+                            
+                            // Priority 3: Merge if both sources exist (to ensure we get all rooms)
+                            if (currentBookingData.room_number_ids && currentBookingData.room_numbers_details) {
+                                const idsFromString = String(currentBookingData.room_number_ids).split(',').map(id => id.trim()).filter(Boolean);
+                                const idsFromDetails = currentBookingData.room_numbers_details.map(r => String(r.id || r)).filter(Boolean);
+                                // Combine and deduplicate
+                                currentRoomIds = [...new Set([...idsFromString, ...idsFromDetails])];
+                            }
+                            
+                            // Priority 4: room_number_id (single ID) - last resort
+                            if (currentRoomIds.length === 0 && currentBookingData.room_number_id) {
+                                currentRoomIds = [String(currentBookingData.room_number_id)];
+                            }
+                            
+                            // Ensure all IDs are strings for comparison
+                            currentRoomIds = currentRoomIds.map(id => String(id).trim()).filter(Boolean);
+                            
+                            if (rooms.length === 0) {
+                                roomsContainer.innerHTML = '<p class="text-muted mb-0">No rooms are available for this stay.</p>';
+                                return;
+                            }
+                            
+                            // Function to update button state based on selection (defined before use)
+                            const updateConfirmButtonState = function() {
+                                const selectedCount = roomsContainer.querySelectorAll('.room-move-checkbox:checked').length;
+                                const confirmBtn = document.getElementById('roomMoveConfirmBtn');
+                                if (confirmBtn) {
+                                    // Enable button only if exactly the required number of rooms is selected
+                                    if (selectedCount === roomsNeeded && selectedCount > 0) {
+                                        confirmBtn.disabled = false;
+                                        confirmBtn.classList.remove('btn-secondary');
+                                        confirmBtn.classList.add('btn-primary');
+                                        
+                                        // Update button text to show selection count if multiple rooms needed
+                                        if (roomsNeeded > 1) {
+                                            confirmBtn.textContent = 'Move Room (' + selectedCount + '/' + roomsNeeded + ')';
+                                        } else {
+                                            confirmBtn.textContent = 'Move Room';
+                                        }
+                                    } else {
+                                        confirmBtn.disabled = true;
+                                        confirmBtn.classList.remove('btn-primary');
+                                        confirmBtn.classList.add('btn-secondary');
+                                        
+                                        if (selectedCount > 0) {
+                                            confirmBtn.textContent = 'Move Room (' + selectedCount + '/' + roomsNeeded + ')';
+                                        } else {
+                                            confirmBtn.textContent = 'Move Room';
+                                        }
+                                    }
+                                }
+                            };
+                            
+                            // Render rooms with selection limit logic
+                            roomsContainer.innerHTML = rooms.map(function (room) {
+                                const id = room.id;
+                                const label = room.label || ('Room ' + id);
+                                const isCurrentlyBooked = currentRoomIds.includes(String(id)) || room.is_current === true;
+                                const checkedAttr = isCurrentlyBooked ? ' checked' : '';
+                                const currentBadge = isCurrentlyBooked ? ' <span class="badge bg-info ms-2">Current</span>' : '';
+                                return '<div class="form-check mb-1">' +
+                                    '<input class="form-check-input room-move-checkbox" type="checkbox" name="roomMoveRoom" value="' + id + '" id="roomMoveRoom_' + id + '" data-room-id="' + id + '"' + checkedAttr + '>' +
+                                    '<label class="form-check-label" for="roomMoveRoom_' + id + '">' + label + currentBadge + '</label>' +
+                                    '</div>';
+                            }).join('');
+
+                            // Add instruction about number of rooms needed
+                            if (roomsNeeded > 1) {
+                                const instructionDiv = document.createElement('div');
+                                instructionDiv.className = 'alert alert-info mt-2 mb-0 small';
+                                instructionDiv.innerHTML = '<strong>Note:</strong> Please select exactly ' + roomsNeeded + ' room(s) for this booking. Once ' + roomsNeeded + ' rooms are selected, other rooms will be disabled.';
+                                roomsContainer.appendChild(instructionDiv);
+                            }
+                            
+                            // Add selection limit logic: disable rooms when limit is reached
+                            const checkboxes = roomsContainer.querySelectorAll('.room-move-checkbox');
+                            const updateRoomAvailability = function() {
+                                const selectedCount = roomsContainer.querySelectorAll('.room-move-checkbox:checked').length;
+                                
+                                checkboxes.forEach(function(checkbox) {
+                                    const isChecked = checkbox.checked;
+                                    
+                                    if (selectedCount >= roomsNeeded && !isChecked) {
+                                        // Disable unchecked rooms when limit is reached
+                                        checkbox.disabled = true;
+                                        checkbox.parentElement.classList.add('text-muted');
+                                    } else {
+                                        // Enable all rooms when under limit
+                                        checkbox.disabled = false;
+                                        checkbox.parentElement.classList.remove('text-muted');
+                                    }
+                                });
+                                
+                                // Update button state
+                                updateConfirmButtonState();
+                            };
+                            
+                            // Attach change handlers
+                            checkboxes.forEach(function(checkbox) {
+                                checkbox.addEventListener('change', updateRoomAvailability);
+                            });
+                            
+                            // Initial state update
+                            updateRoomAvailability();
+                        })
+                        .catch(err => {
+                            if (roomsContainer) {
+                                roomsContainer.innerHTML = '<div class="alert alert-danger mb-0">Unable to load available rooms. Please try again.</div>';
+                            }
+                        });
+                }
+
+                if (window.bootstrap && window.bootstrap.Modal) {
+                    const modalInstance = window.bootstrap.Modal.getOrCreateInstance(roomMoveModal);
+                    modalInstance.show();
+                } else {
+                    roomMoveModal.classList.add('show');
+                    roomMoveModal.style.display = 'block';
+                }
+            });
+        }
+
+        const roomMoveConfirmBtn = document.getElementById('roomMoveConfirmBtn');
+        if (roomMoveConfirmBtn) {
+            roomMoveConfirmBtn.addEventListener('click', function () {
+                const bookingIdInput = document.getElementById('roomMoveBookingId');
+                const errorBox = document.getElementById('roomMoveError');
+                const bookingId = bookingIdInput ? bookingIdInput.value : '';
+
+                const selectedInputs = document.querySelectorAll('.room-move-checkbox:checked');
+                if (!bookingId || selectedInputs.length === 0) {
+                    if (errorBox) {
+                        errorBox.style.display = 'block';
+                        errorBox.textContent = !bookingId
+                            ? 'Booking ID not found.'
+                            : 'Please select at least one room to move to.';
+                    }
+                    return;
+                }
+
+                // Get number of rooms needed from booking
+                const roomsNeeded = parseInt(currentBookingData?.rooms) || 1;
+                
+                // Validate selection count - must match exactly
+                if (selectedInputs.length !== roomsNeeded) {
+                    if (errorBox) {
+                        errorBox.style.display = 'block';
+                        errorBox.textContent = 'Please select exactly ' + roomsNeeded + ' room(s) for this booking. You have selected ' + selectedInputs.length + ' room(s).';
+                    }
+                    return;
+                }
+
+                const assignConfig = window.assignRoomConfig || null;
+                const assignEndpoint = assignConfig?.endpoints?.assign || null;
+                const csrfToken = assignConfig?.csrfToken || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                if (!assignEndpoint || !csrfToken) {
+                    if (errorBox) {
+                        errorBox.style.display = 'block';
+                        errorBox.textContent = 'Room move service is not properly configured. Please reload the page and try again.';
+                    }
+                    return;
+                }
+
+                // Collect all selected room IDs (comma-separated)
+                const roomIds = Array.from(selectedInputs).map(input => input.value).join(',');
+                const payload = new URLSearchParams();
+                payload.append('booking_id', bookingId);
+                payload.append('room_number_ids', roomIds);
+
+                fetch(assignEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: payload.toString()
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data || data.success !== true) {
+                            if (errorBox) {
+                                errorBox.style.display = 'block';
+                                errorBox.textContent = data && data.message ? data.message : 'Failed to move room. Please try again.';
+                            }
+                            return;
+                        }
+
+                        swal('Success', data.message || 'Room moved successfully.', 'success')
+                            .then(function () {
+                                // Reload calendar / booking details to reflect the change
+                                if (typeof loadCalendarData === 'function') {
+                                    loadCalendarData();
+                                } else {
+                                    window.location.reload();
+                                }
+                            });
+                    })
+                    .catch(err => {
+                        if (errorBox) {
+                            errorBox.style.display = 'block';
+                            errorBox.textContent = 'Unable to move room. Please try again.';
+                        }
+                    });
+            });
+        }
+        // Extend Day Modal - Date change handler
+        const extendDayNewCheckOut = document.getElementById('extendDayNewCheckOut');
+        if (extendDayNewCheckOut) {
+            extendDayNewCheckOut.addEventListener('change', function() {
+                const currentCheckOut = document.getElementById('extendDayCurrentCheckOut').value;
+                const newCheckOut = this.value;
+                const pricePerNight = parseFloat(document.getElementById('extendDayRoomPrice').value) || 0;
+                
+                if (!currentCheckOut || !newCheckOut) {
+                    document.getElementById('extendDayAdditionalDays').textContent = '0';
+                    document.getElementById('extendDayAdditionalAmount').textContent = 'Rs. 0.00';
+                    return;
+                }
+                
+                const currentDate = new Date(currentCheckOut);
+                const newDate = new Date(newCheckOut);
+                
+                if (newDate <= currentDate) {
+                    document.getElementById('extendDayError').textContent = 'New check-out date must be after current check-out date.';
+                    document.getElementById('extendDayError').style.display = 'block';
+                    document.getElementById('extendDayAdditionalDays').textContent = '0';
+                    document.getElementById('extendDayAdditionalAmount').textContent = 'Rs. 0.00';
+                    return;
+                }
+                
+                // Calculate additional days
+                const diffTime = newDate - currentDate;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                // Calculate additional amount
+                const additionalAmount = diffDays * pricePerNight;
+                
+                document.getElementById('extendDayAdditionalDays').textContent = diffDays;
+                document.getElementById('extendDayAdditionalAmount').textContent = 
+                    'Rs. ' + additionalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('extendDayError').style.display = 'none';
+            });
+        }
+        
+        // Extend Day Modal - Confirm button handler
+        const extendDayConfirmBtn = document.getElementById('extendDayConfirmBtn');
+        if (extendDayConfirmBtn) {
+            extendDayConfirmBtn.addEventListener('click', function() {
+                const bookingId = document.getElementById('extendDayBookingId').value;
+                const newCheckOut = document.getElementById('extendDayNewCheckOut').value;
+                const currentCheckOut = document.getElementById('extendDayCurrentCheckOut').value;
+                const additionalDays = parseInt(document.getElementById('extendDayAdditionalDays').textContent) || 0;
+                
+                if (!bookingId || !newCheckOut) {
+                    swal('Error', 'Please select a new check-out date.', 'error');
+                    return;
+                }
+                
+                if (additionalDays <= 0) {
+                    swal('Error', 'Please select a date after the current check-out date.', 'error');
+                    return;
+                }
+                
+                // Disable button and show loading
+                this.disabled = true;
+                this.textContent = 'Processing...';
+                
+                // Call extend booking API
+                fetch(`{{ url('/booking') }}/${bookingId}/extend`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({
+                        new_check_out_date: newCheckOut,
+                        additional_days: additionalDays
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    this.disabled = false;
+                    this.textContent = 'Extend Stay';
+                    
+                    if (data.success) {
+                        // Close extend day modal
+                        const extendModal = document.getElementById('extendDayModal');
+                        if (extendModal && window.bootstrap) {
+                            const modalInstance = window.bootstrap.Modal.getInstance(extendModal);
+                            if (modalInstance) {
+                                modalInstance.hide();
+                            }
+                        }
+                        
+                        // Show success message
+                        swal({
+                            title: 'Success!',
+                            text: data.message || `Stay extended by ${additionalDays} day(s) successfully.`,
+                            icon: 'success',
+                            button: 'OK'
+                        }).then(() => {
+                            // Reload booking details to show updated information
+                            if (bookingId) {
+                                fetch(`{{ url('/booking') }}/${bookingId}`, {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success && data.booking) {
+                                        populateBookingModal(data.booking);
+                                    }
+                                });
+                            }
+                            
+                            // Refresh calendar
+                            if (typeof window.loadCalendarData === 'function') {
+                                window.loadCalendarData();
+                            } else {
+                                window.location.reload();
+                            }
+                        });
+                    } else {
+                        // Show error in modal
+                        const errorDiv = document.getElementById('extendDayError');
+                        if (errorDiv) {
+                            errorDiv.textContent = data.message || 'Failed to extend stay. Please try again.';
+                            errorDiv.style.display = 'block';
+                        } else {
+                            swal('Error', data.message || 'Failed to extend stay. Please try again.', 'error');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error extending stay:', error);
+                    this.disabled = false;
+                    this.textContent = 'Extend Stay';
+                    swal('Error', 'An error occurred while extending the stay. Please try again.', 'error');
+                });
+            });
+        }
+        
+        // Cancel Reservation handler
+        const cancelReservationLink = document.getElementById('bookingPopupCancelReservation');
+        if (cancelReservationLink) {
+            cancelReservationLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                const bookingId = document.getElementById('bookingModalBookingId')?.value;
+                if (!bookingId) {
+                    swal('Error', 'Booking ID not found.', 'error');
+                    return;
+                }
+                
+                swal({
+                    title: 'Cancel Reservation',
+                    text: 'Are you sure you want to cancel this reservation? This action cannot be undone.',
+                    icon: 'warning',
+                    buttons: {
+                        cancel: {
+                            text: 'No',
+                            value: false,
+                            visible: true,
+                            className: 'btn-secondary'
+                        },
+                        confirm: {
+                            text: 'Yes, Cancel',
+                            value: true,
+                            visible: true,
+                            className: 'btn-danger'
+                        }
+                    },
+                    dangerMode: true
+                }).then((willCancel) => {
+                    if (willCancel) {
+                        // Show loading state
+                        swal({
+                            title: 'Processing...',
+                            text: 'Please wait while we cancel the reservation.',
+                            icon: 'info',
+                            buttons: false,
+                            closeOnClickOutside: false,
+                            closeOnEsc: false
+                        });
+                        
+                        // Call cancel booking API
+                        fetch(`{{ url('/booking') }}/${bookingId}/cancel`, { 
+                            method: 'DELETE',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Close the booking modal
+                                const bookingModal = document.getElementById('booking-pop');
+                                if (bookingModal && window.bootstrap) {
+                                    const modalInstance = window.bootstrap.Modal.getInstance(bookingModal);
+                                    if (modalInstance) {
+                                        modalInstance.hide();
+                                    }
+                                }
+                                
+                                // Show success message
+                                swal({
+                                    title: 'Success!',
+                                    text: data.message || 'Reservation cancelled successfully.',
+                                    icon: 'success',
+                                    button: 'OK'
+                                }).then(() => {
+                                    // Refresh the calendar to reflect the changes
+                                    if (typeof window.loadCalendarData === 'function') {
+                                        window.loadCalendarData();
+                                    } else {
+                                        // Fallback: reload the page
+                                        window.location.reload();
+                                    }
+                                });
+                            } else {
+                                swal('Error', data.message || 'Failed to cancel reservation.', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error cancelling reservation:', error);
+                            swal('Error', 'An error occurred while cancelling the reservation. Please try again.', 'error');
+                        });
+                    }
+                });
+            });
+        }
+    })();
     
     // Booking Modal - Charges & Payments Functionality
     let currentBookingId = null;
@@ -6242,6 +7130,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         const hotelSelector = document.getElementById('hotelSelector');
         const assetBaseUrl = @json($siteUrl.'public/assets/img/');
+
+        // Expose assign room configuration globally so other features (like Room Move)
+        // can reuse the same endpoints and CSRF token.
+        window.assignRoomConfig = {
+            endpoints: assignEndpoints,
+            csrfToken: csrfToken,
+            assetBaseUrl: assetBaseUrl
+        };
         
         let assignRoomSelectModalInstance = null;
         
@@ -6279,7 +7175,8 @@ document.addEventListener('DOMContentLoaded', function () {
         
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const refDate = startOfWeek(today);
+        // Use today as reference date instead of start of week, so today appears first
+        const refDate = new Date(today);
         refDate.setHours(0, 0, 0, 0);
         
         const state = {
@@ -6877,6 +7774,18 @@ document.addEventListener('DOMContentLoaded', function () {
         
         // Initialize modal on show
         assignModalEl.addEventListener('shown.bs.modal', () => {
+            // Always reset to today when modal opens
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            state.selectedDate = new Date(today);
+            state.referenceDate = new Date(today);
+            
+            // Update date picker
+            const picker = modalBody.querySelector('#assignModalDatePicker');
+            if (picker) {
+                picker.value = toISO(today);
+            }
+            
             if (!state.hydrated) {
                 // Set up event listeners
                 modalBody.querySelector('#assignModalPrevBtn')?.addEventListener('click', () => shiftRange(-1));
@@ -6935,7 +7844,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 state.hydrated = true;
             }
             
-            syncFromCalendar(false);
+            // Don't sync from calendar - always show today first
+            // syncFromCalendar(false); // Removed - always show current week starting from today
             renderDates();
             fetchBookings();
         });

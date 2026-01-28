@@ -111,7 +111,8 @@ class AssignRoomController extends Controller
     }
 
     /**
-     * Get available room numbers for a booking on a specific date
+     * Get available room numbers for a booking - checks entire stay period
+     * Includes rooms already assigned to this booking
      */
     public function availableRoomNumbers(Request $request)
     {
@@ -121,7 +122,6 @@ class AssignRoomController extends Controller
 
         $vendorId = $request->session()->get('vendor_id');
         $bookingId = $request->query('booking_id');
-        $dateInput = $request->query('date');
 
         if (!$bookingId || !is_numeric($bookingId)) {
             return response()->json(['success' => false, 'message' => 'Invalid booking supplied.'], 422);
@@ -139,12 +139,11 @@ class AssignRoomController extends Controller
             return response()->json(['success' => false, 'message' => 'Booking not found.'], 404);
         }
 
-        try {
-            $targetDate = $dateInput ? Carbon::parse($dateInput)->toDateString() : Carbon::parse($booking->check_in_date)->toDateString();
-        } catch (\Throwable $throwable) {
-            return response()->json(['success' => false, 'message' => 'Invalid date supplied.'], 422);
-        }
+        // Get booking date range
+        $checkInDate = Carbon::parse($booking->check_in_date)->toDateString();
+        $checkOutDate = $booking->check_out_date ? Carbon::parse($booking->check_out_date)->toDateString() : $checkInDate;
 
+        // Get all room numbers of the same type in the same hotel
         $roomNumbers = self::$RoomNumbersModel
             ->where('status', 1)
             ->where('room_id', $booking->room_id)
@@ -158,19 +157,30 @@ class AssignRoomController extends Controller
             ]);
         }
 
-        // Collect room numbers that are already booked for the target date
+        // Get currently assigned room IDs for this booking
+        $currentBookingRoomIds = [];
+        if ($booking->room_number_ids) {
+            $currentBookingRoomIds = array_filter(array_map(function ($id) {
+                return (int)trim($id);
+            }, explode(',', $booking->room_number_ids)));
+        }
+
+        // Collect room numbers that are unavailable for the entire stay period
         $unavailableRoomIds = [];
 
+        // Check for overlapping bookings (excluding current booking)
         $overlappingOrders = self::$OrdersModel
             ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
             ->where('hotel.vendor_id', $vendorId)
             ->where('orders.id', '!=', $booking->id)
             ->whereNotNull('orders.room_number_ids')
-            ->where(function ($query) use ($targetDate) {
-                $query->where(function ($q) use ($targetDate) {
-                    $q->where('check_in_date', '<=', $targetDate)
-                        ->where(function ($inner) use ($targetDate) {
-                            $inner->where('check_out_date', '>=', $targetDate)
+            ->where(function ($query) use ($checkInDate, $checkOutDate) {
+                // Check for any overlap with the booking's stay period
+                $query->where(function ($q) use ($checkInDate, $checkOutDate) {
+                    // Overlap: other booking starts before our checkout and ends after our checkin
+                    $q->where('check_in_date', '<', $checkOutDate)
+                        ->where(function ($inner) use ($checkInDate) {
+                            $inner->where('check_out_date', '>', $checkInDate)
                                 ->orWhereNull('check_out_date');
                         });
                 });
@@ -186,23 +196,31 @@ class AssignRoomController extends Controller
             }
         }
 
-        // Include maintenance blocks
+        // Include maintenance blocks that overlap with the stay period
         $maintenanceBlocks = self::$MaintenanceBlocksModel
             ->where('vendor_id', $vendorId)
-            ->where('start_date', '<=', $targetDate)
-            ->where('end_date', '>=', $targetDate)
+            ->where(function ($query) use ($checkInDate, $checkOutDate) {
+                // Check for any overlap with the booking's stay period
+                $query->where(function ($q) use ($checkInDate, $checkOutDate) {
+                    $q->where('start_date', '<', $checkOutDate)
+                        ->where('end_date', '>', $checkInDate);
+                });
+            })
             ->get(['room_number_id']);
 
         foreach ($maintenanceBlocks as $block) {
             $unavailableRoomIds[$block->room_number_id] = true;
         }
 
-        $available = $roomNumbers->filter(function ($room) use ($unavailableRoomIds) {
-            return !isset($unavailableRoomIds[$room->id]);
-        })->values()->map(function ($room) {
+        // Filter rooms: include if available OR if currently assigned to this booking
+        $available = $roomNumbers->filter(function ($room) use ($unavailableRoomIds, $currentBookingRoomIds) {
+            // Include if available OR if currently assigned to this booking
+            return !isset($unavailableRoomIds[$room->id]) || in_array($room->id, $currentBookingRoomIds);
+        })->values()->map(function ($room) use ($currentBookingRoomIds) {
             return [
                 'id' => (int)$room->id,
-                'label' => $room->full_title ?? $room->title ?? 'Room'
+                'label' => $room->full_title ?? $room->title ?? 'Room',
+                'is_current' => in_array($room->id, $currentBookingRoomIds)
             ];
         });
 

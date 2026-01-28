@@ -15,6 +15,9 @@ Route::Post('/vendor-login',[UsersController::class, 'VendorLogin'])->name('Vend
 Route::get('/calendar',[UsersController::class, 'calendar'])->name('calendar');
 Route::get('/calendar/data',[UsersController::class, 'calendarData'])->name('calendar.data');
 Route::get('/booking/{id}',[UsersController::class, 'getBookingDetails'])->name('booking.details');
+Route::get('/booking/{id}/invoice',[UsersController::class, 'printInvoice'])->name('booking.invoice');
+Route::delete('/booking/{id}/cancel',[UsersController::class, 'cancelBooking'])->name('booking.cancel');
+Route::post('/booking/{id}/extend',[UsersController::class, 'extendBooking'])->name('booking.extend');
 Route::post('/save-maintenance-block',[MaintenanceBlockController::class, 'saveMaintenanceBlock'])->name('saveMaintenanceBlock');
 Route::post('/quick-reservations',[UsersController::class, 'saveQuickReservation'])->name('quickReservations.store');
 Route::get('/order-payments/{orderId}',[UsersController::class, 'getOrderPayments'])->name('order.payments');

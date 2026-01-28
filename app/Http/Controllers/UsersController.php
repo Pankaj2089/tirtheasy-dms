@@ -26,6 +26,8 @@ use Cookie;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class UsersController extends Controller{
 
@@ -312,11 +314,13 @@ class UsersController extends Controller{
         }
 
         if(!$start){
-            $start = Carbon::now()->startOfWeek(Carbon::MONDAY);
+            // Use today as start date instead of start of week to match frontend behavior
+            $start = Carbon::now()->startOfDay();
         }
 
         if(!$end){
-            $end = $start->copy()->addDays(self::DEFAULT_VIEW_SPAN_DAYS);
+            // Add 10 days from start (inclusive, so 11 days total: today + 10 more days)
+            $end = $start->copy()->addDays(9);
         }
 
         if($end->lt($start)){
@@ -391,7 +395,6 @@ class UsersController extends Controller{
             $ordersQuery->where('hotel.id', $hotelId);
         }
         // Removed room_category_id filter - work based on individual rooms
-
         if($start && $end){
             $ordersQuery->where(function($query) use ($start, $end){
                 $query->whereBetween('orders.check_in_date', [$start, $end])
@@ -1292,12 +1295,18 @@ class UsersController extends Controller{
                     'id' => 'MB-'.$maintenanceBlock->id,
                     'type' => 'maintenance',
                     'guest_name' => $maintenanceBlock->reason,
+                    'reason' => $maintenanceBlock->reason,
                     'room_number' => $maintenanceBlock->room_number,
                     'room_type' => $maintenanceBlock->room_type,
                     'hotel_name' => $maintenanceBlock->hotel_name,
                     'check_in_date' => $maintenanceBlock->start_date,
                     'check_out_date' => $maintenanceBlock->end_date,
                     'created_at' => $maintenanceBlock->created_at ?? $maintenanceBlock->start_date,
+                    'guest_email' => null,
+                    'guest_phone' => null,
+                    'guest_city' => null,
+                    'guest_state' => null,
+                    'guest_address' => null,
                 ]
             ]);
         } else if(strpos($id, 'ORD-') === 0){
@@ -1352,6 +1361,9 @@ class UsersController extends Controller{
                     'guest_name' => $order->billing_name ?? 'Guest',
                     'guest_email' => $order->billing_email,
                     'guest_phone' => $order->billing_phone,
+                    'guest_city' => $order->billing_city,
+                    'guest_state' => $order->billing_state,
+                    'guest_address' => $order->billing_address,
                     'room_numbers' => $roomNumbers,
                     'room_numbers_details' => $roomNumbersDetails,
                     'room_type' => $order->room_type,
@@ -1365,6 +1377,7 @@ class UsersController extends Controller{
                     'rooms' => $order->rooms,
                     'number_of_nights' => $order->number_of_nights,
                     'room_price' => $order->room_price,
+                    'room_price_id' => $order->room_price_id,
                     'sub_total' => $order->sub_total,
                     'discount' => $order->discount ?? 0,
                     'grand_total' => $order->grand_total,
@@ -1377,6 +1390,310 @@ class UsersController extends Controller{
         }
         
         return response()->json(['success' => false, 'message' => 'Invalid booking ID'], 400);
+    }
+
+    public function cancelBooking(Request $request, $id){
+        if(!$request->session()->has('vendor_login_id')){
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+        
+        try {
+            DB::beginTransaction();
+            
+            // Check if it's a maintenance block (MB- prefix) or order (ORD- prefix)
+            if(strpos($id, 'MB-') === 0){
+                // Cancel maintenance block
+                $maintenanceBlockId = (int)str_replace('MB-', '', $id);
+                $maintenanceBlock = self::$MaintenanceBlocksModel
+                    ->join('room_numbers', 'maintenance_blocks.room_number_id', '=', 'room_numbers.id')
+                    ->join('rooms', 'room_numbers.room_id', '=', 'rooms.id')
+                    ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
+                    ->where('maintenance_blocks.id', $maintenanceBlockId)
+                    ->where('maintenance_blocks.vendor_id', $vendorId)
+                    ->select('maintenance_blocks.*')
+                    ->first();
+                
+                if(!$maintenanceBlock){
+                    DB::rollBack();
+                    return response()->json(['success' => false, 'message' => 'Maintenance block not found'], 404);
+                }
+                
+                // Delete maintenance block
+                self::$MaintenanceBlocksModel->where('id', $maintenanceBlockId)->delete();
+                
+                DB::commit();
+                return response()->json(['success' => true, 'message' => 'Maintenance block cancelled successfully']);
+                
+            } else if(strpos($id, 'ORD-') === 0){
+                // Cancel order/booking
+                $orderId = (int)str_replace('ORD-', '', $id);
+                $order = self::$OrdersModel
+                    ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
+                    ->where('orders.id', $orderId)
+                    ->where('hotel.vendor_id', $vendorId)
+                    ->select('orders.*')
+                    ->first();
+                
+                if(!$order){
+                    DB::rollBack();
+                    return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+                }
+                
+                // Delete all order payments first (foreign key constraint)
+                self::$OrderPaymentsModel->where('order_id', $orderId)->delete();
+                
+                // Delete the order
+                self::$OrdersModel->where('id', $orderId)->delete();
+                
+                DB::commit();
+                return response()->json(['success' => true, 'message' => 'Reservation cancelled successfully']);
+            }
+            
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Invalid booking ID'], 400);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to cancel reservation: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function extendBooking(Request $request, $id){
+        if(!$request->session()->has('vendor_login_id')){
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+        $validator = Validator::make($request->all(), [
+            'new_check_out_date' => 'required|date|after:' . Carbon::today()->format('Y-m-d'),
+            'additional_days' => 'required|integer|min:1'
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+            
+            // Extract order ID
+            if(strpos($id, 'ORD-') === 0){
+                $orderId = (int)str_replace('ORD-', '', $id);
+            } else {
+                $orderId = (int)$id;
+            }
+            
+            // Get the order
+            $order = self::$OrdersModel
+                ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
+                ->where('orders.id', $orderId)
+                ->where('hotel.vendor_id', $vendorId)
+                ->select('orders.*')
+                ->first();
+            
+            if(!$order){
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+            }
+            
+            // Check if single room booking
+            if($order->rooms != 1){
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Extend Day is only available for single room bookings'], 422);
+            }
+            
+            $currentCheckOut = Carbon::parse($order->check_out_date);
+            $newCheckOut = Carbon::parse($request->new_check_out_date);
+            
+            // Validate new check-out is after current check-out
+            if($newCheckOut <= $currentCheckOut){
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'New check-out date must be after current check-out date'], 422);
+            }
+            
+            // Validate room availability for extended dates
+            if(!empty($order->room_number_ids)){
+                $roomNumberIds = array_filter(array_map(function($id){
+                    return (int)trim($id);
+                }, explode(',', $order->room_number_ids)));
+                
+                if(!empty($roomNumberIds)){
+                    // Check availability from current check-out to new check-out
+                    $validationError = $this->validateRoomNumberAvailability(
+                        $roomNumberIds, 
+                        $currentCheckOut->format('Y-m-d'), 
+                        $newCheckOut->format('Y-m-d'),
+                        $orderId // Exclude current booking from conflict check
+                    );
+                    
+                    if($validationError){
+                        DB::rollBack();
+                        return response()->json($validationError, 422);
+                    }
+                }
+            }
+            
+            $nextBooking = self::$OrdersModel
+            ->whereIn('room_number_ids', $roomNumberIds) // adjust if normalized
+            ->where('id', '!=', $orderId)
+            ->where('check_in_date', '>=', $currentCheckOut->format('Y-m-d'))
+            ->orderBy('check_in_date', 'asc')
+            ->first();
+
+            if ($nextBooking) {
+                $maxAllowedCheckout = Carbon::parse($nextBooking->check_in_date);
+            
+                if ($newCheckOut->gt($maxAllowedCheckout)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cannot extend stay beyond the next booking check-in date'
+                    ], 422);
+                }
+            }
+            
+            // Calculate additional amount
+            $numberOfNights = (int)$order->number_of_nights;
+            $roomPrice = (float)$order->room_price;
+            $pricePerNight = $numberOfNights > 0 ? $roomPrice / $numberOfNights : $roomPrice;
+            $additionalDays = (int)$request->additional_days;
+            $additionalAmount = $additionalDays * $pricePerNight;
+            
+            // Update booking
+            $newNumberOfNights = $numberOfNights + $additionalDays;
+            $newRoomPrice = $roomPrice + $additionalAmount;
+            $newSubTotal = (float)$order->sub_total + $additionalAmount;
+            $newGrandTotal = (float)$order->grand_total + $additionalAmount;
+            
+            $order->check_out_date = $newCheckOut->format('Y-m-d');
+            $order->number_of_nights = $newNumberOfNights;
+            $order->room_price = $newRoomPrice;
+            $order->sub_total = $newSubTotal;
+            $order->grand_total = $newGrandTotal;
+            $order->save();
+            
+            // Add folio history entry for extension
+            self::$OrderPaymentsModel->CreateRecord([
+                'order_id' => $orderId,
+                'type' => 'Charge',
+                'amount' => $additionalAmount,
+                'comment' => "Extended stay by {$additionalDays} day(s)",
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Stay extended by {$additionalDays} day(s) successfully",
+                'booking' => [
+                    'id' => 'ORD-'.$order->id,
+                    'check_out_date' => $order->check_out_date,
+                    'number_of_nights' => $order->number_of_nights,
+                    'grand_total' => $order->grand_total,
+                    'additional_amount' => $additionalAmount,
+                    'additional_days' => $additionalDays
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to extend stay: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function printInvoice(Request $request, $id){
+        if(!$request->session()->has('vendor_login_id')){
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+        
+        try {
+            // Extract order ID
+            if(strpos($id, 'ORD-') === 0){
+                $orderId = (int)str_replace('ORD-', '', $id);
+            } else {
+                $orderId = (int)$id;
+            }
+            
+            // Get the order with all related data
+            $order = self::$OrdersModel
+                ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
+                ->join('rooms', 'orders.room_id', '=', 'rooms.id')
+                ->where('orders.id', $orderId)
+                ->where('hotel.vendor_id', $vendorId)
+                ->select('orders.*', 'rooms.title as room_type', 'hotel.title as hotel_name')
+                ->first();
+            
+            if(!$order){
+                return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+            }
+            
+            // Get room numbers
+            $roomNumbers = [];
+            if($order->room_number_ids){
+                $roomNumberIds = explode(',', $order->room_number_ids);
+                $roomNumberRecords = self::$RoomNumbersModel
+                    ->whereIn('id', $roomNumberIds)
+                    ->where('status', 1)
+                    ->get(['id', 'full_title']);
+                $roomNumbers = $roomNumberRecords->pluck('full_title')->toArray();
+            }
+            
+            // Get order payments
+            $payments = self::$OrderPaymentsModel
+                ->where('order_id', $orderId)
+                ->orderBy('created_at', 'ASC')
+                ->get();
+            
+            // Parse other details
+            $otherDetails = [];
+            if(!empty($order->other_details)){
+                $decoded = json_decode($order->other_details, true);
+                if(json_last_error() === JSON_ERROR_NONE){
+                    $otherDetails = $decoded;
+                }
+            }
+            
+            // Prepare invoice data
+            $invoiceData = [
+                'order' => $order,
+                'room_numbers' => $roomNumbers,
+                'payments' => $payments,
+                'other_details' => $otherDetails,
+                'invoice_id' => $order->invoice_id ?? 'ORD-'.$order->id,
+                'invoice_date' => Carbon::now()->format('d M Y'),
+                'check_in_date' => Carbon::parse($order->check_in_date)->format('d M Y'),
+                'check_out_date' => Carbon::parse($order->check_out_date)->format('d M Y'),
+                'check_in_time' => $otherDetails['check_in_time'] ?? '14:00',
+                'check_out_time' => $otherDetails['check_out_time'] ?? '11:00',
+            ];
+            
+            // Generate PDF
+            $options = new Options();
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isRemoteEnabled', true);
+            $options->set('defaultFont', 'Arial');
+            
+            $dompdf = new Dompdf($options);
+            $html = view('invoice.pdf', $invoiceData)->render();
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+            
+            // Return PDF
+            return $dompdf->stream('invoice-'.$invoiceData['invoice_id'].'.pdf', ['Attachment' => 0]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to generate invoice: ' . $e->getMessage()], 500);
+        }
     }
 
 }
