@@ -5964,7 +5964,22 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
+        // Clear Select Room Numbers when Rooms (quantity) value changes so selection matches new count
+        function clearQuickReservationSelectedRoomNumbers() {
+            selectedRoomNumbers.clear();
+            if (roomNumberIdsInput) roomNumberIdsInput.value = '';
+            if (selectedRoomNumbersDiv) selectedRoomNumbersDiv.innerHTML = '';
+            if (roomNumberSearchInput) roomNumberSearchInput.value = '';
+            if (roomNumberDropdown) {
+                roomNumberDropdown.querySelectorAll('.room-number-checkbox').forEach((cb) => { cb.checked = false; });
+                roomNumberDropdown.style.display = 'none';
+            }
+        }
+
         detailsContainer.addEventListener('change', (event) => {
+            if (event.target.classList.contains('room-qty-select')) {
+                clearQuickReservationSelectedRoomNumbers();
+            }
             if (event.target.classList.contains('room-qty-select')
                 || event.target.classList.contains('room-price-input')) {
             recalcSummary();
