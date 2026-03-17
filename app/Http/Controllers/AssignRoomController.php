@@ -152,10 +152,12 @@ class AssignRoomController extends Controller
 
         if ($roomNumbers->isEmpty()) {
             return response()->json([
-                'success' => true,
+                'success' => false,
+                'message' => 'No rooms available.',
                 'rooms' => []
             ]);
         }
+        
 
         // Get currently assigned room IDs for this booking
         $currentBookingRoomIds = [];

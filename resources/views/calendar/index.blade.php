@@ -1753,7 +1753,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function dedupeRoomCategories(data) {
-        const seen = new Map();
+        const seen = new Map();        
         data.forEach((category) => {
             const key = `${category.hostelName}|${category.title}`;
             const existing = seen.get(key);
@@ -1769,6 +1769,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
             seen.set(key, {
+                roomId: category.roomId,
                 hostelName: category.hostelName,
                 title: category.title,
                 summary: cloneSummary(category.summary),
@@ -1786,6 +1787,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     number: room.number,
                     hostelName: category.hostelName,
                     title: category.title
+                    
                 });
             });
         });
@@ -2434,6 +2436,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const roomMeta = dictionary.get(booking.roomId) || {};
             grouped.get(booking.roomId).push({
                 ...booking,
+                room_id: roomMeta.id || '',
                 roomNumber: roomMeta.number || '',
                 hostelName: roomMeta.hostelName || '',
                 categoryTitle: roomMeta.title || '',
@@ -2742,10 +2745,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 // Only match if current date exactly equals check-in date
                 if (currentIso !== startIso) return false;
-                
+                               
                 // Match by room_id - check if booking's room_id matches any room in this category
-                if (booking.room_id && category.rooms) {
-                    return category.rooms.some(room => room.id == booking.room_id);
+                if (booking.room_id && category.roomId) {
+                    return parseInt(booking.room_id) === parseInt(category.roomId);
                 }
                 return false;
             });
@@ -2999,6 +3002,24 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!indices) {
                 return;
             }
+
+            const resolveBookingSourceColor = (bookingObj) => {
+                const raw = (bookingObj?.source ?? bookingObj?.order_platform ?? bookingObj?.platform ?? '').toString();
+                const source = raw.trim().toLowerCase();
+                if (!source) {
+                    return null;
+                }
+                // Tirtheasy bookings
+                if (source === 'Online' || source.includes('PREPAID')) {
+                    return '#ffb3b3';
+                }
+                // Offline/manual bookings (DMS)
+                if (source === 'dms' || source.includes('OFFLINE')) {
+                    return '#f8d7a1';
+                }
+                return null;
+            };
+
             const block = document.createElement('div');
             // Check if payment is pending
             const isPaymentPending = checkIfPaymentPending(booking);
@@ -3011,6 +3032,15 @@ document.addEventListener('DOMContentLoaded', function () {
             block.style.gridColumn = `${indices.start + 1} / ${indices.end + 2}`;
             block.style.gridRow = '1';
             block.title = booking.tooltip || `${booking.label} (${booking.startDate} - ${booking.endDate})`;
+
+            // Apply source-based colors (keep maintenance styling unchanged)
+            if (!(booking.isBlocked || booking.status === 'maintenance')) {
+                const sourceColor = resolveBookingSourceColor(booking);
+                if (sourceColor) {
+                    block.style.background = sourceColor;
+                    block.style.borderColor = sourceColor;
+                }
+            }
             
             // Check if only 1 day is visible (single-day checkout view)
             const isSingleDayVisible = indices.start === indices.end;

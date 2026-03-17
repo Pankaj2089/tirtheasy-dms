@@ -70,6 +70,7 @@ class DashboardController extends Controller
     private function getDashboardData($vendorId, $filter, $date)
     {
         $dateObj = Carbon::parse($date);
+        $asOfDate = $dateObj->toDateString();
         
         // Determine date range based on filter
         switch ($filter) {
@@ -101,8 +102,10 @@ class DashboardController extends Controller
             ->whereBetween('check_in_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
             ->get();
 
-        $arrivalPending = $arrivals->where('payment_status', '!=', 'completed')->count();
-        $arrivalCompleted = $arrivals->where('payment_status', 'completed')->count();
+        $arrivalCompleted = $arrivals->filter(function ($order) {
+            return strtolower((string)($order->payment_status ?? '')) === 'completed';
+        })->count();
+        $arrivalPending = $arrivals->count() - $arrivalCompleted;
         $arrivalTotal = $arrivals->count();
         $arrivalPercentage = $arrivalTotal > 0 ? round(($arrivalCompleted / $arrivalTotal) * 100) : 0;
 
@@ -113,13 +116,15 @@ class DashboardController extends Controller
             ->whereBetween('check_out_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
             ->get();
 
-        $departurePending = $departures->where('payment_status', '!=', 'completed')->count();
-        $departureCheckedOut = $departures->where('payment_status', 'completed')->count();
+        $departureCheckedOut = $departures->filter(function ($order) {
+            return strtolower((string)($order->payment_status ?? '')) === 'completed';
+        })->count();
+        $departurePending = $departures->count() - $departureCheckedOut;
         $departureTotal = $departures->count();
         $departurePercentage = $departureTotal > 0 ? round(($departureCheckedOut / $departureTotal) * 100) : 0;
 
         // Get in-house guests (checked in but not checked out)
-        $today = Carbon::today()->format('Y-m-d');
+        $today = $asOfDate;
         $inHouse = DB::table('orders')
             ->where('vendor_id', $vendorId)
             ->where('is_cancelled', 0)
@@ -195,19 +200,23 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get()
-            ->map(function($order) {
+            ->map(function($order) use ($dateObj) {
                 $type = 'Check In';
+                $typeKey = 'check_in';
                 $class = 'btn-primary';
-                if (Carbon::parse($order->check_out_date)->isToday()) {
+                if (Carbon::parse($order->check_out_date)->isSameDay($dateObj)) {
                     $type = 'Check Out';
+                    $typeKey = 'check_out';
                     $class = 'btn-danger';
                 } elseif ($order->is_cancelled) {
                     $type = 'Cancelled';
+                    $typeKey = 'cancelled';
                     $class = 'btn-warning';
                 }
                 return [
                     'message' => $order->billing_name . ' - ' . $order->billing_phone,
                     'type' => $type,
+                    'type_key' => $typeKey,
                     'class' => $class,
                     'date' => $order->created_at
                 ];

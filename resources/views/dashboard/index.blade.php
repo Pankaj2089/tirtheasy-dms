@@ -42,28 +42,28 @@ $siteUrl = env('APP_URL');
                         aria-labelledby="nav-Analatics-tab">
                         <div class="d-flex p-3 bg-light justify-content-start align-items-center mb-3 gap-2 filter-tabs">
                             <div class="d-flex gap-2">
-                                <button class="btn border-0 filter-btn" data-filter="today"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
+                                <button class="btn border-0 filter-btn {{ $currentFilter === 'today' ? 'active' : '' }}" data-filter="today"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
                                         xmlns="http://www.w3.org/2000/svg">
                                         <path
                                             d="M21 10H3M16 2V6M8 2V6M9 16L11 18L15.5 13.5M7.8 22H16.2C17.8802 22 18.7202 22 19.362 21.673C19.9265 21.3854 20.3854 20.9265 20.673 20.362C21 19.7202 21 18.8802 21 17.2V8.8C21 7.11984 21 6.27976 20.673 5.63803C20.3854 5.07354 19.9265 4.6146 19.362 4.32698C18.7202 4 17.8802 4 16.2 4H7.8C6.11984 4 5.27976 4 4.63803 4.32698C4.07354 4.6146 3.6146 5.07354 3.32698 5.63803C3 6.27976 3 7.11984 3 8.8V17.2C3 18.8802 3 19.7202 3.32698 20.362C3.6146 20.9265 4.07354 21.3854 4.63803 21.673C5.27976 22 6.11984 22 7.8 22Z"
                                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                             stroke-linejoin="round" />
                                     </svg> &nbsp; Today</button>
-                                <button class="btn border-0 filter-btn active" data-filter="week"><svg width="100%" height="100%" viewBox="0 0 24 24"
+                                <button class="btn border-0 filter-btn {{ $currentFilter === 'week' ? 'active' : '' }}" data-filter="week"><svg width="100%" height="100%" viewBox="0 0 24 24"
                                         fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path
                                             d="M21 10H3M16 2V6M8 2V6M9 16L11 18L15.5 13.5M7.8 22H16.2C17.8802 22 18.7202 22 19.362 21.673C19.9265 21.3854 20.3854 20.9265 20.673 20.362C21 19.7202 21 18.8802 21 17.2V8.8C21 7.11984 21 6.27976 20.673 5.63803C20.3854 5.07354 19.9265 4.6146 19.362 4.32698C18.7202 4 17.8802 4 16.2 4H7.8C6.11984 4 5.27976 4 4.63803 4.32698C4.07354 4.6146 3.6146 5.07354 3.32698 5.63803C3 6.27976 3 7.11984 3 8.8V17.2C3 18.8802 3 19.7202 3.32698 20.362C3.6146 20.9265 4.07354 21.3854 4.63803 21.673C5.27976 22 6.11984 22 7.8 22Z"
                                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                             stroke-linejoin="round" />
                                     </svg> &nbsp; Week</button>
-                                <button class="btn border-0 filter-btn" data-filter="month"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
+                                <button class="btn border-0 filter-btn {{ $currentFilter === 'month' ? 'active' : '' }}" data-filter="month"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
                                         xmlns="http://www.w3.org/2000/svg">
                                         <path
                                             d="M21 10H3M16 2V6M8 2V6M9 16L11 18L15.5 13.5M7.8 22H16.2C17.8802 22 18.7202 22 19.362 21.673C19.9265 21.3854 20.3854 20.9265 20.673 20.362C21 19.7202 21 18.8802 21 17.2V8.8C21 7.11984 21 6.27976 20.673 5.63803C20.3854 5.07354 19.9265 4.6146 19.362 4.32698C18.7202 4 17.8802 4 16.2 4H7.8C6.11984 4 5.27976 4 4.63803 4.32698C4.07354 4.6146 3.6146 5.07354 3.32698 5.63803C3 6.27976 3 7.11984 3 8.8V17.2C3 18.8802 3 19.7202 3.32698 20.362C3.6146 20.9265 4.07354 21.3854 4.63803 21.673C5.27976 22 6.11984 22 7.8 22Z"
                                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                             stroke-linejoin="round" />
                                     </svg> &nbsp; Month</button>
-                                <button class="btn border-0 filter-btn" data-filter="year"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
+                                <button class="btn border-0 filter-btn {{ $currentFilter === 'year' ? 'active' : '' }}" data-filter="year"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
                                         xmlns="http://www.w3.org/2000/svg">
                                         <path
                                             d="M21 10H3M16 2V6M8 2V6M9 16L11 18L15.5 13.5M7.8 22H16.2C17.8802 22 18.7202 22 19.362 21.673C19.9265 21.3854 20.3854 20.9265 20.673 20.362C21 19.7202 21 18.8802 21 17.2V8.8C21 7.11984 21 6.27976 20.673 5.63803C20.3854 5.07354 19.9265 4.6146 19.362 4.32698C18.7202 4 17.8802 4 16.2 4H7.8C6.11984 4 5.27976 4 4.63803 4.32698C4.07354 4.6146 3.6146 5.07354 3.32698 5.63803C3 6.27976 3 7.11984 3 8.8V17.2C3 18.8802 3 19.7202 3.32698 20.362C3.6146 20.9265 4.07354 21.3854 4.63803 21.673C5.27976 22 6.11984 22 7.8 22Z"
@@ -82,28 +82,28 @@ $siteUrl = env('APP_URL');
                     </div>
                     <div class="tab-pane fade" id="nav-revenue" role="tabpanel" aria-labelledby="nav-revenue-tab">
                         <div class="d-flex p-3 bg-light justify-content-start align-items-center mb-3 gap-2 filter-tabs">
-                            <button class="btn border-0 filter-btn" data-filter="today"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
+                            <button class="btn border-0 filter-btn {{ $currentFilter === 'today' ? 'active' : '' }}" data-filter="today"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path
                                         d="M21 10H3M16 2V6M8 2V6M9 16L11 18L15.5 13.5M7.8 22H16.2C17.8802 22 18.7202 22 19.362 21.673C19.9265 21.3854 20.3854 20.9265 20.673 20.362C21 19.7202 21 18.8802 21 17.2V8.8C21 7.11984 21 6.27976 20.673 5.63803C20.3854 5.07354 19.9265 4.6146 19.362 4.32698C18.7202 4 17.8802 4 16.2 4H7.8C6.11984 4 5.27976 4 4.63803 4.32698C4.07354 4.6146 3.6146 5.07354 3.32698 5.63803C3 6.27976 3 7.11984 3 8.8V17.2C3 18.8802 3 19.7202 3.32698 20.362C3.6146 20.9265 4.07354 21.3854 4.63803 21.673C5.27976 22 6.11984 22 7.8 22Z"
                                         stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round" />
                                 </svg> &nbsp; Today</button>
-                            <button class="btn border-0 filter-btn active" data-filter="week"><svg width="100%" height="100%" viewBox="0 0 24 24"
+                            <button class="btn border-0 filter-btn {{ $currentFilter === 'week' ? 'active' : '' }}" data-filter="week"><svg width="100%" height="100%" viewBox="0 0 24 24"
                                     fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path
                                         d="M21 10H3M16 2V6M8 2V6M9 16L11 18L15.5 13.5M7.8 22H16.2C17.8802 22 18.7202 22 19.362 21.673C19.9265 21.3854 20.3854 20.9265 20.673 20.362C21 19.7202 21 18.8802 21 17.2V8.8C21 7.11984 21 6.27976 20.673 5.63803C20.3854 5.07354 19.9265 4.6146 19.362 4.32698C18.7202 4 17.8802 4 16.2 4H7.8C6.11984 4 5.27976 4 4.63803 4.32698C4.07354 4.6146 3.6146 5.07354 3.32698 5.63803C3 6.27976 3 7.11984 3 8.8V17.2C3 18.8802 3 19.7202 3.32698 20.362C3.6146 20.9265 4.07354 21.3854 4.63803 21.673C5.27976 22 6.11984 22 7.8 22Z"
                                         stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round" />
                                 </svg> &nbsp; Week</button>
-                            <button class="btn border-0 filter-btn" data-filter="month"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
+                            <button class="btn border-0 filter-btn {{ $currentFilter === 'month' ? 'active' : '' }}" data-filter="month"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path
                                         d="M21 10H3M16 2V6M8 2V6M9 16L11 18L15.5 13.5M7.8 22H16.2C17.8802 22 18.7202 22 19.362 21.673C19.9265 21.3854 20.3854 20.9265 20.673 20.362C21 19.7202 21 18.8802 21 17.2V8.8C21 7.11984 21 6.27976 20.673 5.63803C20.3854 5.07354 19.9265 4.6146 19.362 4.32698C18.7202 4 17.8802 4 16.2 4H7.8C6.11984 4 5.27976 4 4.63803 4.32698C4.07354 4.6146 3.6146 5.07354 3.32698 5.63803C3 6.27976 3 7.11984 3 8.8V17.2C3 18.8802 3 19.7202 3.32698 20.362C3.6146 20.9265 4.07354 21.3854 4.63803 21.673C5.27976 22 6.11984 22 7.8 22Z"
                                         stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round" />
                                 </svg> &nbsp; Month</button>
-                            <button class="btn border-0 filter-btn" data-filter="year"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
+                            <button class="btn border-0 filter-btn {{ $currentFilter === 'year' ? 'active' : '' }}" data-filter="year"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none"
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path
                                         d="M21 10H3M16 2V6M8 2V6M9 16L11 18L15.5 13.5M7.8 22H16.2C17.8802 22 18.7202 22 19.362 21.673C19.9265 21.3854 20.3854 20.9265 20.673 20.362C21 19.7202 21 18.8802 21 17.2V8.8C21 7.11984 21 6.27976 20.673 5.63803C20.3854 5.07354 19.9265 4.6146 19.362 4.32698C18.7202 4 17.8802 4 16.2 4H7.8C6.11984 4 5.27976 4 4.63803 4.32698C4.07354 4.6146 3.6146 5.07354 3.32698 5.63803C3 6.27976 3 7.11984 3 8.8V17.2C3 18.8802 3 19.7202 3.32698 20.362C3.6146 20.9265 4.07354 21.3854 4.63803 21.673C5.27976 22 6.11984 22 7.8 22Z"
@@ -133,12 +133,14 @@ $siteUrl = env('APP_URL');
         $(document).ready(function() {
             let currentFilter = '{{ $currentFilter }}';
             let currentDate = '{{ $currentDate }}';
+            let latestActivityFeeds = @json($dashboardData['activityFeeds'] ?? []);
 
             // Filter button click handler
             $('.filter-btn').on('click', function() {
-                $('.filter-btn').removeClass('active');
-                $(this).addClass('active');
                 currentFilter = $(this).data('filter');
+                // Keep both tab filter bars in sync
+                $('.filter-btn').removeClass('active');
+                $('.filter-btn[data-filter="' + currentFilter + '"]').addClass('active');
                 loadDashboardData();
             });
 
@@ -147,6 +149,14 @@ $siteUrl = env('APP_URL');
                 currentDate = $(this).val();
                 loadDashboardData();
             });
+
+            // Activity feed dropdown filter handler
+            $(document).on('change', '#activityFeedFilter', function() {
+                renderActivityFeeds(latestActivityFeeds);
+            });
+
+            // Initial render (so dropdown works immediately)
+            renderActivityFeeds(latestActivityFeeds);
 
             function loadDashboardData() {
                 $.ajax({
@@ -199,7 +209,8 @@ $siteUrl = env('APP_URL');
                 updateHousekeepingBars(data.housekeeping);
 
                 // Update activity feeds
-                updateActivityFeeds(data.activityFeeds);
+                latestActivityFeeds = data.activityFeeds || [];
+                renderActivityFeeds(latestActivityFeeds);
             }
 
             function updateRevenueData(data) {
@@ -221,19 +232,46 @@ $siteUrl = env('APP_URL');
             }
 
             function updateHousekeepingBars(data) {
-                const maxValue = Math.max(data.clean, data.assign, data.dirty, data.block);
-                $('.hk-bar.clean').css('width', (data.clean / maxValue * 100) + '%');
-                $('.hk-bar.assign').css('width', (data.assign / maxValue * 100) + '%');
-                $('.hk-bar.dirty').css('width', (data.dirty / maxValue * 100) + '%');
-                $('.hk-bar.block').css('width', (data.block / maxValue * 100) + '%');
-                $('.hk-bar-wrap').each(function() {
-                    const value = $(this).find('.hk-value').text();
-                    $(this).find('.hk-value').text(value);
-                });
+                const maxValue = Math.max(data.clean || 0, data.assign || 0, data.dirty || 0, data.block || 0);
+                const denom = maxValue > 0 ? maxValue : 1;
+                $('.hk-bar.clean').css('width', ((data.clean || 0) / denom * 100) + '%');
+                $('.hk-bar.assign').css('width', ((data.assign || 0) / denom * 100) + '%');
+                $('.hk-bar.dirty').css('width', ((data.dirty || 0) / denom * 100) + '%');
+                $('.hk-bar.block').css('width', ((data.block || 0) / denom * 100) + '%');
+
+                // Update numbers
+                $('#hkClean').text(data.clean || 0);
+                $('#hkAssign').text(data.assign || 0);
+                $('#hkDirty').text(data.dirty || 0);
+                $('#hkBlock').text(data.block || 0);
             }
 
-            function updateActivityFeeds(feeds) {
-                const feedsHtml = feeds.map(feed => `
+            function matchesActivityFeedFilter(feed, filterValue) {
+                if (!filterValue || filterValue === 'all') return true;
+
+                const typeKey = String(feed?.type_key || '');
+                if (typeKey) {
+                    return typeKey === filterValue;
+                }
+
+                // Fallback for older payloads
+                const type = String(feed?.type || '').toLowerCase().replace(/\s+/g, '');
+                if (filterValue === 'check_in') return type === 'checkin';
+                if (filterValue === 'check_out') return type === 'checkout';
+                if (filterValue === 'cancelled') return type === 'cancelled';
+                // Room Block isn't currently generated by backend; keep hook for future
+                if (filterValue === 'room_block') return type === 'roomblock';
+                return true;
+            }
+
+            function renderActivityFeeds(feeds) {
+                const filterValue = ($('#activityFeedFilter').val() || 'all');
+                const filtered = (feeds || []).filter(feed => matchesActivityFeedFilter(feed, filterValue));
+                if (!filtered || filtered.length === 0) {
+                    $('#activityFeedsList').html('<li class="text-muted small-text">No activity found.</li>');
+                    return;
+                }
+                const feedsHtml = filtered.map(feed => `
                     <li class="d-flex justify-content-between align-items-center mb-2">
                         <p class="small-text w-75">${feed.message}</p>
                         <div class="btn btn-sm text-white ${feed.class}">${feed.type}</div>

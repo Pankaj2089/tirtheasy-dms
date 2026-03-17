@@ -149,7 +149,8 @@ class UsersController extends Controller{
                     $roomNumbers = self::$RoomNumbersModel
                         ->where('status', 1)
                         ->where('room_id', $roomData->id)
-                        ->get();
+                        ->where('hotel_id', $hotelData->id)
+                        ->get(['id', 'full_title', 'title', 'prefix']);
                     
                     if($roomNumbers->count() > 0){
                         $roomNums = [];

@@ -37,7 +37,7 @@ $vendorProfile = session('vendor_profile');
                         </div>
                         <li><a href="">Username</a></li>
                         <li><a href="{{route('account.index')}}">Account</a></li>
-                        <li><a href="{{$siteUrl}}calendar">Dashboard</a></li>
+                        <li><a href="{{ route('dashboard.index') }}">Dashboard</a></li>
                         <li><a href="">Price Detail</a></li>
                         <li><a href="">Settings</a></li>
                         <li><a href="">Privacy</a></li>

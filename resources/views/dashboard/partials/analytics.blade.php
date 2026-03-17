@@ -120,22 +120,22 @@ $activityFeeds = $data['activityFeeds'] ?? [];
             <!-- bars -->
             <div class="hk-chart">
                 <div class="hk-bar-wrap">
-                    <div class="hk-value">{{ $housekeeping['clean'] }}</div>
+                    <div class="hk-value" id="hkClean">{{ $housekeeping['clean'] }}</div>
                     <div class="hk-bar clean" style="width: {{ $housekeeping['clean'] > 0 ? ($housekeeping['clean'] / max($housekeeping['clean'], $housekeeping['assign'], $housekeeping['dirty'], $housekeeping['block']) * 100) : 0 }}%"></div>
                     <div class="hk-label">Clean</div>
                 </div>
                 <div class="hk-bar-wrap">
-                    <div class="hk-value">{{ $housekeeping['assign'] }}</div>
+                    <div class="hk-value" id="hkAssign">{{ $housekeeping['assign'] }}</div>
                     <div class="hk-bar assign" style="width: {{ $housekeeping['assign'] > 0 ? ($housekeeping['assign'] / max($housekeeping['clean'], $housekeeping['assign'], $housekeeping['dirty'], $housekeeping['block']) * 100) : 0 }}%"></div>
                     <div class="hk-label">HKAssign</div>
                 </div>
                 <div class="hk-bar-wrap">
-                    <div class="hk-value">{{ $housekeeping['dirty'] }}</div>
+                    <div class="hk-value" id="hkDirty">{{ $housekeeping['dirty'] }}</div>
                     <div class="hk-bar dirty" style="width: {{ $housekeeping['dirty'] > 0 ? ($housekeeping['dirty'] / max($housekeeping['clean'], $housekeeping['assign'], $housekeeping['dirty'], $housekeeping['block']) * 100) : 0 }}%"></div>
                     <div class="hk-label">Dirty</div>
                 </div>
                 <div class="hk-bar-wrap">
-                    <div class="hk-value">{{ $housekeeping['block'] }}</div>
+                    <div class="hk-value" id="hkBlock">{{ $housekeeping['block'] }}</div>
                     <div class="hk-bar block" style="width: {{ $housekeeping['block'] > 0 ? ($housekeeping['block'] / max($housekeeping['clean'], $housekeeping['assign'], $housekeeping['dirty'], $housekeeping['block']) * 100) : 0 }}%"></div>
                     <div class="hk-label">Block</div>
                 </div>
@@ -152,12 +152,12 @@ $activityFeeds = $data['activityFeeds'] ?? [];
                 <small class="">Activity Feeds</small>
             </div>
             <div class="right d-flex align-items-center gap-2">
-                <select class="form-select border-0 form-select-sm" style="width: 150px;">
-                    <option>All</option>
-                    <option>Check In</option>
-                    <option>Check Out</option>
-                    <option>Room Block</option>
-                    <option>Cancelled</option>
+                <select class="form-select border-0 form-select-sm" id="activityFeedFilter" style="width: 150px;">
+                    <option value="all">All</option>
+                    <option value="check_in">Check In</option>
+                    <option value="check_out">Check Out</option>
+                    <option value="room_block">Room Block</option>
+                    <option value="cancelled">Cancelled</option>
                 </select>
                 &nbsp;
                 <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
