@@ -18,6 +18,7 @@ class Hotels extends Authenticatable{
      */
     protected $fillable = [
 		'title',
+        'ordering',
 		'vendor_id',
 		'added_by',
 		'slug',

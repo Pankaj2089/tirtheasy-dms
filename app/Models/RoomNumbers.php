@@ -22,6 +22,7 @@ class RoomNumbers extends Authenticatable{
     'room_id',
     'prefix',
     'full_title',
+    'ordering',
     ];
 
 	public function GetRecordById($id){

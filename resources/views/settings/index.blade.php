@@ -149,6 +149,66 @@ $siteUrl = env('APP_URL');
                         </div>
                     </form>
                 </div>
+
+                <div class="top-report p-4 mt-4 mb-5 position-relative" id="orderingSection">
+                    <h5 class="mb-4">Set Ordering</h5>
+
+                    <div class="row align-items-end mb-3">
+                        <div class="col-md-3 mb-2">
+                            <label for="ordering_type" class="form-label mt-0">Select Ordering Type</label>
+                            <select id="ordering_type" class="form-control form-select">
+                                <option value="">Select Type</option>
+                                <option value="hotel">Update Hotel</option>
+                                <option value="room">Update Room</option>
+                                <option value="room_number">Update Room Number</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-2 d-none" id="orderingHotelWrap">
+                            <label for="ordering_hotel_id" class="form-label mt-0">Property Name</label>
+                            <select id="ordering_hotel_id" class="form-control form-select">
+                                <option value="">Select Property</option>
+                                @foreach($hotels as $hotel)
+                                    <option value="{{ $hotel->id }}">{{ $hotel->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-2 d-none" id="orderingRoomWrap">
+                            <label for="ordering_room_id" class="form-label mt-0">Rooms Type</label>
+                            <select id="ordering_room_id" class="form-control form-select" disabled>
+                                <option value="">Select Room Type</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="border rounded bg-light p-3 position-relative">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="text-muted small" id="orderingHint">Select a type to load the list.</div>
+                            <div class="text-muted small" id="orderingMeta"></div>
+                        </div>
+
+                        <div id="orderingEmptyState" class="text-center text-muted py-4 d-none">
+                            No data available.
+                        </div>
+
+                        <ul id="orderingList" class="list-group d-none"></ul>
+
+                        <div id="orderingPager" class="d-flex align-items-center justify-content-between mt-3 d-none">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="orderingPrevBtn">Prev</button>
+                            <div class="small text-muted" id="orderingPageText"></div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="orderingNextBtn">Next</button>
+                        </div>
+
+                        <div id="orderingOverlay" class="d-none"
+                            style="position:absolute; inset:0; background: rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; border-radius: 0.375rem; z-index: 10;">
+                            <div class="bg-white rounded px-3 py-2 shadow-sm d-flex align-items-center gap-2">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span class="small">Please wait...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -177,6 +237,7 @@ $siteUrl = env('APP_URL');
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
         document.querySelectorAll('.btn-toggle').forEach(ele => ele.addEventListener('click', () => {
             if (ele.classList.contains("active")) {
@@ -256,6 +317,278 @@ $siteUrl = env('APP_URL');
                     // Reset form if no hotel or room selected
                     resetFormFields();
                 }
+            });
+        });
+
+        // -------- Set Ordering (drag & drop) --------
+        const Ordering = {
+            type: '',
+            hotelId: '',
+            roomId: '',
+            page: 1,
+            perPage: 50,
+            lastPage: 1,
+            isBusy: false,
+            sortable: null,
+        };
+
+        function orderingSetBusy(isBusy) {
+            Ordering.isBusy = isBusy;
+            $('#orderingOverlay').toggleClass('d-none', !isBusy);
+            $('#orderingSection select, #orderingPrevBtn, #orderingNextBtn').prop('disabled', isBusy);
+            $('#orderingList').css('pointer-events', isBusy ? 'none' : 'auto');
+        }
+
+        function orderingAjax(opts) {
+            const token = $('meta[name="csrf-token"]').attr('content');
+            return $.ajax({
+                ...opts,
+                headers: {
+                    ...(opts.headers || {}),
+                    'X-CSRF-TOKEN': token,
+                }
+            });
+        }
+
+        function orderingResetUI(message) {
+            $('#orderingHint').text(message || 'Select a type to load the list.');
+            $('#orderingMeta').text('');
+            $('#orderingEmptyState').addClass('d-none');
+            $('#orderingList').addClass('d-none').empty();
+            $('#orderingPager').addClass('d-none');
+        }
+
+        function orderingRenderList(items) {
+            const list = $('#orderingList');
+            list.empty();
+
+            if (!items || items.length === 0) {
+                $('#orderingEmptyState').removeClass('d-none');
+                $('#orderingList').addClass('d-none');
+                return;
+            }
+
+            $('#orderingEmptyState').addClass('d-none');
+            $('#orderingList').removeClass('d-none');
+
+            items.forEach((it) => {
+                const title = it.title || it.full_title || it.name || '';
+                const li = $(`
+                    <li class="list-group-item d-flex align-items-center justify-content-between" data-id="${it.id}">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted" style="cursor: grab;">☰</span>
+                            <span class="fw-medium">${$('<div/>').text(title).html()}</span>
+                        </div>
+                        <span class="badge bg-secondary">#${it.ordering ?? ''}</span>
+                    </li>
+                `);
+                list.append(li);
+            });
+
+            if (Ordering.sortable) {
+                Ordering.sortable.destroy();
+                Ordering.sortable = null;
+            }
+
+            Ordering.sortable = new Sortable(document.getElementById('orderingList'), {
+                animation: 150,
+                handle: '.text-muted',
+                ghostClass: 'bg-warning-subtle',
+                onEnd: function() {
+                    orderingPersistOrder();
+                }
+            });
+        }
+
+        function orderingUpdatePager(meta) {
+            const hasPager = meta && meta.last_page && meta.last_page > 1;
+            Ordering.lastPage = meta?.last_page || 1;
+            $('#orderingPager').toggleClass('d-none', !hasPager);
+            $('#orderingPrevBtn').prop('disabled', Ordering.page <= 1 || Ordering.isBusy);
+            $('#orderingNextBtn').prop('disabled', Ordering.page >= Ordering.lastPage || Ordering.isBusy);
+            $('#orderingPageText').text(`Page ${Ordering.page} of ${Ordering.lastPage}`);
+            if (meta?.total != null) {
+                $('#orderingMeta').text(`Total: ${meta.total}`);
+            }
+        }
+
+        function orderingFetchList() {
+            if (!Ordering.type) {
+                orderingResetUI('Select a type to load the list.');
+                return;
+            }
+
+            let url = '';
+            const data = { page: Ordering.page, per_page: Ordering.perPage };
+
+            if (Ordering.type === 'hotel') {
+                url = '{{ route("settings.ordering.hotels") }}';
+                $('#orderingHint').text('Drag & drop to reorder hotels.');
+            } else if (Ordering.type === 'room') {
+                if (!Ordering.hotelId) {
+                    orderingResetUI('Select a property to load rooms.');
+                    return;
+                }
+                url = '{{ route("settings.ordering.rooms") }}';
+                data.hotel_id = Ordering.hotelId;
+                $('#orderingHint').text('Drag & drop to reorder rooms for the selected property.');
+            } else if (Ordering.type === 'room_number') {
+                if (!Ordering.hotelId || !Ordering.roomId) {
+                    orderingResetUI('Select a property and room type to load room numbers.');
+                    return;
+                }
+                url = '{{ route("settings.ordering.roomNumbers") }}';
+                data.hotel_id = Ordering.hotelId;
+                data.room_id = Ordering.roomId;
+                $('#orderingHint').text('Drag & drop to reorder room numbers for the selected room type.');
+            }
+
+            orderingSetBusy(true);
+            orderingAjax({
+                url,
+                type: 'GET',
+                data,
+            }).done(function(res) {
+                if (!res?.success) {
+                    orderingResetUI(res?.message || 'Failed to load data.');
+                    return;
+                }
+                orderingRenderList(res.data || []);
+                orderingUpdatePager(res.meta || {});
+            }).fail(function() {
+                orderingResetUI('Failed to load data.');
+            }).always(function() {
+                orderingSetBusy(false);
+            });
+        }
+
+        function orderingLoadRoomsForHotel(hotelId) {
+            $('#ordering_room_id').html('<option value="">Select Room Type</option>').prop('disabled', true);
+            Ordering.roomId = '';
+            if (!hotelId) {
+                return;
+            }
+
+            orderingSetBusy(true);
+            orderingAjax({
+                url: '{{ route("settings.ordering.rooms") }}',
+                type: 'GET',
+                data: { hotel_id: hotelId, per_page: 200, page: 1 },
+            }).done(function(res) {
+                if (res?.success && Array.isArray(res.data)) {
+                    res.data.forEach(function(room) {
+                        $('#ordering_room_id').append(
+                            $('<option></option>').attr('value', room.id).text(room.title)
+                        );
+                    });
+                }
+            }).always(function() {
+                $('#ordering_room_id').prop('disabled', false);
+                orderingSetBusy(false);
+            });
+        }
+
+        function orderingPersistOrder() {
+            if (Ordering.isBusy) return;
+            const ids = [];
+            $('#orderingList').children('li').each(function() {
+                const id = parseInt($(this).attr('data-id'), 10);
+                if (!isNaN(id)) ids.push(id);
+            });
+            if (ids.length === 0) return;
+
+            orderingSetBusy(true);
+            orderingAjax({
+                url: '{{ route("settings.ordering.update") }}',
+                type: 'POST',
+                data: {
+                    type: Ordering.type,
+                    ordered_ids: ids,
+                    hotel_id: Ordering.hotelId || null,
+                    room_id: Ordering.roomId || null,
+                }
+            }).done(function(res) {
+                if (!res?.success) {
+                    if (typeof swal === 'function') {
+                        swal("Error!", res?.message || 'Failed to update ordering', "error");
+                    }
+                    orderingFetchList();
+                    return;
+                }
+                // Refresh the list to show updated order numbers, keep filters.
+                orderingFetchList();
+            }).fail(function() {
+                if (typeof swal === 'function') {
+                    swal("Error!", 'Failed to update ordering', "error");
+                }
+                orderingFetchList();
+            }).always(function() {
+                orderingSetBusy(false);
+            });
+        }
+
+        $(document).ready(function() {
+            orderingResetUI();
+
+            $('#ordering_type').on('change', function() {
+                Ordering.type = $(this).val();
+                Ordering.page = 1;
+                $('#ordering_hotel_id,#ordering_room_id').val('');
+                // Show/hide dependent filters
+                if (Ordering.type === 'hotel') {
+                    $('#orderingHotelWrap').addClass('d-none');
+                    $('#orderingRoomWrap').addClass('d-none');
+                    $('#ordering_room_id').val('');
+                    Ordering.hotelId = '';
+                    Ordering.roomId = '';
+                    orderingFetchList();
+                } else if (Ordering.type === 'room') {
+                    $('#orderingHotelWrap').removeClass('d-none');
+                    $('#orderingRoomWrap').addClass('d-none');
+                    Ordering.roomId = '';
+                    orderingResetUI('Select a property to load rooms.');
+                } else if (Ordering.type === 'room_number') {
+                    $('#orderingHotelWrap').removeClass('d-none');
+                    $('#orderingRoomWrap').removeClass('d-none');
+                    orderingResetUI('Select a property and room type to load room numbers.');
+                } else {
+                    $('#orderingHotelWrap').addClass('d-none');
+                    $('#orderingRoomWrap').addClass('d-none');
+                    Ordering.hotelId = '';
+                    Ordering.roomId = '';
+                    orderingResetUI();
+                }
+            });
+
+            $('#ordering_hotel_id').on('change', function() {
+                Ordering.hotelId = $(this).val();
+                Ordering.page = 1;
+
+                if (Ordering.type === 'room') {
+                    orderingFetchList();
+                } else if (Ordering.type === 'room_number') {
+                    orderingLoadRoomsForHotel(Ordering.hotelId);
+                    orderingResetUI('Select a room type to load room numbers.');
+                }
+            });
+
+            $('#ordering_room_id').on('change', function() {
+                Ordering.roomId = $(this).val();
+                Ordering.page = 1;
+                if (Ordering.type === 'room_number') {
+                    orderingFetchList();
+                }
+            });
+
+            $('#orderingPrevBtn').on('click', function() {
+                if (Ordering.page <= 1 || Ordering.isBusy) return;
+                Ordering.page -= 1;
+                orderingFetchList();
+            });
+            $('#orderingNextBtn').on('click', function() {
+                if (Ordering.page >= Ordering.lastPage || Ordering.isBusy) return;
+                Ordering.page += 1;
+                orderingFetchList();
             });
         });
 

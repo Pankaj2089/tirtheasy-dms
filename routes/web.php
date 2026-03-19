@@ -44,6 +44,10 @@ Route::get('/settings',[SettingsController::class, 'index'])->name('settings.ind
 Route::post('/settings/store',[SettingsController::class, 'store'])->name('settings.store');
 Route::get('/settings/get',[SettingsController::class, 'getSettings'])->name('settings.get');
 Route::get('/settings/room-types',[SettingsController::class, 'getRoomTypes'])->name('settings.roomTypes');
+Route::get('/settings/ordering/hotels',[SettingsController::class, 'orderingHotels'])->name('settings.ordering.hotels');
+Route::get('/settings/ordering/rooms',[SettingsController::class, 'orderingRooms'])->name('settings.ordering.rooms');
+Route::get('/settings/ordering/room-numbers',[SettingsController::class, 'orderingRoomNumbers'])->name('settings.ordering.roomNumbers');
+Route::post('/settings/ordering/update',[SettingsController::class, 'updateOrdering'])->name('settings.ordering.update');
 
 // Dashboard routes
 Route::get('/dashboard',[DashboardController::class, 'index'])->name('dashboard.index');

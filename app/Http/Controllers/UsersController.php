@@ -128,7 +128,9 @@ class UsersController extends Controller{
             $hotelsQuery->where('id', $hotelId);
         }
         
-        $hotels = $hotelsQuery->get();
+        $hotels = $hotelsQuery
+            ->orderBy('ordering', 'ASC')
+            ->get();
         
         if($hotels->count() > 0){
             foreach($hotels as $hotelData){
@@ -137,7 +139,9 @@ class UsersController extends Controller{
                     ->where('hotel_id', $hotelData->id)
                     ->where('status', 1);
                 
-                $hotelRooms = $roomsQuery->get();
+                $hotelRooms = $roomsQuery
+                    ->orderBy('ordering', 'ASC')
+                    ->get();
                 
                 // Process each room type for this hotel
                 foreach($hotelRooms as $roomData){
@@ -150,6 +154,7 @@ class UsersController extends Controller{
                         ->where('status', 1)
                         ->where('room_id', $roomData->id)
                         ->where('hotel_id', $hotelData->id)
+                        ->orderBy('ordering', 'ASC')
                         ->get(['id', 'full_title', 'title', 'prefix']);
                     
                     if($roomNumbers->count() > 0){
@@ -470,9 +475,9 @@ class UsersController extends Controller{
             ->where('hotel.status', 1)
             ->where('rooms.status', 1)
             ->where('room_numbers.status', 1)
-            ->select('hotel.id', 'hotel.title')
+            ->select('hotel.id', 'hotel.title','hotel.ordering')
             ->distinct()
-            ->orderBy('hotel.title', 'ASC')
+            ->orderBy('hotel.ordering', 'ASC')
             ->get();
         return $hotels;
     }
@@ -481,15 +486,15 @@ class UsersController extends Controller{
         // Changed to return room types instead of room categories - work based on individual rooms
         // Only show room types that have at least one available room number
         return DB::table('rooms')
-            ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
-            ->join('room_numbers', 'rooms.id', '=', 'room_numbers.room_id')
-            ->where('hotel.vendor_id', $vendorId)
-            ->where('rooms.status', 1)
-            ->where('room_numbers.status', 1)
-            ->select('rooms.id', 'rooms.title')
-            ->distinct()
-            ->orderBy('rooms.title', 'ASC')
-            ->get();
+        ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
+        ->join('room_numbers', 'rooms.id', '=', 'room_numbers.room_id')
+        ->where('hotel.vendor_id', $vendorId)
+        ->where('rooms.status', 1)
+        ->where('room_numbers.status', 1)
+        ->select('rooms.id', 'rooms.title', 'rooms.ordering') // ✅ added
+        ->distinct()
+        ->orderBy('rooms.ordering', 'ASC')
+        ->get();
     }
 
 	# admin dashboard page
@@ -572,7 +577,7 @@ class UsersController extends Controller{
                 'rooms.extra_mattress_price',
                 'hotel.title as hotel_title'
             ])
-            ->orderBy('rooms.title', 'ASC');
+            ->orderBy('rooms.ordering', 'ASC');
 
         $rooms = $roomsQuery->get();
         if($rooms->isEmpty()){

@@ -35,9 +35,9 @@ class SettingsController extends Controller
             ->where('hotel.status', 1)
             ->where('rooms.status', 1)
             ->where('room_numbers.status', 1)
-            ->select('hotel.id', 'hotel.title')
+            ->select('hotel.id', 'hotel.title', 'hotel.ordering')
             ->distinct()
-            ->orderBy('hotel.title', 'ASC')
+            ->orderBy('hotel.ordering', 'ASC')
             ->get();
     }
 
@@ -49,9 +49,9 @@ class SettingsController extends Controller
             ->where('hotel.vendor_id', $vendorId)
             ->where('rooms.status', 1)
             ->where('room_numbers.status', 1)
-            ->select('rooms.id', 'rooms.title', 'rooms.hotel_id')
+            ->select('rooms.id', 'rooms.title', 'rooms.hotel_id', 'rooms.ordering')
             ->distinct()
-            ->orderBy('rooms.title', 'ASC')
+            ->orderBy('rooms.ordering', 'ASC')
             ->get();
     }
 
@@ -211,12 +211,242 @@ class SettingsController extends Controller
             ->where('rooms.hotel_id', $hotelId)
             ->where('rooms.status', 1)
             ->where('room_numbers.status', 1)
-            ->select('rooms.id', 'rooms.title', 'rooms.hotel_id')
+            ->select('rooms.id', 'rooms.title', 'rooms.hotel_id', 'rooms.ordering')
             ->distinct()
-            ->orderBy('rooms.title', 'ASC')
+            ->orderBy('rooms.ordering', 'ASC')
             ->get();
 
         return response()->json(['success' => true, 'data' => $roomTypes]);
+    }
+
+    private function normalizePerPage(?int $perPage): int
+    {
+        $perPage = $perPage ?: 50;
+        if ($perPage < 1) {
+            $perPage = 1;
+        }
+        if ($perPage > 200) {
+            $perPage = 200;
+        }
+        return $perPage;
+    }
+
+    public function orderingHotels(Request $request)
+    {
+        if (!$request->session()->has('vendor_login_id')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+        $perPage = $this->normalizePerPage((int)$request->query('per_page'));
+
+        $query = DB::table('hotel')
+            ->join('rooms', 'hotel.id', '=', 'rooms.hotel_id')
+            ->join('room_numbers', 'rooms.id', '=', 'room_numbers.room_id')
+            ->where('hotel.vendor_id', $vendorId)
+            ->where('hotel.status', 1)
+            ->where('rooms.status', 1)
+            ->where('room_numbers.status', 1)
+            ->select('hotel.id', 'hotel.title', 'hotel.ordering')
+            ->distinct()
+            ->orderBy('hotel.ordering', 'ASC');
+
+        $result = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $result->items(),
+            'meta' => [
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'per_page' => $result->perPage(),
+                'total' => $result->total(),
+            ],
+        ]);
+    }
+
+    public function orderingRooms(Request $request)
+    {
+        if (!$request->session()->has('vendor_login_id')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+        $perPage = $this->normalizePerPage((int)$request->query('per_page'));
+
+        $request->validate([
+            'hotel_id' => 'required|integer',
+        ]);
+
+        $hotelId = (int)$request->query('hotel_id');
+
+        $query = DB::table('rooms')
+            ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
+            ->join('room_numbers', 'rooms.id', '=', 'room_numbers.room_id')
+            ->where('hotel.vendor_id', $vendorId)
+            ->where('rooms.hotel_id', $hotelId)
+            ->where('hotel.status', 1)
+            ->where('rooms.status', 1)
+            ->where('room_numbers.status', 1)
+            ->select('rooms.id', 'rooms.title', 'rooms.ordering', 'rooms.hotel_id')
+            ->distinct()
+            ->orderBy('rooms.ordering', 'ASC');
+
+        $result = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $result->items(),
+            'meta' => [
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'per_page' => $result->perPage(),
+                'total' => $result->total(),
+            ],
+        ]);
+    }
+
+    public function orderingRoomNumbers(Request $request)
+    {
+        if (!$request->session()->has('vendor_login_id')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+        $perPage = $this->normalizePerPage((int)$request->query('per_page'));
+
+        $request->validate([
+            'hotel_id' => 'required|integer',
+            'room_id' => 'required|integer',
+        ]);
+
+        $hotelId = (int)$request->query('hotel_id');
+        $roomId = (int)$request->query('room_id');
+
+        $query = DB::table('room_numbers')
+            ->join('rooms', 'room_numbers.room_id', '=', 'rooms.id')
+            ->join('hotel', 'room_numbers.hotel_id', '=', 'hotel.id')
+            ->where('hotel.vendor_id', $vendorId)
+            ->where('room_numbers.hotel_id', $hotelId)
+            ->where('room_numbers.room_id', $roomId)
+            ->where('hotel.status', 1)
+            ->where('rooms.status', 1)
+            ->where('room_numbers.status', 1)
+            ->select('room_numbers.id', 'room_numbers.full_title as title', 'room_numbers.ordering', 'room_numbers.hotel_id', 'room_numbers.room_id')
+            ->orderBy('room_numbers.ordering', 'ASC');
+
+        $result = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $result->items(),
+            'meta' => [
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'per_page' => $result->perPage(),
+                'total' => $result->total(),
+            ],
+        ]);
+    }
+
+    public function updateOrdering(Request $request)
+    {
+        if (!$request->session()->has('vendor_login_id')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+
+        $request->validate([
+            'type' => 'required|string|in:hotel,room,room_number',
+            'ordered_ids' => 'required|array|min:1',
+            'ordered_ids.*' => 'integer',
+            'hotel_id' => 'nullable|integer',
+            'room_id' => 'nullable|integer',
+        ]);
+
+        $type = $request->input('type');
+        $orderedIds = array_values(array_map('intval', $request->input('ordered_ids', [])));
+        $hotelId = $request->input('hotel_id') ? (int)$request->input('hotel_id') : null;
+        $roomId = $request->input('room_id') ? (int)$request->input('room_id') : null;
+
+        try {
+            DB::beginTransaction();
+
+            if ($type === 'hotel') {
+                $allowed = DB::table('hotel')
+                    ->where('vendor_id', $vendorId)
+                    ->whereIn('id', $orderedIds)
+                    ->pluck('id')
+                    ->map(fn ($id) => (int)$id)
+                    ->all();
+
+                $allowedLookup = array_fill_keys($allowed, true);
+                $pos = 1;
+                foreach ($orderedIds as $id) {
+                    if (!isset($allowedLookup[$id])) {
+                        continue;
+                    }
+                    DB::table('hotel')->where('id', $id)->update(['ordering' => $pos]);
+                    $pos++;
+                }
+            } elseif ($type === 'room') {
+                if (!$hotelId) {
+                    DB::rollBack();
+                    return response()->json(['success' => false, 'message' => 'hotel_id is required for room ordering'], 422);
+                }
+
+                $allowed = DB::table('rooms')
+                    ->join('hotel', 'rooms.hotel_id', '=', 'hotel.id')
+                    ->where('hotel.vendor_id', $vendorId)
+                    ->where('rooms.hotel_id', $hotelId)
+                    ->whereIn('rooms.id', $orderedIds)
+                    ->pluck('rooms.id')
+                    ->map(fn ($id) => (int)$id)
+                    ->all();
+
+                $allowedLookup = array_fill_keys($allowed, true);
+                $pos = 1;
+                foreach ($orderedIds as $id) {
+                    if (!isset($allowedLookup[$id])) {
+                        continue;
+                    }
+                    DB::table('rooms')->where('id', $id)->update(['ordering' => $pos]);
+                    $pos++;
+                }
+            } else { // room_number
+                if (!$hotelId || !$roomId) {
+                    DB::rollBack();
+                    return response()->json(['success' => false, 'message' => 'hotel_id and room_id are required for room number ordering'], 422);
+                }
+
+                $allowed = DB::table('room_numbers')
+                    ->join('hotel', 'room_numbers.hotel_id', '=', 'hotel.id')
+                    ->where('hotel.vendor_id', $vendorId)
+                    ->where('room_numbers.hotel_id', $hotelId)
+                    ->where('room_numbers.room_id', $roomId)
+                    ->whereIn('room_numbers.id', $orderedIds)
+                    ->pluck('room_numbers.id')
+                    ->map(fn ($id) => (int)$id)
+                    ->all();
+
+                $allowedLookup = array_fill_keys($allowed, true);
+                $pos = 1;
+                foreach ($orderedIds as $id) {
+                    if (!isset($allowedLookup[$id])) {
+                        continue;
+                    }
+                    DB::table('room_numbers')->where('id', $id)->update(['ordering' => $pos]);
+                    $pos++;
+                }
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Ordering updated']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Error updating ordering: ' . $e->getMessage()], 500);
+        }
     }
 }
 
