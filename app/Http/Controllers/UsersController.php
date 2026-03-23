@@ -1388,6 +1388,7 @@ class UsersController extends Controller{
                     'discount' => $order->discount ?? 0,
                     'grand_total' => $order->grand_total,
                     'payment_status' => $order->payment_status,
+                        'checkin_checkout_status' => $order->checkin_checkout_status ?? null,
                     'reservation_type' => $otherDetails['reservation_type'] ?? 'confirmed',
                     'notes' => $otherDetails['notes'] ?? null,
                     'created_at' => $order->created_at,
@@ -1463,6 +1464,226 @@ class UsersController extends Controller{
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Failed to cancel reservation: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function checkInBooking(Request $request, $id){
+        if(!$request->session()->has('vendor_login_id')){
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+
+        try {
+            DB::beginTransaction();
+
+            // Extract order ID
+            if(strpos($id, 'ORD-') === 0){
+                $orderId = (int)str_replace('ORD-', '', $id);
+            } else {
+                $orderId = (int)$id;
+            }
+
+            $order = self::$OrdersModel
+                ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
+                ->where('orders.id', $orderId)
+                ->where('hotel.vendor_id', $vendorId)
+                ->select('orders.*')
+                ->first();
+
+            if(!$order){
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+            }
+
+            // Prevent check-in for already checked bookings
+            if($order->checkin_checkout_status === 'checked_in'){
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Booking already checked-in'], 409);
+            }
+            if($order->checkin_checkout_status === 'checked_out'){
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Booking already checked-out'], 409);
+            }
+
+            // Validate previous bookings for the same room_number_ids are checked out.
+            $roomNumberIds = array_filter(array_map(function($rid){
+                return (int)trim($rid);
+            }, explode(',', (string)($order->room_number_ids ?? ''))));
+
+            if(empty($roomNumberIds)){
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This booking does not have valid room numbers for check-in validation.'
+                ], 422);
+            }
+
+            if(empty($order->check_in_date)){
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This booking does not have a check-in date.'
+                ], 422);
+            }
+
+            $currentCheckInDate = Carbon::parse($order->check_in_date)->toDateString();
+
+            $conflictingBookings = self::$OrdersModel
+                ->where(function($q){
+                    // Some installs store non-cancelled rows as 0, others as NULL.
+                    $q->whereNull('is_cancelled')->orWhere('is_cancelled', 0);
+                })
+                ->where('id', '!=', $orderId)
+                ->whereRaw('DATE(check_in_date) < ?', [$currentCheckInDate])
+                ->where(function($q) use ($roomNumberIds){
+                    foreach($roomNumberIds as $roomNumberId){
+                        $q->orWhereRaw('FIND_IN_SET(?, room_number_ids)', [$roomNumberId]);
+                    }
+                })
+                ->where(function($q){
+                    $q->whereNull('checkin_checkout_status')
+                      ->orWhere('checkin_checkout_status', '!=', 'checked_out');
+                })
+                ->get([
+                    'id',
+                    'invoice_id',
+                    'billing_name',
+                    'check_in_date',
+                    'check_out_date',
+                    'checkin_checkout_status'
+                ]);
+
+            if($conflictingBookings->count() > 0){
+                DB::rollBack();
+
+                $conflictPayload = $conflictingBookings->map(function($b){
+                    return [
+                        'id' => 'ORD-'.$b->id,
+                        'invoice_id' => $b->invoice_id,
+                        'guest_name' => $b->billing_name ?? 'Guest',
+                        'check_in_date' => $b->check_in_date,
+                        'check_out_date' => $b->check_out_date,
+                        'status' => $b->checkin_checkout_status ?? null
+                    ];
+                })->values();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot check-in. Previous bookings for this room are not checked out.',
+                    'conflicts' => $conflictPayload
+                ], 409);
+            }
+
+            self::$OrdersModel
+                ->where('id', $orderId)
+                ->update([
+                    'checkin_checkout_status' => 'checked_in',
+                ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checked in successfully.',
+                'checkin_checkout_status' => 'checked_in'
+            ]);
+        } catch(\Throwable $throwable) {
+            DB::rollBack();
+            report($throwable);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to check-in booking.',
+                'error' => $throwable->getMessage(),
+                'line' => $throwable->getLine(),
+                'file' => basename($throwable->getFile())
+            ], 500);
+        }
+    }
+
+    public function checkoutBooking(Request $request, $id){
+        if(!$request->session()->has('vendor_login_id')){
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorId = $request->session()->get('vendor_id');
+
+        try {
+            DB::beginTransaction();
+
+            // Extract order ID
+            if(strpos($id, 'ORD-') === 0){
+                $orderId = (int)str_replace('ORD-', '', $id);
+            } else {
+                $orderId = (int)$id;
+            }
+
+            $order = self::$OrdersModel
+                ->join('hotel', 'orders.hotel_id', '=', 'hotel.id')
+                ->where('orders.id', $orderId)
+                ->where('hotel.vendor_id', $vendorId)
+                ->select('orders.*')
+                ->first();
+
+            if(!$order){
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+            }
+
+            // Prevent duplicate/invalid checkout
+            if($order->checkin_checkout_status !== 'checked_in'){
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Booking is not checked-in yet.'
+                ], 409);
+            }
+
+            $grandTotal = (float)($order->grand_total ?? 0);
+
+            $totalPaid = (float)self::$OrderPaymentsModel
+                ->where('order_id', $orderId)
+                ->where('type', 'Payment')
+                ->sum('amount');
+
+            $balanceDue = $grandTotal - $totalPaid;
+
+            // Treat tiny rounding differences as completed
+            if($balanceDue > 0.01){
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'code' => 'PAYMENT_PENDING',
+                    'message' => 'Payment is pending. Please complete the payment before checkout.',
+                    'grand_total' => $grandTotal,
+                    'paid' => $totalPaid,
+                    'balance_due' => $balanceDue
+                ], 409);
+            }
+
+            self::$OrdersModel
+                ->where('id', $orderId)
+                ->update([
+                    'checkin_checkout_status' => 'checked_out',
+                ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Booking checked out successfully.',
+                'checkin_checkout_status' => 'checked_out'
+            ]);
+        } catch(\Throwable $throwable) {
+            DB::rollBack();
+            report($throwable);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to checkout booking.',
+                'error' => $throwable->getMessage(),
+                'line' => $throwable->getLine(),
+                'file' => basename($throwable->getFile())
+            ], 500);
         }
     }
 

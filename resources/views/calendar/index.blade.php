@@ -621,7 +621,6 @@ $siteUrl = env('APP_URL');
     <div class="modal-content">
         <button type="button" class="btn-close left-close-button bg-white" data-bs-dismiss="modal"
             aria-label="Close"><img src="{{$siteUrl}}public/assets/img/close.svg" class="bg-white rounded-circle" alt=""></button>
-
         <div class="modal-body p-0">
             <div class="booking-popup">
                 <!-- Hidden input to store booking ID -->
@@ -898,8 +897,20 @@ $siteUrl = env('APP_URL');
                         </div>
                         <div class="col-md-3">
                             <div class="d-flex w-100 justify-content-end">
-                                <button type="button" id="bookingSaveBtn" onclick="saveBookingChargesPayments()"
-                                    class="theme-btn-sm rounded text-white text-center text-decoration-none border-0">Save Changes</button>
+                                 <!-- Check-in / Checkout Buttons -->
+                                    <div id="checkinCheckoutSection">
+                                        <button type="button" id="bookingCheckInBtn" onclick="checkInBooking()"
+                                            class="theme-btn-sm rounded text-white border-0">Check-in</button>
+
+                                        <button type="button" id="bookingCheckoutBtn" onclick="checkoutBooking()"
+                                            class="theme-btn-sm rounded text-white border-0" style="display:none;">Checkout</button>
+                                    </div>
+
+                                    <!-- Save Button -->
+                                    <div id="saveChangesSection" style="display:none;">
+                                        <button type="button" id="bookingSaveBtn" onclick="saveBookingChargesPayments()"
+                                            class="theme-btn-sm rounded text-white border-0">Save Changes</button>
+                                    </div>
                             </div>
                         </div>
                     </div>
@@ -1634,6 +1645,27 @@ function blockDates(event) {
 </script>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+const bookingTab = document.getElementById("Booking-tab");
+const paymentTab = document.getElementById("Payment-tab");
+
+const checkinSection = document.getElementById("checkinCheckoutSection");
+const saveSection = document.getElementById("saveChangesSection");
+
+// Jab Booking tab open ho
+bookingTab.addEventListener("shown.bs.tab", function () {
+    checkinSection.style.display = "flex";
+    saveSection.style.display = "none";
+});
+
+// Jab Payment tab open ho
+paymentTab.addEventListener("shown.bs.tab", function () {
+    checkinSection.style.display = "none";
+    saveSection.style.display = "flex";
+});
+
+});
 document.addEventListener('DOMContentLoaded', function () {
     const dateColumnsEl = document.getElementById('dateColumns');
     const roomsContainer = document.querySelector('.rooms-container');
@@ -3456,6 +3488,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // Store current booking data for calculations
         currentBookingData = booking;
         
+        // Toggle Check-in / Checkout actions based on checkin_checkout_status
+        updateCheckinCheckoutButtons(booking, isMaintenance);
+        
         // Fetch and display existing charges and payments
         // Use numeric order_id if available, otherwise skip for maintenance blocks
         if (booking.order_id) {
@@ -4177,6 +4212,226 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentBookingData = null;
     let bookingCharges = [];
     let bookingPayments = [];
+    let bookingActionInProgress = false;
+
+    function updateCheckinCheckoutButtons(booking, isMaintenance = false) {
+        const checkInBtn = document.getElementById('bookingCheckInBtn');
+        const checkoutBtn = document.getElementById('bookingCheckoutBtn');
+
+        if (!checkInBtn || !checkoutBtn) return;
+
+        // Save original texts once
+        if (!checkInBtn.dataset.originalText) checkInBtn.dataset.originalText = checkInBtn.textContent || 'Check-in';
+        if (!checkoutBtn.dataset.originalText) checkoutBtn.dataset.originalText = checkoutBtn.textContent || 'Checkout';
+
+        if (isMaintenance || booking?.type === 'maintenance' || (booking?.id || '').toString().startsWith('MB-')) {
+            checkInBtn.style.display = 'none';
+            checkoutBtn.style.display = 'none';
+            return;
+        }
+
+        const status = booking?.checkin_checkout_status || null;
+
+        if (status === 'checked_in') {
+            checkInBtn.style.display = 'none';
+            checkoutBtn.style.display = '';
+        } else if (status === 'checked_out') {
+            checkInBtn.style.display = 'none';
+            checkoutBtn.style.display = 'none';
+        } else {
+            // status null / checked_in_checkout_status unset => show Check-in
+            checkInBtn.style.display = '';
+            checkoutBtn.style.display = 'none';
+        }
+    }
+
+    function setBookingActionLoading(isLoading, actionType = null) {
+        const checkInBtn = document.getElementById('bookingCheckInBtn');
+        const checkoutBtn = document.getElementById('bookingCheckoutBtn');
+        if (!checkInBtn || !checkoutBtn) return;
+
+        if (isLoading) {
+            checkInBtn.disabled = true;
+            checkoutBtn.disabled = true;
+
+            if (actionType === 'checkin') {
+                checkInBtn.textContent = 'Checking in...';
+                checkoutBtn.textContent = 'Please wait...';
+            } else if (actionType === 'checkout') {
+                checkoutBtn.textContent = 'Checking out...';
+                checkInBtn.textContent = 'Please wait...';
+            } else {
+                checkInBtn.textContent = 'Please wait...';
+                checkoutBtn.textContent = 'Please wait...';
+            }
+        } else {
+            checkInBtn.disabled = false;
+            checkoutBtn.disabled = false;
+            checkInBtn.textContent = checkInBtn.dataset.originalText || 'Check-in';
+            checkoutBtn.textContent = checkoutBtn.dataset.originalText || 'Checkout';
+        }
+    }
+
+    window.checkInBooking = async function() {
+        if (bookingActionInProgress) return;
+
+        const bookingId = document.getElementById('bookingModalBookingId')?.value;
+        if (!bookingId) {
+            swal('Error!', 'Booking ID not found.', 'error');
+            return;
+        }
+
+        if (currentBookingData?.type === 'maintenance' || bookingId.toString().startsWith('MB-')) {
+            swal('Error!', 'Check-in is not available for maintenance blocks.', 'error');
+            return;
+        }
+
+        const status = currentBookingData?.checkin_checkout_status || null;
+        if (status === 'checked_in') {
+            swal('Error!', 'Booking is already checked-in.', 'error');
+            return;
+        }
+        if (status === 'checked_out') {
+            swal('Error!', 'Booking is already checked-out.', 'error');
+            return;
+        }
+
+        bookingActionInProgress = true;
+        setBookingActionLoading(true, 'checkin');
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const checkinUrl = `{{ url('/booking') }}/${encodeURIComponent(bookingId)}/checkin`;
+
+            const response = await fetch(checkinUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                currentBookingData = currentBookingData || {};
+                currentBookingData.checkin_checkout_status = 'checked_in';
+                updateCheckinCheckoutButtons(currentBookingData, false);
+                swal('Success!', data.message || 'Checked in successfully.', 'success');
+                return;
+            }
+
+            if (Array.isArray(data.conflicts) && data.conflicts.length > 0) {
+                const conflictsHtml = data.conflicts.map(c => {
+                    const guestName = c.guest_name || 'Guest';
+                    const prevStatus = c.status || c.checkin_checkout_status || 'unknown';
+                    const checkIn = c.check_in_date ? new Date(c.check_in_date).toLocaleDateString('en-GB') : '-';
+                    return `<div style="margin-bottom:6px;"><strong>${c.id}</strong> - ${guestName} (Prev status: ${prevStatus}, Check-in: ${checkIn})</div>`;
+                }).join('');
+
+                swal({
+                    icon: 'error',
+                    title: 'Check-in blocked',
+                    html: `<div>${data.message || 'Previous bookings for this room are not checked out.'}</div><div style="margin-top:10px; text-align:left;">${conflictsHtml}</div>`
+                });
+                return;
+            }
+
+            swal('Error!', data.message || 'Failed to check-in.', 'error');
+        } catch (error) {
+            console.error('Error during check-in:', error);
+            swal('Error!', 'An error occurred while checking in. Please try again.', 'error');
+        } finally {
+            bookingActionInProgress = false;
+            setBookingActionLoading(false);
+        }
+    };
+
+    window.checkoutBooking = async function() {
+        if (bookingActionInProgress) return;
+
+        const bookingId = document.getElementById('bookingModalBookingId')?.value;
+        if (!bookingId) {
+            swal('Error!', 'Booking ID not found.', 'error');
+            return;
+        }
+
+        if (currentBookingData?.type === 'maintenance' || bookingId.toString().startsWith('MB-')) {
+            swal('Error!', 'Checkout is not available for maintenance blocks.', 'error');
+            return;
+        }
+
+        const status = currentBookingData?.checkin_checkout_status || null;
+        if (status !== 'checked_in') {
+            swal('Error!', 'Checkout is only available after check-in.', 'error');
+            return;
+        }
+
+        bookingActionInProgress = true;
+        setBookingActionLoading(true, 'checkout');
+
+        try {
+            // Persist any charges/payments the user added before checkout (avoid noisy swal when nothing is new).
+            const hasNewCharges = Array.isArray(bookingCharges) && bookingCharges.some(c => !c.existing);
+            const hasNewPayments = Array.isArray(bookingPayments) && bookingPayments.some(p => !p.existing);
+
+            if (hasNewCharges || hasNewPayments) {
+                const saveOk = await window.saveBookingChargesPayments();
+                if (saveOk === false) {
+                    swal('Error!', 'Failed to save charges/payments before checkout.', 'error');
+                    return;
+                }
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const checkoutUrl = `{{ url('/booking') }}/${encodeURIComponent(bookingId)}/checkout`;
+
+            const response = await fetch(checkoutUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                currentBookingData = currentBookingData || {};
+                currentBookingData.checkin_checkout_status = 'checked_out';
+                updateCheckinCheckoutButtons(currentBookingData, false);
+                swal('Success!', 'Booking completed successfully', 'success');
+                return;
+            }
+
+            if (data.code === 'PAYMENT_PENDING') {
+                swal('Error!', data.message || 'Payment is pending. Please complete payment before checkout.', 'error');
+
+                // Switch to Payment Details tab automatically
+                const paymentTab = document.getElementById('Payment-tab');
+                if (paymentTab) {
+                    if (window.bootstrap?.Tab?.getOrCreateInstance) {
+                        window.bootstrap.Tab.getOrCreateInstance(paymentTab).show();
+                    } else {
+                        paymentTab.click();
+                    }
+                }
+                return;
+            }
+
+            swal('Error!', data.message || 'Failed to checkout.', 'error');
+        } catch (error) {
+            console.error('Error during checkout:', error);
+            swal('Error!', 'An error occurred while checking out. Please try again.', 'error');
+        } finally {
+            bookingActionInProgress = false;
+            setBookingActionLoading(false);
+        }
+    };
     
     // Load existing charges and payments from database
     async function loadBookingPaymentHistory(orderId) {

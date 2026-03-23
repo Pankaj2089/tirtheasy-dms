@@ -22,6 +22,8 @@ Route::post('/save-maintenance-block',[MaintenanceBlockController::class, 'saveM
 Route::post('/quick-reservations',[UsersController::class, 'saveQuickReservation'])->name('quickReservations.store');
 Route::get('/order-payments/{orderId}',[UsersController::class, 'getOrderPayments'])->name('order.payments');
 Route::post('/booking/save-charges-payments',[UsersController::class, 'saveBookingChargesPayments'])->name('booking.saveChargesPayments');
+Route::post('/booking/{id}/checkin',[UsersController::class, 'checkInBooking'])->name('booking.checkin');
+Route::post('/booking/{id}/checkout',[UsersController::class, 'checkoutBooking'])->name('booking.checkout');
 Route::get('/logout',[UsersController::class, 'logout'])->name('logout');
 
 // Reservation routes

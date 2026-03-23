@@ -6806,6 +6806,7 @@ CREATE TABLE `orders` (
   `billing_city` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `billing_state` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `payment_status` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'PENDING/SUCCESS/FAILED',
+  `checkin_checkout_status` enum('checked_in','checked_out') DEFAULT NULL COMMENT 'null/checked_in/checked_out',
   `check_in_date` date DEFAULT NULL,
   `check_out_date` date NOT NULL,
   `order_platform` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'MOBILE APP/WEB APP',

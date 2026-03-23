@@ -40,6 +40,7 @@ class Orders extends Authenticatable
         "billing_city",
         "billing_state",
         "payment_status",
+        "checkin_checkout_status",
         "check_in_date",
         "check_out_date",
         "order_platform",
