@@ -956,6 +956,7 @@ class UsersController extends Controller{
                     'check_out_date' => $checkOutDate,
                     'txn_id' => null,
                     'other_details' => json_encode($otherDetails),
+                    'is_read' => 1,
                 ];
 
                 $orderRecord = self::$OrdersModel->CreateRecord($orderPayload);
@@ -1921,6 +1922,27 @@ class UsersController extends Controller{
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Failed to generate invoice: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function getLatestBookings(Request $request){
+        if(!$request->session()->has('vendor_login_id')){return response()->json(['message' => 'Unauthorized'], 401);}
+
+        $vendorId = $request->session()->get('vendor_id');
+
+        $bookings = self::$OrdersModel->where('vendor_id', $vendorId)->orderBy('created_at', 'desc')->limit(20)->get();
+
+        $data = [];
+
+        foreach($bookings as $booking){
+            $data[] = [
+                'date_time' => date('d-m-Y, h:ia', strtotime($booking->created_at)),
+                'logs' => 'New Booking',
+                'user' => $booking->billing_name,
+                'number' => $booking->billing_phone
+            ];
+        }
+
+        return response()->json($data);
     }
 
 }

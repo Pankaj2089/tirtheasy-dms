@@ -614,8 +614,9 @@ $siteUrl = env('APP_URL');
 </div>
 <!-- maintenance block popup end -->
 
+<!-- Booking modal is now included globally -->
 
-<!--booking Modal -->
+<!-- assign room popup -->
 <div class="modal fade" id="booking-pop" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
 <div class="modal-dialog">
     <div class="modal-content">
@@ -1302,7 +1303,7 @@ aria-hidden="true">
         <!-- Header -->
         <div class="modal-header d-flex flex-column p-0">
             <div class="tp p-3 d-flex justify-content-between align-items-center w-100">
-                <h5 class="modal-title" id="quickReservationLabel">Quick Reservation</h5>
+                <h5 class="modal-title" id="quickReservationLabel">Notifications</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><img
                         src="{{$siteUrl}}public/assets/img/close.svg" alt=""></button>
             </div>
@@ -1322,193 +1323,12 @@ aria-hidden="true">
         <div class="modal-body">
             <div class="table-responsive">
                 <table class="table align-middle position-relative mb-0">
-                    <tbody>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>PMSTrial@1</td>
-                            <td>49.37.226.71</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.0.177</td>
-                        </tr>
-                        <tr>
-                            <td>01-04-2025, 03:00pm</td>
-                            <td>Add Guest</td>
-                            <td>OTA</td>
-                            <td>28.0.38.232</td>
-                        </tr>
+                    <tbody id="reservation-new-tbody">
+                        <!-- Data will be loaded dynamically -->
+                         <span id="labelLoading" class="label-loading position-absolute top-50 start-50 translate-middle d-flex flex-column align-items-center text-muted">
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Processing...
+                        </span>
                     </tbody>
                 </table>
             </div>
@@ -1640,7 +1460,44 @@ function blockDates(event) {
     return false;
 }
 
+$('#reservation-new').on('shown.bs.modal', function () {
 
+    $('#labelLoading').removeClass('d-none');
+
+    const tbody = document.getElementById('reservation-new-tbody');
+
+    // ✅ Clear properly
+    tbody.innerHTML = '';
+
+    fetch("{{ url('/latest-bookings') }}")
+    .then(response => response.json())
+    .then(data => {
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center">No Data Found</td></tr>`;
+        } else {
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.date_time}</td>
+                    <td>${item.logs}</td>
+                    <td>${item.user}</td>
+                    <td>${item.number}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+        }
+
+        $('#labelLoading').addClass('d-none');
+    })
+    .catch(error => {
+        console.error('Error fetching bookings:', error);
+        $('#labelLoading').addClass('d-none');
+    });
+
+});
 
 </script>
 

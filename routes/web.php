@@ -9,6 +9,7 @@ use App\Http\Controllers\GuestDatabaseController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OrderController;
 
 Route::get('/',[UsersController::class, 'LoginPage'])->name('LoginPage');
 Route::Post('/vendor-login',[UsersController::class, 'VendorLogin'])->name('VendorLogin');
@@ -48,9 +49,13 @@ Route::get('/settings/get',[SettingsController::class, 'getSettings'])->name('se
 Route::get('/settings/room-types',[SettingsController::class, 'getRoomTypes'])->name('settings.roomTypes');
 Route::get('/settings/ordering/hotels',[SettingsController::class, 'orderingHotels'])->name('settings.ordering.hotels');
 Route::get('/settings/ordering/rooms',[SettingsController::class, 'orderingRooms'])->name('settings.ordering.rooms');
+Route::get('/latest-bookings',[UsersController::class, 'getLatestBookings'])->name('latest.bookings');
 Route::get('/settings/ordering/room-numbers',[SettingsController::class, 'orderingRoomNumbers'])->name('settings.ordering.roomNumbers');
 Route::post('/settings/ordering/update',[SettingsController::class, 'updateOrdering'])->name('settings.ordering.update');
 
 // Dashboard routes
 Route::get('/dashboard',[DashboardController::class, 'index'])->name('dashboard.index');
 Route::get('/dashboard/data',[DashboardController::class, 'getData'])->name('dashboard.data');
+
+Route::get('/vendor/new-bookings', [OrderController::class, 'getNewBookings']);
+Route::post('/vendor/mark-bookings-read', [OrderController::class, 'markAsRead']);

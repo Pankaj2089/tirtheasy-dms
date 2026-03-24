@@ -39,6 +39,8 @@ $siteUrl = env('APP_URL');
         }
     </style>
     @yield('content')
+    @include('element.booking-modal')
+    @include('element.booking-functions')
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.min.js"></script>
     <script src="{{ asset('public/assets/js/sweet-alert.min.js') }}" ></script>
