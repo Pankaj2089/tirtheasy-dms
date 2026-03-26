@@ -44,7 +44,7 @@ $siteUrl = env('APP_URL');
                 <!-- Tab Content -->
                 <div class="tab-content" id="settingsTabContent">
                     <!-- Price Detail Tab -->
-                    <div class="tab-pane fade active show" id="priceDetail" role="tabpanel" aria-labelledby="priceDetail-tab">
+                    <div class="tab-pane fade active show mt-4 " id="priceDetail" role="tabpanel" aria-labelledby="priceDetail-tab">
                         <div class="top-report p-4">
                             <h5 class="mb-4">Price Detail</h5>
                             <form class="bl-reserve-form pe-0" id="priceSettingsForm">
