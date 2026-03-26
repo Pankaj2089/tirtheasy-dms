@@ -198,31 +198,22 @@ class ReservationController extends Controller
                 }
             }
             
-            // In-House: Guests who have already checked in (room assigned AND check-in date is today or past) AND booking is ongoing
-            // Must have room assigned AND check-in date is today or in the past (actually checked in)
-            // Check-out date must be today or in the future (not checked out yet)
-            if ($hasCheckedIn) {
+            // In-House: Only show guests with checkin_checkout_status = 'checked_in'
+            // AND check_out_date is NOT today (or NOT filter date if filter is applied)
+            $checkinCheckoutStatus = $booking['checkin_checkout_status'] ?? null;
+            
+            if ($checkinCheckoutStatus === 'checked_in') {
                 if ($useFilterDate) {
-                    // Filter by selected date - include if check-in <= filter date AND (no check-out OR check-out >= filter date)
-                    // Use Carbon comparison methods for reliable date comparison
-                    if ($checkInDate->lte($filterDate)) {
-                        if (!$checkOutDate || $checkOutDate->gte($filterDate)) {
-                            $inHouse[] = $bookingData;
-                        }
+                    // Filter by selected date
+                    // Include if: check_out_date doesn't match filter date (or is null/empty)
+                    if (!$checkOutDate || !$checkOutDate->isSameDay($filterDate)) {
+                        $inHouse[] = $bookingData;
                     }
                 } else {
-                    // Default: Only include if check-in is today or in the past (already checked in)
-                    // AND check-out is today or in the future (not checked out yet)
-                    if ($checkInDate->isToday() || $checkInDate->isPast()) {
-                        if (!$checkOutDate) {
-                            // No check-out date, they're in-house
-                            $inHouse[] = $bookingData;
-                        } elseif ($checkOutDate->isToday() || $checkOutDate->isFuture()) {
-                            // Check-out is today or future, they're in-house
-                            $inHouse[] = $bookingData;
-                        }
+                    // Default: Only include if check_out_date is not today
+                    if (!$checkOutDate || !$checkOutDate->isToday()) {
+                        $inHouse[] = $bookingData;
                     }
-                    // If check-in is in the future, don't add to in-house (they haven't checked in yet)
                 }
             }
             
@@ -292,7 +283,8 @@ class ReservationController extends Controller
                 'orders.room_number_ids',
                 'orders.payment_status',
                 'orders.grand_total',
-                'orders.other_details'
+                'orders.other_details',
+                'orders.checkin_checkout_status'
             ]);
         
         $bookings = [];
@@ -325,7 +317,8 @@ class ReservationController extends Controller
                 'payment_status' => $order->payment_status,
                 'grand_total' => $order->grand_total,
                 'reservation_type' => $details['reservation_type'] ?? 'confirmed',
-                'has_room_assigned' => $hasRoomAssigned
+                'has_room_assigned' => $hasRoomAssigned,
+                'checkin_checkout_status' => $order->checkin_checkout_status
             ];
         }
         

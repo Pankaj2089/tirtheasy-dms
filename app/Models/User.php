@@ -39,6 +39,7 @@ class User extends Authenticatable
 		'property_id',
 		'login_id',
 		'vendor_id',
+		'room_assignment_type',
     ];
 
     /**

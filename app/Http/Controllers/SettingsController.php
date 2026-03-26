@@ -448,5 +448,67 @@ class SettingsController extends Controller
             return response()->json(['success' => false, 'message' => 'Error updating ordering: ' . $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Save booking settings for the user
+     */
+    public function saveBookingSettings(Request $request)
+    {
+        if (!$request->session()->has('vendor_login_id')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorLoginId = $request->session()->get('vendor_login_id');
+        
+        $request->validate([
+            'room_assignment_type' => 'required|string|in:all,assign_manually,assign_auto',
+        ]);
+
+        try {
+            // Update user's room assignment type
+            $user = self::$UserModel->where('login_id', $vendorLoginId)->first();
+            
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => 'User not found'], 404);
+            }
+
+            $user->update([
+                'room_assignment_type' => $request->room_assignment_type,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Booking settings saved successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error saving settings: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get booking settings for the user
+     */
+    public function getBookingSettings(Request $request)
+    {
+        if (!$request->session()->has('vendor_login_id')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $vendorLoginId = $request->session()->get('vendor_login_id');
+
+        try {
+            $user = self::$UserModel->where('login_id', $vendorLoginId)->first();
+            
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => 'User not found'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'room_assignment_type' => $user->room_assignment_type ?? 'assign_manually'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error fetching settings: ' . $e->getMessage()], 500);
+        }
+    }
 }
 

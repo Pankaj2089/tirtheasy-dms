@@ -52,6 +52,8 @@ Route::get('/settings/ordering/rooms',[SettingsController::class, 'orderingRooms
 Route::get('/latest-bookings',[UsersController::class, 'getLatestBookings'])->name('latest.bookings');
 Route::get('/settings/ordering/room-numbers',[SettingsController::class, 'orderingRoomNumbers'])->name('settings.ordering.roomNumbers');
 Route::post('/settings/ordering/update',[SettingsController::class, 'updateOrdering'])->name('settings.ordering.update');
+Route::post('/settings/booking-settings/save',[SettingsController::class, 'saveBookingSettings'])->name('settings.saveBookingSettings');
+Route::get('/settings/booking-settings/get',[SettingsController::class, 'getBookingSettings'])->name('settings.getBookingSettings');
 
 // Dashboard routes
 Route::get('/dashboard',[DashboardController::class, 'index'])->name('dashboard.index');
