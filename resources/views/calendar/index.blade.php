@@ -7635,6 +7635,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 container.innerHTML = `
                     <div class="mb-3">
                         <p class="small text-muted mb-2">Select exactly <strong>${requiredRooms}</strong> room(s) (Booking requires ${requiredRooms} room${requiredRooms > 1 ? 's' : ''}):</p>
+                        <div class="d-flex justify-content-end mb-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="autoSelectRoomButton">Auto Select Rooms</button>
+                        </div>
                         <div class="list-group" style="max-height: 300px; overflow-y: auto;">
                             ${rooms.map((room) => {
                                 const isChecked = selectedRoomIds.includes(room.id);
@@ -7694,9 +7697,35 @@ document.addEventListener('DOMContentLoaded', function () {
                         updateCheckboxStates();
                     });
                 });
-                
-                // Initialize checkbox states
+
+                const autoSelectRooms = () => {
+                    const checkboxes = Array.from(container.querySelectorAll('input.room-checkbox'));
+                    if (checkboxes.length < requiredRooms) {
+                        swal('Error', `Only ${checkboxes.length} room(s) available. Cannot auto-select ${requiredRooms}.`, 'warning');
+                        return;
+                    }
+
+                    checkboxes.forEach(cb => {
+                        cb.checked = false;
+                    });
+
+                    for (let i = 0; i < requiredRooms; i++) {
+                        if (checkboxes[i]) {
+                            checkboxes[i].checked = true;
+                        }
+                    }
+
+                    updateCheckboxStates();
+                };
+
+                const autoSelectBtn = container.querySelector('#autoSelectRoomButton');
+                if (autoSelectBtn) {
+                    autoSelectBtn.addEventListener('click', autoSelectRooms);
+                }
+
+                // Initialize checkbox states and auto-select recommended rooms
                 updateCheckboxStates();
+                autoSelectRooms();
                 
                 // Handle cancel
                 container.querySelector('[data-cancel-selection]')?.addEventListener('click', () => {
